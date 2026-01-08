@@ -47,8 +47,6 @@ jobs:
 
           modrinth-dependencies: |
             gregtechceu-modern(required)
-            ldlib(required)
 
           curseforge-dependencies: |
             890405(required)
-            626676(required)

@@ -58,22 +58,30 @@ repositories {
     maven {
         name = 'GTCEu Maven'
         url = 'https://maven.gtceu.com'
+        content { includeGroup 'com.gregtechceu.gtceu' }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        forRepositories(fg.repository)
+        filter { includeGroup "maven.modrinth" }
     }
     maven {
         name = 'Modmaven'
         url = 'https://modmaven.dev/'
-    }
-    flatDir {
-        dirs 'libs'
     }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    // Local dependencies from libs folder
-    implementation files('libs/ldlib-forge-1.20.1-1.0.40.b.jar')
-    implementation files('libs/gtceu-1.20.1-7.0.0.jar')
+    implementation fg.deobf("maven.modrinth:ldlib:mc1.20.1-1.0.40.b-forge")
+
+    implementation fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:7.0.0")
 
     // Applied Energistics 2 (compile only - will use runtime version)
     compileOnly files('libs/appliedenergistics2-forge-15.4.10.jar')
