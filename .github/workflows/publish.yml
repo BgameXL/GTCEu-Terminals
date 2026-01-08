@@ -19,7 +19,7 @@ jobs:
           java-version: 17
 
       - name: Build
-        run: ./gradle clean build
+        run: ./gradlew clean build
 
       - name: Publish
         uses: Kir-Antipov/mc-publish@v3.3
