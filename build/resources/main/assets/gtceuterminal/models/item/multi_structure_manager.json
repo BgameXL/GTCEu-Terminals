@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "gtceuterminal:item/multi_structure_manager"
-  }
-}
