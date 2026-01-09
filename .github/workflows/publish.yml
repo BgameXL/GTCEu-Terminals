@@ -42,7 +42,7 @@ jobs:
           modrinth-id: ${{ secrets.MODRINTH_PROJECT_ID }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
 
-          curseforge-id: ${{ secrets.CURSEFORGE_PROJECT_ID }}
+          curseforge-id: 1423461
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
 
           modrinth-dependencies:
