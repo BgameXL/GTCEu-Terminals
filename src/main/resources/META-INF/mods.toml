@@ -11,21 +11,21 @@ authors="${mod_author}"
 description='''${mod_description}'''
 logoFile="assets/${mod_id}/logo.png"
 
-[[dependencies.gtceuterminal]]
+[[dependencies.${mod_id}]]
     modId="forge"
     mandatory=true
     versionRange="${forge_version_range}"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.gtceuterminal]]
+[[dependencies.${mod_id}]]
     modId="minecraft"
     mandatory=true
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.gtceuterminal]]
+[[dependencies.${mod_id}]]
     modId="gtceu"
     mandatory=true
     versionRange="[7.0.0,)"

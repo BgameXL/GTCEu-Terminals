@@ -5,7 +5,7 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
 }
 
-version = "${mod_version}"
+version = project.findProperty("mod_version") ?: "0.0.0"
 group = "com.${mod_id}"
 
 base {
