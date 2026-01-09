@@ -42,13 +42,6 @@ jobs:
           modrinth-id: ${{ secrets.MODRINTH_PROJECT_ID }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
 
-          curseforge-id: 1423461
-          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-
           modrinth-dependencies:
             gregtechceu-modern(required)
             ldlib(required)
-
-          curseforge-dependencies:
-            890405(required)
-            626676(required)
