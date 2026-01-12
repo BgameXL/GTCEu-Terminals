@@ -10,7 +10,7 @@ GregTech Terminals offers three very useful Quality of Life gadgets for your mod
 
 **Multi-Structure Manager**:
 
-This gadget sees all multiblocks within a 32-block radius and allows you to upgrade any tiered blocks such as Coils, I/O Hatches, Energy Hatches, Parallel Hatches, Mufflers, and even custom Tiered Casings, directly from the player's inventory or AE2! It connects straight to your ME Network through a ME Wireless Access Point just like a Wireless Terminal, and also has the ability to request blocks for you. (requesting is currently a planned feature and not complete)
+This gadget sees all multiblocks within a 32-block radius and allows you to upgrade any tiered blocks such as Coils, I/O Hatches, I/0 Buses, Energy Hatches, Parallel Hatches, Mufflers, and even custom Tiered Casings, directly from the player's inventory or AE2! It connects straight to your ME Network through a ME Wireless Access Point just like a Wireless Terminal, and also has the ability to request blocks for you. (requesting is currently a planned feature and not complete)
 
 
 
@@ -20,9 +20,9 @@ This gadget allows you to shift + right-click a multiblock controller in order t
 
 
 
-**Dismatler**:
+**Dismantler**:
 
-This final gadget allows you to shift + right-click a multiblock controller in order to pick up all blocks that are a part of the structure and put them in the player's inventory. Any excess blocks picked up by the dismantler will be dropped on the ground if there isn't any space for them.(the dismantler is currently a planned feature and not complete)
+This final gadget allows you to shift + right-click a multiblock controller in order to pick up all blocks that are a part of the structure and put them in the player's inventory. Any excess blocks picked up by the dismantler will be dropped on the ground if player inventory is full.(the dismantler is currently a planned feature and not complete)
 
 
 
