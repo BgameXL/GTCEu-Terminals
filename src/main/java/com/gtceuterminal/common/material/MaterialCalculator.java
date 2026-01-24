@@ -1,8 +1,12 @@
 package com.gtceuterminal.common.material;
 
 import com.gtceuterminal.GTCEUTerminalMod;
+import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
+import com.gtceuterminal.common.ae2.WirelessTerminalHandler;
+import com.gtceuterminal.common.item.MultiStructureManagerItem;
+import com.gtceuterminal.common.item.SchematicInterfaceItem;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
-import com.gtceuterminal.common.multiblock.ComponentType;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -13,9 +17,7 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 
 import java.util.*;
 
-
- // Calculates material requirements and checks availability
-
+// Calculates material requirements and checks availability
 public class MaterialCalculator {
 
     private static final int CHEST_SCAN_RADIUS = 3;
@@ -23,7 +25,6 @@ public class MaterialCalculator {
     public static Map<Item, Integer> calculateUpgradeCost(ComponentInfo component, int targetTier) {
         Map<Item, Integer> materials = new HashMap<>();
         String blockName = component.getBlockName();
-
         return materials;
     }
 
@@ -65,8 +66,38 @@ public class MaterialCalculator {
     }
 
 
-      // Check material availability from all sources
+    // Find wireless terminal in player's inventory
+    private static ItemStack findWirelessTerminal(Player player) {
+        // Check main hand
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.getItem() instanceof MultiStructureManagerItem ||
+                mainHand.getItem() instanceof SchematicInterfaceItem) {
+            return mainHand;
+        }
 
+        // Check off hand
+        ItemStack offHand = player.getOffhandItem();
+        if (offHand.getItem() instanceof MultiStructureManagerItem ||
+                offHand.getItem() instanceof SchematicInterfaceItem) {
+            return offHand;
+        }
+
+        // Check inventory
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.getItem() instanceof MultiStructureManagerItem ||
+                    stack.getItem() instanceof SchematicInterfaceItem) {
+                return stack;
+            }
+        }
+
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * Check material availability from all sources INCLUDING ME Network
+     * CLIENT SIDE: Assumes ME has items if linked (can't check BlockEntity)
+     * SERVER SIDE: Actually checks ME Network
+     */
     public static List<MaterialAvailability> checkMaterialsAvailability(
             Map<Item, Integer> required,
             Player player,
@@ -79,54 +110,47 @@ public class MaterialCalculator {
         Map<Item, Integer> playerInv = scanPlayerInventory(player);
         Map<Item, Integer> chests = scanNearbyChests(level, player.blockPosition());
 
+        // Find wireless terminal
+        ItemStack wirelessTerminal = findWirelessTerminal(player);
+        boolean isLinked = !wirelessTerminal.isEmpty() && WirelessTerminalHandler.isLinked(wirelessTerminal);
+
         for (Map.Entry<Item, Integer> entry : required.entrySet()) {
             MaterialAvailability mat = new MaterialAvailability(entry.getKey(), entry.getValue());
 
             mat.setInInventory(playerInv.getOrDefault(entry.getKey(), 0));
             mat.setInNearbyChests(chests.getOrDefault(entry.getKey(), 0));
 
-            long inME = scanMENetworkForItem(player, level, entry.getKey());
+            // ME Network handling
+            long inME = 0;
+
+            if (isLinked) {
+                if (level.isClientSide) {
+                    // CLIENT: Assume ME has the items (can't check for real)
+                    // This allows the button to be enabled
+                    inME = entry.getValue();
+                    GTCEUTerminalMod.LOGGER.info("  {} [CLIENT]: Linked, assuming available in ME",
+                            entry.getKey().getDescription().getString());
+                } else {
+                    // SERVER: Actually check ME Network
+                    inME = MENetworkItemExtractor.checkItemAvailability(
+                            wirelessTerminal, level, player, entry.getKey()
+                    );
+                    GTCEUTerminalMod.LOGGER.info("  {} [SERVER]: Found {} in ME",
+                            entry.getKey().getDescription().getString(), inME);
+                }
+            }
+
             mat.setInMENetwork(inME);
 
             String itemName = entry.getKey().getDescription().getString();
-            GTCEUTerminalMod.LOGGER.info("  {}: Required={}, InInv={}, InChests={}, InME={}",
-                    itemName, entry.getValue(), mat.getInInventory(), mat.getInNearbyChests(), inME);
+            GTCEUTerminalMod.LOGGER.info("  {}: Required={}, InInv={}, InChests={}, InME={}, Total={}, Enough={}",
+                    itemName, entry.getValue(), mat.getInInventory(), mat.getInNearbyChests(),
+                    inME, mat.getTotalAvailable(), mat.hasEnough());
 
             availability.add(mat);
         }
 
         return availability;
-    }
-
-    public static Map<Item, Long> scanMENetwork(Player player, Level level) {
-        Map<Item, Long> items = new HashMap<>();
-
-        try {
-            if (!com.gtceuterminal.common.ae2.MENetworkScanner.isAE2Available()) {
-                return items;
-            }
-
-        } catch (Exception e) {
-            com.gtceuterminal.GTCEUTerminalMod.LOGGER.error("Error scanning ME network", e);
-        }
-
-        return items;
-    }
-
-    public static long scanMENetworkForItem(Player player, Level level, Item item) {
-        try {
-            if (!com.gtceuterminal.common.ae2.MENetworkScanner.isAE2Available()) {
-                return 0;
-            }
-
-            return com.gtceuterminal.common.ae2.MENetworkScanner.getTotalInMENetworks(
-                    player, level, item, 16
-            );
-
-        } catch (Exception e) {
-            com.gtceuterminal.GTCEUTerminalMod.LOGGER.error("Error scanning ME network for item", e);
-            return 0;
-        }
     }
 
     public static boolean hasEnoughMaterials(List<MaterialAvailability> materials) {
@@ -193,6 +217,7 @@ public class MaterialCalculator {
         return remaining <= 0;
     }
 
+    // Extract materials - ONLY CALLED ON SERVER
     public static boolean extractMaterials(
             List<MaterialAvailability> materials,
             Player player,
@@ -202,14 +227,45 @@ public class MaterialCalculator {
     ) {
         GTCEUTerminalMod.LOGGER.info("=== Extracting Materials (Server: {}) ===", !level.isClientSide);
 
+        // Build required items map
+        Map<Item, Integer> required = new HashMap<>();
+        for (MaterialAvailability mat : materials) {
+            required.put(mat.getItem(), mat.getRequired());
+        }
+
+        // Find wireless terminal
+        ItemStack wirelessTerminal = findWirelessTerminal(player);
+
+        // Try ME Network first if available
+        if (!wirelessTerminal.isEmpty()) {
+            GTCEUTerminalMod.LOGGER.info("  Found wireless terminal, trying ME Network extraction...");
+
+            MENetworkItemExtractor.ExtractResult result =
+                    MENetworkItemExtractor.tryExtractFromMEOrInventory(
+                            wirelessTerminal, level, player, required
+                    );
+
+            if (result.success) {
+                if (result.source == MENetworkItemExtractor.ExtractionSource.ME_NETWORK) {
+                    GTCEUTerminalMod.LOGGER.info("  ✓ Successfully extracted from ME Network");
+                    return true;
+                } else if (result.source == MENetworkItemExtractor.ExtractionSource.PLAYER_INVENTORY) {
+                    GTCEUTerminalMod.LOGGER.info("  ✓ Successfully extracted from Player Inventory");
+                    return true;
+                }
+            }
+
+            GTCEUTerminalMod.LOGGER.warn("  ✗ ME Network extraction failed, trying traditional method...");
+        }
+
+        // Fallback to traditional extraction
         for (MaterialAvailability mat : materials) {
             int remaining = mat.getRequired();
             String itemName = mat.getItemName();
 
-            GTCEUTerminalMod.LOGGER.info("  Item: {}, Required: {}, InInv: {}, InME: {}",
-                    itemName, remaining, mat.getInInventory(), mat.getInMENetwork());
+            GTCEUTerminalMod.LOGGER.info("  Item: {}, Required: {}", itemName, remaining);
 
-            // Try inventory first
+            // Try inventory
             if (useInventory && remaining > 0) {
                 int available = Math.min(remaining, mat.getInInventory());
                 if (available > 0 && extractFromInventory(player, mat.getItem(), available)) {
@@ -218,7 +274,7 @@ public class MaterialCalculator {
                 }
             }
 
-            // Try chests (it doesnt work, next update maybe)
+            // Try chests
             if (useChests && remaining > 0) {
                 int available = Math.min(remaining, mat.getInNearbyChests());
                 if (available > 0 && extractFromChests(level, player.blockPosition(), mat.getItem(), available)) {
@@ -227,21 +283,6 @@ public class MaterialCalculator {
                 }
             }
 
-            // Try ME Network last (it doesnt work, next update maybe)
-            if (remaining > 0 && mat.getInMENetwork() > 0) {
-                long available = Math.min(remaining, mat.getInMENetwork());
-                GTCEUTerminalMod.LOGGER.info("    Trying to extract {} from ME Network", available);
-
-                if (available > 0) {
-                    long extracted = com.gtceuterminal.common.ae2.MENetworkExtractor.extractFromNearbyMENetwork(
-                            player, level, mat.getItem(), available, 16
-                    );
-                    GTCEUTerminalMod.LOGGER.info("    Actually extracted {} from ME", extracted);
-                    remaining -= (int) extracted;
-                }
-            }
-
-            // Check if enough materials
             if (remaining > 0) {
                 GTCEUTerminalMod.LOGGER.warn("  FAILED: Still missing {} of {}", remaining, itemName);
                 return false;

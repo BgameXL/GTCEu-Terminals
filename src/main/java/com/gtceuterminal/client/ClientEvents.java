@@ -2,8 +2,10 @@ package com.gtceuterminal.client;
 
 import com.gtceuterminal.client.renderer.SchematicPreviewRenderer;
 import com.gtceuterminal.common.data.SchematicData;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.nbt.CompoundTag;
@@ -27,7 +29,7 @@ public class ClientEvents {
             return;
         }
 
-        // Check if player is holding schematic Terminal with clipboard
+        // Check if player is holding schematic Terminal
         ItemStack heldItem = minecraft.player.getMainHandItem();
         if (!heldItem.getItem().toString().contains("schematic_interface")) {
             heldItem = minecraft.player.getOffhandItem();
@@ -60,7 +62,7 @@ public class ClientEvents {
             // Enable transparency
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.5f); // 50% transparent
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f); // 50% transparent
 
             // Render ghost blocks with clipboard tag for original facing
             SchematicPreviewRenderer.renderGhostBlocks(poseStack, bufferSource, clipboard, minecraft, tag.getCompound("Clipboard"));
@@ -68,7 +70,7 @@ public class ClientEvents {
             bufferSource.endBatch();
 
             // Reset rendering state
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             RenderSystem.disableBlend();
 
             poseStack.popPose();

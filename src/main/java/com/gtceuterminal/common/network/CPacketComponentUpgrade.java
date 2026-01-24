@@ -1,5 +1,7 @@
 package com.gtceuterminal.common.network;
 
+import com.gtceuterminal.common.item.MultiStructureManagerItem;
+import com.gtceuterminal.common.item.SchematicInterfaceItem;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
 import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.common.upgrade.ComponentUpgrader;
@@ -9,6 +11,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
@@ -17,11 +20,19 @@ import java.util.function.Supplier;
 
 public class CPacketComponentUpgrade {
 
-    private final List<BlockPos> positions;
+    private List<BlockPos> positions = new ArrayList<>();
     private final int targetTier;
 
+    // Main constructor used by decode
     public CPacketComponentUpgrade(List<BlockPos> positions, int targetTier) {
         this.positions = positions;
+        this.targetTier = targetTier;
+    }
+
+    // Convenient constructor for a single component
+    public CPacketComponentUpgrade(BlockPos position, int targetTier, BlockPos controllerPos) {
+        this.positions = new ArrayList<>();
+        this.positions.add(position);  // IMPORTANTE: Agregar la posición
         this.targetTier = targetTier;
     }
 
@@ -48,6 +59,9 @@ public class CPacketComponentUpgrade {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
 
+            // Find wireless terminal in player's hands or inventory
+            ItemStack wirelessTerminal = findWirelessTerminal(player);
+
             int upgraded = 0;
             int failed = 0;
 
@@ -65,105 +79,133 @@ public class CPacketComponentUpgrade {
 
                 ComponentInfo component = new ComponentInfo(type, currentTier, pos, state);
 
+                // Pass wireless terminal to upgrader
                 ComponentUpgrader.UpgradeResult result = ComponentUpgrader.upgradeComponent(
                         component,
                         targetTier,
                         player,
                         player.level(),
-                        true
+                        true,
+                        wirelessTerminal
                 );
 
                 if (result.success) upgraded++;
                 else failed++;
             }
 
+            // Send feedback
             if (upgraded > 0) {
                 player.displayClientMessage(
-                        Component.literal("§aUpgraded " + upgraded + " components to " +
-                                com.gregtechceu.gtceu.api.GTValues.VN[targetTier] +
-                                (failed > 0 ? " §e(" + failed + " failed)" : "!")),
-                        false
-                );
-                player.playSound(SoundEvents.ANVIL_USE, 1.0f, 1.0f);
-            } else {
-                player.displayClientMessage(
-                        Component.literal("§cFailed to upgrade components"),
+                        Component.literal("§aUpgraded " + upgraded + " component(s)"),
                         true
                 );
-                player.playSound(SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
+                player.playSound(SoundEvents.ANVIL_USE, 1.0F, 1.0F);
+            }
+
+            if (failed > 0) {
+                player.displayClientMessage(
+                        Component.literal("§cFailed to upgrade " + failed + " component(s)"),
+                        true
+                );
             }
         });
-
         ctx.get().setPacketHandled(true);
     }
 
-    private static ComponentType detectComponentType(net.minecraft.world.level.block.Block block) {
-        String blockName = block.getDescriptionId().toLowerCase();
-
-        // Parallel Hatch
-        if (blockName.contains("parallel_hatch")) {
-            return ComponentType.PARALLEL_HATCH;
+    private ItemStack findWirelessTerminal(ServerPlayer player) {
+        // Check main hand
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.getItem() instanceof MultiStructureManagerItem ||
+                mainHand.getItem() instanceof SchematicInterfaceItem) {
+            return mainHand;
         }
 
-        // Check energy FIRST
-        if (blockName.contains("energy_hatch") || blockName.contains("energy_input") ||
-                blockName.contains("energy.input") || blockName.contains("energy_output")) {
-            return ComponentType.ENERGY_HATCH;
+        // Check off hand
+        ItemStack offHand = player.getOffhandItem();
+        if (offHand.getItem() instanceof MultiStructureManagerItem ||
+                offHand.getItem() instanceof SchematicInterfaceItem) {
+            return offHand;
         }
 
-        if (blockName.contains("input_hatch") || blockName.contains("item_import_bus") ||
-                blockName.contains("item.input")) {
+        // Check inventory
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.getItem() instanceof MultiStructureManagerItem ||
+                    stack.getItem() instanceof SchematicInterfaceItem) {
+                return stack;
+            }
+        }
+
+        return ItemStack.EMPTY;
+    }
+
+    private ComponentType detectComponentType(net.minecraft.world.level.block.Block block) {
+        String blockId = block.builtInRegistryHolder().key().location().toString().toLowerCase();
+
+        // Energy hatches
+        if (blockId.contains("energy") && blockId.contains("input")) return ComponentType.ENERGY_HATCH;
+        if (blockId.contains("dynamo")) return ComponentType.DYNAMO_HATCH;
+        if (blockId.contains("energy") && blockId.contains("output")) return ComponentType.DYNAMO_HATCH;
+
+        // Coils
+        if (blockId.contains("coil")) return ComponentType.COIL;
+
+        // Fluid hatches
+        if (blockId.contains("input_hatch") && !blockId.contains("quadruple") && !blockId.contains("nonuple"))
             return ComponentType.INPUT_HATCH;
-        } else if (blockName.contains("output_hatch") || blockName.contains("item_export_bus") ||
-                blockName.contains("item.output")) {
+        if (blockId.contains("output_hatch") && !blockId.contains("quadruple") && !blockId.contains("nonuple"))
             return ComponentType.OUTPUT_HATCH;
-        }
+        if (blockId.contains("quadruple") && blockId.contains("input"))
+            return ComponentType.QUAD_INPUT_HATCH;
+        if (blockId.contains("quadruple") && blockId.contains("output"))
+            return ComponentType.QUAD_OUTPUT_HATCH;
+        if (blockId.contains("nonuple") && blockId.contains("input"))
+            return ComponentType.NONUPLE_INPUT_HATCH;
+        if (blockId.contains("nonuple") && blockId.contains("output"))
+            return ComponentType.NONUPLE_OUTPUT_HATCH;
 
-        if (blockName.contains("input_bus") || blockName.contains("fluid_import_hatch") ||
-                blockName.contains("fluid.input")) {
-            return ComponentType.INPUT_BUS;
-        } else if (blockName.contains("output_bus") || blockName.contains("fluid_export_hatch") ||
-                blockName.contains("fluid.output")) {
-            return ComponentType.OUTPUT_BUS;
-        }
+        // Item buses
+        if (blockId.contains("input_bus")) return ComponentType.INPUT_BUS;
+        if (blockId.contains("output_bus")) return ComponentType.OUTPUT_BUS;
 
-        if (blockName.contains("muffler")) return ComponentType.MUFFLER;
-        if (blockName.contains("maintenance")) return ComponentType.MAINTENANCE;
-        if (blockName.contains("coil")) return ComponentType.COIL;
+        // Maintenance
+        if (blockId.contains("maintenance")) return ComponentType.MAINTENANCE;
 
-        com.gtceuterminal.GTCEUTerminalMod.LOGGER.warn("Could not detect component type for block: {}", blockName);
+        // Muffler
+        if (blockId.contains("muffler")) return ComponentType.MUFFLER;
+
         return null;
     }
 
-    private static int detectTier(net.minecraft.world.level.block.Block block) {
-        String blockId = block.getDescriptionId().toLowerCase();
-        String blockName = block.getName().getString().toLowerCase();
+    private int detectTier(net.minecraft.world.level.block.Block block) {
+        String blockId = block.builtInRegistryHolder().key().location().toString().toLowerCase();
 
-        com.gtceuterminal.GTCEUTerminalMod.LOGGER.info("Detecting tier for block: id='{}', name='{}'", blockId, blockName);
-
-        // Coil tiers
-        if (blockId.contains("cupronickel") || blockName.contains("cupronickel")) return 0;
-        if (blockId.contains("kanthal") || blockName.contains("kanthal")) return 1;
-        if (blockId.contains("nichrome") || blockName.contains("nichrome")) return 2;
-        if (blockId.contains("rtm") || blockName.contains("rtm")) return 3;
-        if (blockId.contains("hss") || blockName.contains("hss")) return 4;
-        if ((blockId.contains("naquadah") || blockName.contains("naquadah")) &&
-                (blockId.contains("coil") || blockName.contains("coil"))) return 5;
-        if (blockId.contains("trinium") || blockName.contains("trinium")) return 6;
-        if (blockId.contains("tritanium") || blockName.contains("tritanium")) return 7;
-
-        // Standard tiers
-        if (blockId.contains("ulv") || blockName.contains("ulv")) return 0;
-        if (blockId.contains("lv") && !blockId.contains("ulv") && !blockId.contains("luv")) return 1;
+        // Standard voltage tiers
+        if (blockId.contains("ulv")) return 0;
+        if (blockId.contains("lv")) return 1;
         if (blockId.contains("mv")) return 2;
         if (blockId.contains("hv")) return 3;
         if (blockId.contains("ev")) return 4;
-        if (blockId.contains("iv") && !blockId.contains("div")) return 5;
+        if (blockId.contains("iv")) return 5;
         if (blockId.contains("luv")) return 6;
         if (blockId.contains("zpm")) return 7;
-        if (blockId.contains("uv") && !blockId.contains("luv")) return 8;
+        if (blockId.contains("uv")) return 8;
+        if (blockId.contains("uhv")) return 9;
+        if (blockId.contains("uev")) return 10;
+        if (blockId.contains("uiv")) return 11;
+        if (blockId.contains("uxv")) return 12;
+        if (blockId.contains("opv")) return 13;
+        if (blockId.contains("max")) return 14;
 
-        com.gtceuterminal.GTCEUTerminalMod.LOGGER.warn("Could not detect tier for block '{}', defaulting to 0", blockId);
+        // Coil tiers
+        if (blockId.contains("cupronickel")) return 0;
+        if (blockId.contains("kanthal")) return 1;
+        if (blockId.contains("nichrome")) return 2;
+        if (blockId.contains("rtm_alloy")) return 3;
+        if (blockId.contains("hssg")) return 4;
+        if (blockId.contains("naquadah")) return 5;
+        if (blockId.contains("trinium")) return 6;
+        if (blockId.contains("tritanium")) return 7;
+
         return 0;
     }
 }

@@ -13,17 +13,29 @@ public class SchematicData {
     private final String name;
     private final String multiblockType;
     private final Map<BlockPos, BlockState> blocks;
+
+    /**
+     * Optional BlockEntity NBT per block position
+     * Used for accurate preview and perfect paste
+     */
+    private final Map<BlockPos, CompoundTag> blockEntities;
     private final BlockPos size;
     private final String originalFacing;
 
     public SchematicData(String name, String multiblockType, Map<BlockPos, BlockState> blocks) {
-        this(name, multiblockType, blocks, "south");
+        this(name, multiblockType, blocks, Collections.emptyMap(), "south");
     }
 
     public SchematicData(String name, String multiblockType, Map<BlockPos, BlockState> blocks, String originalFacing) {
+        this(name, multiblockType, blocks, Collections.emptyMap(), originalFacing);
+    }
+
+    public SchematicData(String name, String multiblockType, Map<BlockPos, BlockState> blocks,
+                         Map<BlockPos, CompoundTag> blockEntities, String originalFacing) {
         this.name = name;
         this.multiblockType = multiblockType;
         this.blocks = new HashMap<>(blocks);
+        this.blockEntities = new HashMap<>(blockEntities);
         this.originalFacing = originalFacing;
         this.size = calculateSize();
     }
@@ -58,6 +70,10 @@ public class SchematicData {
         return Collections.unmodifiableMap(blocks);
     }
 
+    public Map<BlockPos, CompoundTag> getBlockEntities() {
+        return Collections.unmodifiableMap(blockEntities);
+    }
+
     public BlockPos getSize() {
         return size;
     }
@@ -79,7 +95,6 @@ public class SchematicData {
         com.gtceuterminal.GTCEUTerminalMod.LOGGER.info("Saving schematic '{}' - originalFacing: {}", name, originalFacing);
 
         // Able to copy and paste blocks from different mods, include liquids like water and lava.
-
         ListTag blocksList = new ListTag();
         for (Map.Entry<BlockPos, BlockState> entry : blocks.entrySet()) {
             CompoundTag blockTag = new CompoundTag();
@@ -89,6 +104,19 @@ public class SchematicData {
         }
         tag.put("Blocks", blocksList);
 
+        // Optional BlockEntities
+        if (!blockEntities.isEmpty()) {
+            ListTag beList = new ListTag();
+            for (Map.Entry<BlockPos, CompoundTag> entry : blockEntities.entrySet()) {
+                if (entry.getValue() == null || entry.getValue().isEmpty()) continue;
+                CompoundTag beTag = new CompoundTag();
+                beTag.put("Pos", NbtUtils.writeBlockPos(entry.getKey()));
+                beTag.put("NBT", entry.getValue().copy());
+                beList.add(beTag);
+            }
+            tag.put("BlockEntities", beList);
+        }
+
         return tag;
     }
 
@@ -97,7 +125,7 @@ public class SchematicData {
         String type = tag.getString("Type");
         String originalFacing = tag.contains("OriginalFacing") ? tag.getString("OriginalFacing") : "south";
 
-        com.gtceuterminal.GTCEUTerminalMod.LOGGER.info("Loading schematic '{}' - originalFacing: {}", name, originalFacing);
+        // com.gtceuterminal.GTCEUTerminalMod.LOGGER.info("Loading schematic '{}' - originalFacing: {}", name, originalFacing);
 
         Map<BlockPos, BlockState> blocks = new HashMap<>();
         ListTag blocksList = tag.getList("Blocks", 10);
@@ -111,11 +139,26 @@ public class SchematicData {
             blocks.put(pos, state);
         }
 
-        return new SchematicData(name, type, blocks, originalFacing);
+        // Optional BlockEntities
+        Map<BlockPos, CompoundTag> blockEntities = new HashMap<>();
+        if (tag.contains("BlockEntities")) {
+            ListTag beList = tag.getList("BlockEntities", 10);
+            for (int i = 0; i < beList.size(); i++) {
+                CompoundTag beTag = beList.getCompound(i);
+                BlockPos pos = NbtUtils.readBlockPos(beTag.getCompound("Pos"));
+                CompoundTag nbt = beTag.getCompound("NBT");
+                if (!nbt.isEmpty()) {
+                    blockEntities.put(pos, nbt.copy());
+                }
+            }
+        }
+
+        return new SchematicData(name, type, blocks, blockEntities, originalFacing);
     }
 
     public SchematicData rotate(net.minecraft.core.Direction.Axis axis) {
         Map<BlockPos, BlockState> rotatedBlocks = new HashMap<>();
+        Map<BlockPos, CompoundTag> rotatedBEs = new HashMap<>();
 
         for (Map.Entry<BlockPos, BlockState> entry : blocks.entrySet()) {
             BlockPos pos = entry.getKey();
@@ -127,7 +170,12 @@ public class SchematicData {
             rotatedBlocks.put(newPos, newState);
         }
 
-        return new SchematicData(name, multiblockType, rotatedBlocks, originalFacing);
+        for (Map.Entry<BlockPos, CompoundTag> entry : blockEntities.entrySet()) {
+            BlockPos newPos = rotatePosition(entry.getKey(), axis);
+            rotatedBEs.put(newPos, entry.getValue().copy());
+        }
+
+        return new SchematicData(name, multiblockType, rotatedBlocks, rotatedBEs, originalFacing);
     }
 
     private BlockPos rotatePosition(BlockPos pos, net.minecraft.core.Direction.Axis axis) {

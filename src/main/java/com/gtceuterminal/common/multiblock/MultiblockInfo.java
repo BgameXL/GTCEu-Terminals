@@ -17,6 +17,9 @@ public class MultiblockInfo {
     private final List<ComponentInfo> components;
     private MultiblockStatus status;
 
+    // Universal Scanner Support
+    private String sourceMod = "gtceu";
+
     public MultiblockInfo(
             IMultiController controller,
             String name,
@@ -115,7 +118,17 @@ public class MultiblockInfo {
     }
 
     public String getDistanceString() {
-        return String.format("%.0fm", distanceFromPlayer);
+        // Displaying a decimal point prevents many different distances from appearing identical due to rounding.
+        // (e.g., 55.6m, 56.1m, 56.4m -> "56m"), which also obscures the actual order.
+        if (Double.isNaN(distanceFromPlayer) || Double.isInfinite(distanceFromPlayer)) {
+            return "?m";
+        }
+
+        // 1 decimal place up to 999.9m, then no decimal places to avoid taking up too much space.
+        if (distanceFromPlayer < 1000.0) {
+            return String.format(java.util.Locale.ROOT, "%.1fm", distanceFromPlayer);
+        }
+        return String.format(java.util.Locale.ROOT, "%.0fm", distanceFromPlayer);
     }
 
     public List<ComponentInfo> getComponentsByType(ComponentType type) {
@@ -136,6 +149,51 @@ public class MultiblockInfo {
                 .count();
     }
 
+    // ============================================
+    // MOD SOURCE TRACKING
+    // ============================================
+
+    public void setSourceMod(String modId) {
+        this.sourceMod = modId != null ? modId : "unknown";
+    }
+
+    public String getSourceMod() {
+        return sourceMod;
+    }
+
+    public boolean isFromMod(String modId) {
+        return this.sourceMod.equals(modId);
+    }
+
+    public boolean isVanillaGTCEu() {
+        return "gtceu".equals(sourceMod);
+    }
+
+    /**
+     * Gets a display name that includes the source mod, useful for UI when there are multiblocks of multiple mods
+     * Examples:
+     * - GTCEu: "Electric Blast Furnace"
+     * - PFT: "Tesla Tower"
+     * - AGE: "Solar Boiler Array"
+     */
+    public String getDisplayNameWithMod() {
+        if ("gtceu".equals(sourceMod)) {
+            return getName();
+        }
+        return "[" + sourceMod.toUpperCase() + "] " + getName();
+    }
+
+    public int getModColor() {
+        return switch (sourceMod) {
+            case "gtceu" -> 0xFFFFFF;              // White
+            case "monifactory" -> 0x00FF00;               // Green
+            case "terrafirmagreg" -> 0x00FFFF;            // Cyan
+            case "phoenix's technologies" -> 0xFFAA00; // Orange
+            case "astrogreg:exsilium" -> 0xFF00FF;    // Purple
+            default -> 0xAAAAAA;                   // Gray
+        };
+    }
+
     @Override
     public String toString() {
         return "MultiblockInfo{" +
@@ -145,6 +203,11 @@ public class MultiblockInfo {
                 ", formed=" + isFormed +
                 ", components=" + components.size() +
                 ", status=" + status +
+                ", sourceMod='" + sourceMod + '\'' +
                 '}';
+    }
+
+    public String getType() {
+        return "";
     }
 }

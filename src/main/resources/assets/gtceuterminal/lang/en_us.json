@@ -3,6 +3,7 @@
 
   "item.gtceuterminal.multi_structure_manager": "Multi-Structure Manager",
   "item.gtceuterminal.schematic_interface": "Schematic Interface",
+  "item.gtceuterminal.dismantler": "Dismantler",
 
   "item.gtceuterminal.terminal.success": "Multiblock Built Successfully",
   "item.gtceuterminal.terminal.failed": "Failed to Build Multiblock",
@@ -11,5 +12,6 @@
   "item.gtceuterminal.terminal.already_formed": "Multiblock Already Formed",
 
   "item.gtceuterminal.multi_structure_manager.tooltip": "Manage and Upgrade Nearby Multiblocks",
-  "item.gtceuterminal.schematic_interface.tooltip": "Copy and Paste Multiblock Schematics"
+  "item.gtceuterminal.schematic_interface.tooltip": "Copy and Paste Multiblock Schematics",
+  "item.gtceuterminal.dismantler.tooltip": "Disassemble Multiblocks and Return Components"
 }

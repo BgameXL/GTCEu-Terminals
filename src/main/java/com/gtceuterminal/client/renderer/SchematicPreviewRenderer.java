@@ -16,6 +16,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
+
+// Renders a schematic preview as ghost blocks in the world
 public class SchematicPreviewRenderer {
 
     public static void renderGhostBlocks(PoseStack poseStack,
@@ -23,7 +25,7 @@ public class SchematicPreviewRenderer {
                                          SchematicData schematic,
                                          Minecraft minecraft,
                                          CompoundTag clipboardTag) {
-        if (schematic == null || schematic.getBlocks().isEmpty()) {
+        if (schematic == null || schematic.getBlocks().isEmpty() || minecraft.level == null || minecraft.player == null) {
             return;
         }
 
@@ -31,7 +33,8 @@ public class SchematicPreviewRenderer {
         try {
             String facingStr = schematic.getOriginalFacing();
             if (facingStr != null && !facingStr.isEmpty()) {
-                originalFacing = Direction.byName(facingStr);
+                Direction byName = Direction.byName(facingStr);
+                if (byName != null) originalFacing = byName;
             }
         } catch (Exception ignored) {
         }
@@ -44,7 +47,6 @@ public class SchematicPreviewRenderer {
         }
 
         Vec3 cameraPos = minecraft.gameRenderer.getMainCamera().getPosition();
-
         if (cameraPos.distanceTo(Vec3.atCenterOf(targetPos)) > 20.0) {
             return;
         }
@@ -56,6 +58,7 @@ public class SchematicPreviewRenderer {
 
         BlockRenderDispatcher blockRenderer = minecraft.getBlockRenderer();
 
+        // Render each block in the schematic
         for (var entry : schematic.getBlocks().entrySet()) {
             BlockPos relativePos = entry.getKey();
             BlockState state = entry.getValue();
@@ -77,10 +80,11 @@ public class SchematicPreviewRenderer {
                         rotatedState,
                         poseStack,
                         bufferSource,
-                        15728880, // full bright
+                        15728880,  // full bright
                         OverlayTexture.NO_OVERLAY
                 );
             } catch (Exception ignored) {
+                // Skip rendering this block if there's an error
             }
 
             poseStack.popPose();

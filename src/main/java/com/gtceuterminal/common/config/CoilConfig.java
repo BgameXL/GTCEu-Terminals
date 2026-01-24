@@ -3,10 +3,12 @@ package com.gtceuterminal.common.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +21,10 @@ import java.util.*;
 public class CoilConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(CoilConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    
+
     private static final String CONFIG_DIR = "config/gtceuterminal";
     private static final String CONFIG_FILE = "coils.json";
-    
+
     private static List<CoilEntry> coilEntries = new ArrayList<>();
     private static boolean initialized = false;
 
@@ -31,10 +33,10 @@ public class CoilConfig {
         public String displayName;       // e.g., "Cupronickel Coil"
         public int temperature;          // e.g., 1800
         public int tier;                 // e.g., 0
-        
+
         // For JSON serialization
         public CoilEntry() {}
-        
+
         public CoilEntry(String blockId, String displayName, int temperature, int tier) {
             this.blockId = blockId;
             this.displayName = displayName;
@@ -44,8 +46,8 @@ public class CoilConfig {
 
         @Override
         public String toString() {
-            return String.format("CoilEntry{blockId='%s', name='%s', temp=%dK, tier=%d}", 
-                blockId, displayName, temperature, tier);
+            return String.format("CoilEntry{blockId='%s', name='%s', temp=%dK, tier=%d}",
+                    blockId, displayName, temperature, tier);
         }
     }
 
@@ -62,9 +64,9 @@ public class CoilConfig {
         }
 
         LOGGER.info("Initializing coil configuration system...");
-        
+
         Path configPath = Paths.get(CONFIG_DIR, CONFIG_FILE);
-        
+
         if (Files.exists(configPath)) {
             loadConfig(configPath);
         } else {
@@ -74,10 +76,10 @@ public class CoilConfig {
         }
 
         coilEntries.sort(Comparator.comparingInt(entry -> entry.temperature));
-        
+
         LOGGER.info("Coil configuration initialized with {} coil types", coilEntries.size());
         logCoilList();
-        
+
         initialized = true;
     }
 
@@ -92,14 +94,14 @@ public class CoilConfig {
         config.coils.add(new CoilEntry("gtceu:naquadah_coil_block", "Naquadah Coil", 7200, 5));
         config.coils.add(new CoilEntry("gtceu:trinium_coil_block", "Trinium Coil", 9000, 6));
         config.coils.add(new CoilEntry("gtceu:tritanium_coil_block", "Tritanium Coil", 10800, 7));
-        
+
         try {
             Files.createDirectories(configPath.getParent());
-            
+
             // Write config file
             String json = GSON.toJson(config);
             Files.writeString(configPath, json);
-            
+
             LOGGER.info("Created default config file at: {}", configPath);
         } catch (IOException e) {
             LOGGER.error("Failed to create default config file", e);
@@ -110,13 +112,13 @@ public class CoilConfig {
         try {
             String json = Files.readString(configPath);
             CoilConfiguration config = GSON.fromJson(json, CoilConfiguration.class);
-            
+
             if (config == null || config.coils == null) {
                 LOGGER.error("Invalid config file structure, using defaults");
                 createDefaultConfig(configPath);
                 return;
             }
-            
+
             coilEntries.clear();
 
             for (CoilEntry entry : config.coils) {
@@ -126,13 +128,13 @@ public class CoilConfig {
                     LOGGER.warn("Skipping invalid coil entry: {}", entry);
                 }
             }
-            
+
             if (coilEntries.isEmpty()) {
                 LOGGER.warn("No valid coils found in config, creating defaults");
                 createDefaultConfig(configPath);
                 loadConfig(configPath);
             }
-            
+
         } catch (IOException e) {
             LOGGER.error("Failed to load config file", e);
             createDefaultConfig(configPath);
@@ -147,27 +149,27 @@ public class CoilConfig {
             LOGGER.error("Coil entry missing blockId");
             return false;
         }
-        
+
         if (entry.displayName == null || entry.displayName.isEmpty()) {
             LOGGER.error("Coil entry missing displayName: {}", entry.blockId);
             return false;
         }
-        
+
         if (entry.temperature <= 0) {
             LOGGER.error("Coil entry has invalid temperature: {}", entry.blockId);
             return false;
         }
-        
+
         if (entry.tier < 0) {
             LOGGER.error("Coil entry has invalid tier: {}", entry.blockId);
             return false;
         }
-        
+
         // Verify block exists
         try {
-            ResourceLocation blockId = new ResourceLocation(entry.blockId);
+            ResourceLocation blockId = ResourceLocation.parse(entry.blockId);
             Block block = BuiltInRegistries.BLOCK.get(blockId);
-            
+
             if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) {
                 LOGGER.warn("Block not found in registry: {} - skipping", entry.blockId);
                 return false;
@@ -176,7 +178,7 @@ public class CoilConfig {
             LOGGER.error("Invalid block ID format: {}", entry.blockId, e);
             return false;
         }
-        
+
         return true;
     }
 
@@ -191,15 +193,15 @@ public class CoilConfig {
         if (!initialized) {
             initialize();
         }
-        
+
         String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
-        
+
         for (int i = 0; i < coilEntries.size(); i++) {
             if (coilEntries.get(i).blockId.equals(blockId)) {
                 return i;
             }
         }
-        
+
         return -1;
     }
 
@@ -207,20 +209,20 @@ public class CoilConfig {
         if (!initialized) {
             initialize();
         }
-        
+
         if (tier >= 0 && tier < coilEntries.size()) {
             return coilEntries.get(tier);
         }
-        
+
         return null;
     }
 
     public static Block getCoilBlock(int tier) {
         CoilEntry entry = getCoilByTier(tier);
         if (entry == null) return null;
-        
+
         try {
-            ResourceLocation blockId = new ResourceLocation(entry.blockId);
+            ResourceLocation blockId = ResourceLocation.parse(entry.blockId);
             return BuiltInRegistries.BLOCK.get(blockId);
         } catch (Exception e) {
             LOGGER.error("Failed to get block for tier {}", tier, e);
@@ -238,7 +240,11 @@ public class CoilConfig {
         if (!initialized) {
             initialize();
         }
-        return coilEntries.isEmpty() ? -1 : coilEntries.size() - 1;
+        if (coilEntries.isEmpty()) {
+            return 0;
+        }
+
+        return coilEntries.size() - 1;
     }
 
     public static boolean isValidTier(int tier) {
@@ -256,8 +262,8 @@ public class CoilConfig {
         LOGGER.info("Configured coils (sorted by temperature):");
         for (int i = 0; i < coilEntries.size(); i++) {
             CoilEntry entry = coilEntries.get(i);
-            LOGGER.info("  [{}] {} - {}K (Block: {})", 
-                i, entry.displayName, entry.temperature, entry.blockId);
+            LOGGER.info("  [{}] {} - {}K (Block: {})",
+                    i, entry.displayName, entry.temperature, entry.blockId);
         }
     }
 

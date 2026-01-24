@@ -1,12 +1,14 @@
 package com.gtceuterminal.common.multiblock;
 
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
+
 import com.gtceuterminal.GTCEUTerminalMod;
+import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
 import com.gtceuterminal.common.data.BlockReplacementData;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -16,8 +18,10 @@ import java.util.*;
 
 public class BlockReplacer {
 
+
+    // Replace blocks with ME Network support
     public static boolean replaceBlocks(IMultiController controller, Player player,
-                                        BlockReplacementData data) {
+                                        BlockReplacementData data, ItemStack wirelessTerminal) {
         Level level = controller.self().getLevel();
         if (level == null || level.isClientSide) {
             return false;
@@ -26,8 +30,40 @@ public class BlockReplacer {
         BlockPos controllerPos = controller.self().getPos();
 
         Map<Block, Integer> required = calculateRequiredBlocks(data);
-        if (!verifyInventory(player, required)) {
-            return false;
+
+        // Try ME Network first, then inventory
+        boolean hasResources = false;
+        MENetworkItemExtractor.ExtractionSource extractionSource = MENetworkItemExtractor.ExtractionSource.NONE;
+
+        if (!player.isCreative()) {
+            // Convert Block to Item for ME extraction
+            Map<Item, Integer> requiredItems = new HashMap<>();
+            for (Map.Entry<Block, Integer> entry : required.entrySet()) {
+                Item item = entry.getKey().asItem();
+                if (item != net.minecraft.world.item.Items.AIR) {
+                    requiredItems.put(item, entry.getValue());
+                }
+            }
+
+            // Try extract from ME or inventory
+            if (wirelessTerminal != null && !wirelessTerminal.isEmpty()) {
+                MENetworkItemExtractor.ExtractResult result =
+                        MENetworkItemExtractor.tryExtractFromMEOrInventory(
+                                wirelessTerminal, level, player, requiredItems
+                        );
+
+                hasResources = result.success;
+                extractionSource = result.source;
+            } else {
+                // No wireless terminal, use traditional method
+                hasResources = verifyAndConsumeInventory(player, required);
+                extractionSource = hasResources ? MENetworkItemExtractor.ExtractionSource.PLAYER_INVENTORY : MENetworkItemExtractor.ExtractionSource.NONE;
+            }
+
+            if (!hasResources) {
+                GTCEUTerminalMod.LOGGER.warn("Player {} doesn't have required resources", player.getName().getString());
+                return false;
+            }
         }
 
         com.gregtechceu.gtceu.api.pattern.MultiblockState state = controller.getMultiblockState();
@@ -47,7 +83,6 @@ public class BlockReplacer {
             return false;
         }
 
-        Map<Block, Integer> consumed = new HashMap<>();
         Map<Block, Integer> returned = new HashMap<>();
 
         BlockState fillCasing = data.getFillCasing();
@@ -71,7 +106,6 @@ public class BlockReplacer {
             if (newState != null && !currentState.equals(newState)) {
                 BlockState finalState = copyProperties(currentState, newState);
                 level.setBlock(pos, finalState, 3);
-                consumed.merge(finalState.getBlock(), 1, Integer::sum);
                 returned.merge(currentState.getBlock(), 1, Integer::sum);
 
                 updateNeighborBlocks(level, pos, finalState.getBlock());
@@ -80,7 +114,6 @@ public class BlockReplacer {
                 if (!wasReplaced) {
                     BlockState finalCasing = copyProperties(currentState, fillCasing);
                     level.setBlock(pos, finalCasing, 3);
-                    consumed.merge(finalCasing.getBlock(), 1, Integer::sum);
                     returned.merge(currentState.getBlock(), 1, Integer::sum);
 
                     updateNeighborBlocks(level, pos, finalCasing.getBlock());
@@ -88,17 +121,29 @@ public class BlockReplacer {
             }
         }
 
-        consumeBlocks(player, consumed);
         returnBlocks(player, returned);
 
         try {
             controller.checkPattern();
-            GTCEUTerminalMod.LOGGER.info("Multiblock pattern re-checked after block replacement");
+
+            String sourceMsg = extractionSource == MENetworkItemExtractor.ExtractionSource.ME_NETWORK
+                    ? " (from ME Network)"
+                    : extractionSource == MENetworkItemExtractor.ExtractionSource.PLAYER_INVENTORY
+                    ? " (from Inventory)"
+                    : "";
+
+            GTCEUTerminalMod.LOGGER.info("Multiblock pattern re-checked after block replacement{}", sourceMsg);
         } catch (Exception e) {
             GTCEUTerminalMod.LOGGER.error("Error rechecking pattern after replacement", e);
         }
 
         return true;
+    }
+
+    // Backward compatibility - replace blocks without wireless terminal
+    public static boolean replaceBlocks(IMultiController controller, Player player,
+                                        BlockReplacementData data) {
+        return replaceBlocks(controller, player, data, ItemStack.EMPTY);
     }
 
     private static boolean isHatchOrBus(BlockState state) {
@@ -163,7 +208,9 @@ public class BlockReplacer {
         return required;
     }
 
-    private static boolean verifyInventory(Player player, Map<Block, Integer> required) {
+
+    // Verify and consume from player inventory (fallback method)
+    private static boolean verifyAndConsumeInventory(Player player, Map<Block, Integer> required) {
         if (player.isCreative()) {
             return true;
         }
@@ -179,6 +226,7 @@ public class BlockReplacer {
             }
         }
 
+        // Verify first
         for (Map.Entry<Block, Integer> entry : required.entrySet()) {
             int needed = entry.getValue();
             int have = available.getOrDefault(entry.getKey(), 0);
@@ -188,6 +236,8 @@ public class BlockReplacer {
             }
         }
 
+        // Then consume
+        consumeBlocks(player, required);
         return true;
     }
 

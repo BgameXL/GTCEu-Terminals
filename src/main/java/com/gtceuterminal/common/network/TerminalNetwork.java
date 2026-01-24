@@ -3,17 +3,17 @@ package com.gtceuterminal.common.network;
 import com.gtceuterminal.GTCEUTerminalMod;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
-
- // Handles network communication between client and server
 
 public class TerminalNetwork {
 
     private static final String PROTOCOL_VERSION = "1";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(GTCEUTerminalMod.MOD_ID, "network"),
+            ResourceLocation.fromNamespaceAndPath(GTCEUTerminalMod.MOD_ID, "network"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,
             PROTOCOL_VERSION::equals
@@ -22,6 +22,12 @@ public class TerminalNetwork {
     private static int packetId = 0;
 
     public static void registerPackets() {
+        GTCEUTerminalMod.LOGGER.info("Registering Terminal Network packets...");
+
+        // ==========================================
+        // CLIENT → SERVER PACKETS
+        // ==========================================
+
         CHANNEL.messageBuilder(CPacketBlockReplacement.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(CPacketBlockReplacement::encode)
                 .decoder(CPacketBlockReplacement::new)
@@ -46,6 +52,46 @@ public class TerminalNetwork {
                 .consumerMainThread(CPacketSetCustomMultiblockName::handle)
                 .add();
 
-        GTCEUTerminalMod.LOGGER.info("Network packets registered");
+        CHANNEL.messageBuilder(CPacketDismantle.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketDismantle::encode)
+                .decoder(CPacketDismantle::decode)
+                .consumerMainThread(CPacketDismantle::handle)
+                .add();
+
+        CHANNEL.messageBuilder(CPacketOpenDismantlerUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketOpenDismantlerUI::encode)
+                .decoder(CPacketOpenDismantlerUI::decode)
+                .consumerMainThread(CPacketOpenDismantlerUI::handle)
+                .add();
+
+        CHANNEL.messageBuilder(CPacketOpenMultiStructureUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketOpenMultiStructureUI::encode)
+                .decoder(CPacketOpenMultiStructureUI::decode)
+                .consumerMainThread(CPacketOpenMultiStructureUI::handle)
+                .add();
+
+        CHANNEL.messageBuilder(CPacketOpenSchematicUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketOpenSchematicUI::encode)
+                .decoder(CPacketOpenSchematicUI::decode)
+                .consumerMainThread(CPacketOpenSchematicUI::handle)
+                .add();
+
+        CHANNEL.messageBuilder(CPacketOpenManagerSettings.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketOpenManagerSettings::encode)
+                .decoder(CPacketOpenManagerSettings::decode)
+                .consumerMainThread(CPacketOpenManagerSettings::handle)
+                .add();
+
+        GTCEUTerminalMod.LOGGER.info("Registered {} Terminal Network packets", packetId);
+        GTCEUTerminalMod.LOGGER.info("Network packets registered successfully!");
+    }
+
+
+    // Send packet from server to specific player
+    public static void sendToPlayer(Object packet, ServerPlayer player) {
+        CHANNEL.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                packet
+        );
     }
 }

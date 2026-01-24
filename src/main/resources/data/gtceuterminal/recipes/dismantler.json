@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SPS",
+    "CGC",
+    "WRW"
+  ],
+  "key": {
+    "S": {
+      "item": "gtceu:damascus_steel_screw"
+    },
+    "P": {
+      "item": "gtceu:mv_sensor"
+    },
+    "C": {
+      "item": "gtceu:black_steel_single_wire"
+    },
+    "G": {
+      "item": "gtceu:computer_monitor_cover"
+    },
+    "W": {
+      "item": "gtceu:damascus_steel_plate"
+    },
+    "R": {
+      "item": "gtceu:data_stick"
+    }
+  },
+  "result": {
+    "item": "gtceuterminal:dismantler"
+  }
+}

@@ -1,5 +1,6 @@
 package com.gtceuterminal.common.upgrade;
 
+import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
 import com.gtceuterminal.common.material.ComponentUpgradeHelper;
 import com.gtceuterminal.common.material.MaterialAvailability;
 import com.gtceuterminal.common.material.MaterialCalculator;
@@ -8,6 +9,7 @@ import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.GTCEUTerminalMod;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -21,40 +23,81 @@ import java.util.Map;
 
 public class ComponentUpgrader {
 
+    /**
+     * Upgrade to component with optional ME Network support
+     * @param component The component to upgrade
+     * @param targetTier Target tier
+     * @param player Player performing upgrade
+     * @param level Current level
+     * @param consumeMaterials Whether to consume materials
+     * @param wirelessTerminal Optional wireless terminal for ME access (can be null/empty)
+     * @return UpgradeResult with extraction source info
+     */
     public static UpgradeResult upgradeComponent(
             ComponentInfo component,
             int targetTier,
             Player player,
             Level level,
-            boolean consumeMaterials
+            boolean consumeMaterials,
+            ItemStack wirelessTerminal
     ) {
-        // Creative mode
         boolean isCreative = player.isCreative();
+        String extractionSource = "";
 
-        // Validate upgrade is possible
         if (!isCreative && !ComponentUpgradeHelper.canUpgrade(component, targetTier)) {
             return new UpgradeResult(false, "Cannot upgrade to tier " + targetTier);
         }
 
-        // Get required materials
         Map<Item, Integer> required = ComponentUpgradeHelper.getUpgradeItems(component, targetTier);
         if (required.isEmpty()) {
             return new UpgradeResult(false, "No upgrade item found for this component");
         }
 
-        // Check material availability
-        if (!isCreative) {
-            List<MaterialAvailability> materials = MaterialCalculator.checkMaterialsAvailability(
-                    required, player, level
-            );
+        if (!isCreative && consumeMaterials) {
+            // Try ME Network first if wireless terminal is provided
+            if (wirelessTerminal != null && !wirelessTerminal.isEmpty()) {
+                MENetworkItemExtractor.ExtractResult meResult =
+                        MENetworkItemExtractor.tryExtractFromMEOrInventory(
+                                wirelessTerminal, level, player, required
+                        );
 
-            if (!MaterialCalculator.hasEnoughMaterials(materials)) {
-                Map<Item, Integer> missing = MaterialCalculator.getMissingMaterials(materials);
-                return new UpgradeResult(false, "Missing materials: " + formatMissing(missing));
-            }
+                if (meResult.success) {
+                    if (meResult.source == MENetworkItemExtractor.ExtractionSource.ME_NETWORK) {
+                        extractionSource = " §a(ME Network)";
+                    } else if (meResult.source == MENetworkItemExtractor.ExtractionSource.PLAYER_INVENTORY) {
+                        extractionSource = " §7(Inventory)";
+                    }
+                } else {
+                    // Fallback to traditional method
+                    List<MaterialAvailability> materials = MaterialCalculator.checkMaterialsAvailability(
+                            required, player, level
+                    );
 
-            // Extract materials if consuming
-            if (consumeMaterials) {
+                    if (!MaterialCalculator.hasEnoughMaterials(materials)) {
+                        Map<Item, Integer> missing = MaterialCalculator.getMissingMaterials(materials);
+                        return new UpgradeResult(false, "Missing materials: " + formatMissing(missing));
+                    }
+
+                    boolean extracted = MaterialCalculator.extractMaterials(
+                            materials, player, level, true, true
+                    );
+
+                    if (!extracted) {
+                        return new UpgradeResult(false, "Failed to extract materials");
+                    }
+                    extractionSource = " §7(Inventory)";
+                }
+            } else {
+                // No wireless terminal, use traditional method
+                List<MaterialAvailability> materials = MaterialCalculator.checkMaterialsAvailability(
+                        required, player, level
+                );
+
+                if (!MaterialCalculator.hasEnoughMaterials(materials)) {
+                    Map<Item, Integer> missing = MaterialCalculator.getMissingMaterials(materials);
+                    return new UpgradeResult(false, "Missing materials: " + formatMissing(missing));
+                }
+
                 boolean extracted = MaterialCalculator.extractMaterials(
                         materials, player, level, true, true
                 );
@@ -62,6 +105,7 @@ public class ComponentUpgrader {
                 if (!extracted) {
                     return new UpgradeResult(false, "Failed to extract materials");
                 }
+                extractionSource = " §7(Inventory)";
             }
         }
 
@@ -128,24 +172,38 @@ public class ComponentUpgrader {
             GTCEUTerminalMod.LOGGER.info("Returned old block {} to player", oldItem);
         }
 
-        GTCEUTerminalMod.LOGGER.info("Upgraded {} at {} from {} to {} (Block: {} -> {})",
+        GTCEUTerminalMod.LOGGER.info("Upgraded {} at {} from {} to {} (Block: {} -> {}){}",
                 component.getType(), pos, component.getTierName(),
                 com.gregtechceu.gtceu.api.GTValues.VN[targetTier],
-                oldBlock.getDescriptionId(), newBlock.getDescriptionId());
+                oldBlock.getDescriptionId(), newBlock.getDescriptionId(),
+                extractionSource.replace("§a", "").replace("§7", ""));
 
         return new UpgradeResult(true, "Successfully upgraded to " +
-                com.gregtechceu.gtceu.api.GTValues.VN[targetTier]);
+                com.gregtechceu.gtceu.api.GTValues.VN[targetTier] + extractionSource);
     }
 
+
+    // Backward compatibility - upgrade without wireless terminal
+    public static UpgradeResult upgradeComponent(
+            ComponentInfo component,
+            int targetTier,
+            Player player,
+            Level level,
+            boolean consumeMaterials
+    ) {
+        return upgradeComponent(component, targetTier, player, level, consumeMaterials, ItemStack.EMPTY);
+    }
+
+    // Bulk upgrade with ME Network support
     public static BulkUpgradeResult upgradeMultipleComponents(
             List<ComponentInfo> components,
             int targetTier,
             Player player,
-            Level level
+            Level level,
+            ItemStack wirelessTerminal
     ) {
         BulkUpgradeResult result = new BulkUpgradeResult();
 
-        // Calculate total materials needed
         Map<Item, Integer> totalRequired = new HashMap<>();
         boolean upgradingCoils = false;
 
@@ -154,7 +212,6 @@ public class ComponentUpgrader {
                 continue;
             }
 
-            // Check if we're upgrading coils
             if (component.getType() == ComponentType.COIL) {
                 upgradingCoils = true;
             }
@@ -165,25 +222,68 @@ public class ComponentUpgrader {
             );
         }
 
-        List<MaterialAvailability> materials = MaterialCalculator.checkMaterialsAvailability(
-                totalRequired, player, level
-        );
+        String extractionSource = "";
 
-        if (!MaterialCalculator.hasEnoughMaterials(materials)) {
-            Map<Item, Integer> missing = MaterialCalculator.getMissingMaterials(materials);
-            result.success = false;
-            result.message = "Missing materials: " + formatMissing(missing);
-            return result;
-        }
+        // Try ME Network first if wireless terminal is provided
+        if (wirelessTerminal != null && !wirelessTerminal.isEmpty()) {
+            MENetworkItemExtractor.ExtractResult meResult =
+                    MENetworkItemExtractor.tryExtractFromMEOrInventory(
+                            wirelessTerminal, level, player, totalRequired
+                    );
 
-        boolean extracted = MaterialCalculator.extractMaterials(
-                materials, player, level, true, true
-        );
+            if (meResult.success) {
+                if (meResult.source == MENetworkItemExtractor.ExtractionSource.ME_NETWORK) {
+                    extractionSource = " §a(ME Network)";
+                } else if (meResult.source == MENetworkItemExtractor.ExtractionSource.PLAYER_INVENTORY) {
+                    extractionSource = " §7(Inventory)";
+                }
+            } else {
+                // Fallback to traditional method
+                List<MaterialAvailability> materials = MaterialCalculator.checkMaterialsAvailability(
+                        totalRequired, player, level
+                );
 
-        if (!extracted) {
-            result.success = false;
-            result.message = "Failed to extract materials";
-            return result;
+                if (!MaterialCalculator.hasEnoughMaterials(materials)) {
+                    Map<Item, Integer> missing = MaterialCalculator.getMissingMaterials(materials);
+                    result.success = false;
+                    result.message = "Missing materials: " + formatMissing(missing);
+                    return result;
+                }
+
+                boolean extracted = MaterialCalculator.extractMaterials(
+                        materials, player, level, true, true
+                );
+
+                if (!extracted) {
+                    result.success = false;
+                    result.message = "Failed to extract materials";
+                    return result;
+                }
+                extractionSource = " §7(Inventory)";
+            }
+        } else {
+            // No wireless terminal, use traditional method
+            List<MaterialAvailability> materials = MaterialCalculator.checkMaterialsAvailability(
+                    totalRequired, player, level
+            );
+
+            if (!MaterialCalculator.hasEnoughMaterials(materials)) {
+                Map<Item, Integer> missing = MaterialCalculator.getMissingMaterials(materials);
+                result.success = false;
+                result.message = "Missing materials: " + formatMissing(missing);
+                return result;
+            }
+
+            boolean extracted = MaterialCalculator.extractMaterials(
+                    materials, player, level, true, true
+            );
+
+            if (!extracted) {
+                result.success = false;
+                result.message = "Failed to extract materials";
+                return result;
+            }
+            extractionSource = " §7(Inventory)";
         }
 
         for (ComponentInfo component : components) {
@@ -193,7 +293,7 @@ public class ComponentUpgrader {
             }
 
             UpgradeResult componentResult = upgradeComponent(
-                    component, targetTier, player, level, false
+                    component, targetTier, player, level, false, ItemStack.EMPTY
             );
 
             if (componentResult.success) {
@@ -205,12 +305,10 @@ public class ComponentUpgrader {
         }
 
         result.success = result.successful > 0;
-        result.message = String.format("Upgraded %d/%d components",
-                result.successful, components.size());
+        result.message = String.format("Upgraded %d/%d components%s",
+                result.successful, components.size(), extractionSource);
 
-        // If coils were upgraded, inform the player they need to reset the multiblock
         if (upgradingCoils && result.successful > 0) {
-            // Get coil name for better feedback
             String coilName = "Unknown Coil";
             try {
                 ComponentInfo firstCoil = components.stream()
@@ -227,15 +325,13 @@ public class ComponentUpgrader {
                 GTCEUTerminalMod.LOGGER.error("Error getting coil name for upgrade message", e);
             }
 
-            // Chat message (permanent) - visible in chat history
             player.displayClientMessage(
                     net.minecraft.network.chat.Component.literal(
-                            String.format("§e⚠ Upgraded %d coils to §6%s", result.successful, coilName)
+                            String.format("§e⚠ Upgraded %d coils to §6%s%s", result.successful, coilName, extractionSource)
                     ).withStyle(net.minecraft.ChatFormatting.YELLOW),
                     false
             );
 
-            // Action bar message (temporary) - visible above hotbar for 3 seconds
             player.displayClientMessage(
                     net.minecraft.network.chat.Component.literal(
                             "§6⚠ Reset multiblock to apply new temperature"
@@ -243,34 +339,42 @@ public class ComponentUpgrader {
                     true
             );
 
-            // Sound effect for feedback
             player.level().playSound(
                     null,
                     player.blockPosition(),
-                    net.minecraft.sounds.SoundEvents.ANVIL_USE,
+                    SoundEvents.ANVIL_LAND,
                     net.minecraft.sounds.SoundSource.PLAYERS,
                     0.5F,
                     1.2F
             );
 
-            // Debug log
-            GTCEUTerminalMod.LOGGER.info("Player {} upgraded {} coils to {} (tier {})",
-                    player.getName().getString(), result.successful, coilName, targetTier);
+            GTCEUTerminalMod.LOGGER.info("Player {} upgraded {} coils to {} (tier {}){}",
+                    player.getName().getString(), result.successful, coilName, targetTier,
+                    extractionSource.replace("§a", "").replace("§7", ""));
         }
 
         return result;
     }
 
+
+    // Backward compatibility - bulk upgrade without wireless terminal
+    public static BulkUpgradeResult upgradeMultipleComponents(
+            List<ComponentInfo> components,
+            int targetTier,
+            Player player,
+            Level level
+    ) {
+        return upgradeMultipleComponents(components, targetTier, player, level, ItemStack.EMPTY);
+    }
+
     private static BlockState copyBlockStateProperties(BlockState oldState, BlockState newState) {
         try {
-            // Copy HORIZONTAL_FACING if both have it
             if (oldState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING) &&
                     newState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
                 var facing = oldState.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
                 newState = newState.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, facing);
             }
 
-            // Copy FACING if both have it
             if (oldState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING) &&
                     newState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING)) {
                 var facing = oldState.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING);
@@ -284,7 +388,6 @@ public class ComponentUpgrader {
     }
 
     private static void updateNeighborBlocks(Level level, BlockPos pos, Block newBlock) {
-        // Update all
         BlockPos[] neighbors = {
                 pos,
                 pos.above(),
@@ -307,7 +410,6 @@ public class ComponentUpgrader {
             var chunk = level.getChunkAt(pos);
             chunk.setUnsaved(true);
 
-            // Send light update
             level.getChunkSource().getLightEngine().checkBlock(pos);
         }
 
@@ -323,6 +425,14 @@ public class ComponentUpgrader {
                     .append(entry.getValue());
         }
         return sb.toString();
+    }
+
+    public static boolean upgradeComponent(BlockPos position, int targetTier, Player player, BlockPos controllerPos, boolean wirelessTerminal)   {
+        return wirelessTerminal;
+    }
+
+    public static boolean upgradeComponent(BlockPos position, int targetTier, Player player, BlockPos controllerPos, ItemStack wirelessTerminal) {
+        return false;
     }
 
     public static class UpgradeResult {

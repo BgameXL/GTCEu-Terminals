@@ -1,6 +1,7 @@
 package com.gtceuterminal.common.multiblock;
 
 import com.gregtechceu.gtceu.api.GTValues;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -23,6 +24,14 @@ public class ComponentInfo {
         this.blockName = state.getBlock().builtInRegistryHolder().key().location().getPath();
     }
 
+    public ComponentInfo(ComponentType type, int tier, BlockPos position, ComponentType type1, int tier1, BlockPos position1, BlockState state, String blockName) {
+        this.type = type1;
+        this.tier = tier1;
+        this.position = position1;
+        this.state = state;
+        this.blockName = blockName;
+    }
+
     public ComponentType getType() {
         return type;
     }
@@ -43,7 +52,32 @@ public class ComponentInfo {
         return blockName;
     }
 
+    /**
+     * It achieves the maximum tier for this type of component.
+     * Coils use a different tier system (0-7) vs. voltage tiers
+     */
+    private int getMaxTierForType() {
+        if (type == ComponentType.COIL) {
+            // Coils tienen 8 tipos (0-7): Cupronickel hasta Tritanium
+            // Usar CoilConfig para obtener el máximo dinámicamente
+            return 7;
+        }
+
+        // Standard components use voltage tiers
+        return GTValues.VN.length - 1;
+    }
+
     public String getTierName() {
+        if (type == ComponentType.COIL) {
+            String coilName = com.gtceuterminal.common.config.CoilConfig.getCoilDisplayName(tier);
+            if (coilName != null && !coilName.isEmpty()) {
+                // Return only the coil name without "Coil"
+                return coilName.replace(" Coil", "").trim();
+            }
+            return "Unknown Coil";
+        }
+
+        // Standard components use voltage names
         if (tier < 0 || tier >= GTValues.VN.length) {
             return "Unknown";
         }
@@ -52,32 +86,37 @@ public class ComponentInfo {
 
     public List<Integer> getPossibleUpgradeTiers() {
         List<Integer> tiers = new ArrayList<>();
+        int maxTier = getMaxTierForType();
 
-        for (int i = tier + 1; i < GTValues.VN.length; i++) {
-            tiers.add(i);
+        // Generate a list of ALL possible tiers (except the current one)
+        for (int i = 0; i <= maxTier; i++) {
+            if (i != tier) {  // Exclude current tier
+                tiers.add(i);
+            }
         }
 
         return tiers;
     }
 
+    // Check if it's possible to switch to a specific tier
     public boolean canUpgradeTo(int targetTier) {
-        return targetTier > tier && targetTier < GTValues.VN.length;
+        int maxTier = getMaxTierForType();
+        return targetTier != tier && targetTier >= 0 && targetTier <= maxTier;
     }
 
-
-     // Get display name for GUI, Formats registry ID to readable name
+    // Get display name for GUI, Formats registry ID to readable name
     public String getDisplayName() {
         if (blockName.contains("rtm_alloy")) {
             return blockName.replace("rtm_alloy", "RTM Alloy")
-                           .replace("_coil_block", " Coil Block")
-                           .replace("_", " ");
+                    .replace("_coil_block", " Coil Block")
+                    .replace("_", " ");
         }
         if (blockName.contains("hss_g")) {
             return blockName.replace("hss_g", "HSS-G")
-                           .replace("_coil_block", " Coil Block")
-                           .replace("_", " ");
+                    .replace("_coil_block", " Coil Block")
+                    .replace("_", " ");
         }
-        
+
         String[] parts = blockName.split("_");
         StringBuilder display = new StringBuilder();
 
@@ -86,7 +125,7 @@ public class ComponentInfo {
             if (display.length() > 0) {
                 display.append(" ");
             }
-            
+
             if (!part.isEmpty()) {
                 // Check if this part is a tier name
                 if (isTierName(part)) {
@@ -105,11 +144,11 @@ public class ComponentInfo {
 
     private boolean isTierName(String s) {
         String lower = s.toLowerCase(java.util.Locale.ROOT);
-        return lower.equals("ulv") || lower.equals("lv") || lower.equals("mv") || 
-               lower.equals("hv") || lower.equals("ev") || lower.equals("iv") || 
-               lower.equals("luv") || lower.equals("zpm") || lower.equals("uv") || 
-               lower.equals("uhv") || lower.equals("uev") || lower.equals("uiv") || 
-               lower.equals("uxv") || lower.equals("opv") || lower.equals("max");
+        return lower.equals("ulv") || lower.equals("lv") || lower.equals("mv") ||
+                lower.equals("hv") || lower.equals("ev") || lower.equals("iv") ||
+                lower.equals("luv") || lower.equals("zpm") || lower.equals("uv") ||
+                lower.equals("uhv") || lower.equals("uev") || lower.equals("uiv") ||
+                lower.equals("uxv") || lower.equals("opv") || lower.equals("max");
     }
 
     @Override
@@ -119,5 +158,9 @@ public class ComponentInfo {
                 ", tier=" + getTierName() +
                 ", position=" + position +
                 '}';
+    }
+
+    public Object getPos() {
+        return null;
     }
 }

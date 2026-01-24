@@ -11,8 +11,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
- // Saves/clears a custom multiblock name on the Multi-Structure Manager item.
-
+// Saves/clears a custom multiblock name on the Multi-Structure Manager item.
 public class CPacketSetCustomMultiblockName {
 
     private final int handOrdinal;

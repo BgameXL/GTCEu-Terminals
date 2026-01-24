@@ -2,6 +2,8 @@ package com.gtceuterminal.common.network;
 
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.data.BlockReplacementData;
+import com.gtceuterminal.common.item.MultiStructureManagerItem;
+import com.gtceuterminal.common.item.SchematicInterfaceItem;
 import com.gtceuterminal.common.multiblock.BlockReplacer;
 
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
@@ -10,6 +12,7 @@ import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -83,6 +86,9 @@ public class CPacketBlockReplacement {
                 return;
             }
 
+            // Find wireless terminal in player's inventory
+            ItemStack wirelessTerminal = findWirelessTerminal(player);
+
             // Convert IDs back to BlockStates
             BlockReplacementData data = new BlockReplacementData();
             data.setMirrorMode(mirrorMode);
@@ -105,8 +111,8 @@ public class CPacketBlockReplacement {
                 }
             }
 
-            // Perform replacement
-            boolean success = BlockReplacer.replaceBlocks(controller, player, data);
+            // Perform replacement with wireless terminal support
+            boolean success = BlockReplacer.replaceBlocks(controller, player, data, wirelessTerminal);
 
             if (success) {
                 GTCEUTerminalMod.LOGGER.info("Block replacement successful for player: {}",
@@ -118,5 +124,31 @@ public class CPacketBlockReplacement {
         });
 
         ctx.get().setPacketHandled(true);
+    }
+
+    private ItemStack findWirelessTerminal(ServerPlayer player) {
+        // Check main hand
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.getItem() instanceof MultiStructureManagerItem ||
+                mainHand.getItem() instanceof SchematicInterfaceItem) {
+            return mainHand;
+        }
+
+        // Check off hand
+        ItemStack offHand = player.getOffhandItem();
+        if (offHand.getItem() instanceof MultiStructureManagerItem ||
+                offHand.getItem() instanceof SchematicInterfaceItem) {
+            return offHand;
+        }
+
+        // Check inventory
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.getItem() instanceof MultiStructureManagerItem ||
+                    stack.getItem() instanceof SchematicInterfaceItem) {
+                return stack;
+            }
+        }
+
+        return ItemStack.EMPTY;
     }
 }

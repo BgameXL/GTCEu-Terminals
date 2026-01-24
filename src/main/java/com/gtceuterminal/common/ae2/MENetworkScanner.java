@@ -1,6 +1,7 @@
 package com.gtceuterminal.common.ae2;
 
 import com.gtceuterminal.GTCEUTerminalMod;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -14,9 +15,8 @@ import java.util.List;
 /**
  * Scanner for Applied Energistics 2 ME Networks
  * Uses reflection to avoid hard dependency on AE2
- * it doesnt work, next update maybe
+ * it works now!
  */
-
 public class MENetworkScanner {
     
     private static boolean ae2Available = false;

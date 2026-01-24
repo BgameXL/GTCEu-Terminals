@@ -1,6 +1,7 @@
 package com.gtceuterminal.common.data;
 
 import com.gtceuterminal.GTCEUTerminalMod;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -26,10 +27,11 @@ public class GTCEUTerminalTabs {
 
                         output.accept(GTCEUTerminalItems.SCHEMATIC_INTERFACE.get());
 
-                        // output.accept(GTCEUTerminalItems.FUTURE_ITEM.get());
+                        output.accept(GTCEUTerminalItems.DISMANTLER.get());
                     })
                     .build()
     );
+    public static final GTCEUTerminalTabs CREATIVE_TABS =  new GTCEUTerminalTabs();
 
     public static void register(IEventBus modEventBus) {
         CREATIVE_MODE_TABS.register(modEventBus);

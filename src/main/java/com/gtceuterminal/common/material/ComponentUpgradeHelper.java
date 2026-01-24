@@ -1,10 +1,13 @@
 package com.gtceuterminal.common.material;
 
 import com.gregtechceu.gtceu.api.GTValues;
+
+import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.config.*;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
 import com.gtceuterminal.common.multiblock.ComponentType;
-import com.gtceuterminal.GTCEUTerminalMod;
+import com.gtceuterminal.common.config.MaintenanceHatchConfig;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -14,8 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
- // Helper class for component upgrades.
-
+// Helper class for component upgrades.
 public class ComponentUpgradeHelper {
 
     public static Map<Item, Integer> getUpgradeItems(ComponentInfo component, int targetTier) {
@@ -34,7 +36,7 @@ public class ComponentUpgradeHelper {
         if (blockId == null) return null;
 
         try {
-            ResourceLocation id = new ResourceLocation(blockId);
+            ResourceLocation id = ResourceLocation.parse(blockId);
             Block block = BuiltInRegistries.BLOCK.get(id);
             if (block != net.minecraft.world.level.block.Blocks.AIR) {
                 return block;
@@ -47,8 +49,7 @@ public class ComponentUpgradeHelper {
     }
 
 
-     // Get block ID from config based on component type and tier.
-
+    // Get block ID from config based on component type and tier.
     private static String getBlockIdFromConfig(ComponentType type, int tier) {
         return switch (type) {
             case INPUT_HATCH -> {
@@ -76,17 +77,14 @@ public class ComponentUpgradeHelper {
                 yield null;
             }
             case ENERGY_HATCH -> {
-                // Get ANY energy hatch for this tier
                 List<EnergyHatchConfig.EnergyHatchEntry> energyHatches = EnergyHatchConfig.getAllEnergyHatches();
 
-                // First try basic energy hatch
                 for (EnergyHatchConfig.EnergyHatchEntry energy : energyHatches) {
                     if (energy.tier == tier &&
                             (energy.blockId.endsWith("_energy_input_hatch") || energy.blockId.endsWith("_energy_output_hatch"))) {
                         yield energy.blockId;
                     }
                 }
-                // Then try 4A energy hatch (needs polish lmao)
                 for (EnergyHatchConfig.EnergyHatchEntry energy : energyHatches) {
                     if (energy.tier == tier) yield energy.blockId;
                 }
@@ -113,15 +111,16 @@ public class ComponentUpgradeHelper {
                 yield null;
             }
             case MAINTENANCE -> {
-                // Maintenance hatches are special: LV/MV/HV/EV with specific names
-                yield getMaintenanceHatchPath(tier);
+                for (MaintenanceHatchConfig.MaintenanceHatchEntry maintenance : MaintenanceHatchConfig.getAllMaintenanceHatches()) {
+                    if (maintenance.tier == tier) yield maintenance.blockId;
+                }
+                yield null;
             }
             default -> null;
         };
     }
 
-     // Check if component can be upgraded to target tier.
-
+    // Check if component can be upgraded to target tier.
     public static boolean canUpgrade(ComponentInfo component, int targetTier) {
         if (!component.getType().isUpgradeable()) {
             return false;
@@ -202,8 +201,10 @@ public class ComponentUpgradeHelper {
                 yield null;
             }
             case MAINTENANCE -> {
-                // Maintenance hatches have special names
-                yield getMaintenanceDisplayName(targetTier);
+                for (MaintenanceHatchConfig.MaintenanceHatchEntry maintenance : MaintenanceHatchConfig.getAllMaintenanceHatches()) {
+                    if (maintenance.tier == targetTier) yield maintenance.displayName + " →";
+                }
+                yield null;
             }
             default -> null;
         };
@@ -219,28 +220,12 @@ public class ComponentUpgradeHelper {
             case PARALLEL_HATCH -> ParallelHatchConfig.getAllParallelHatches().stream().map(p -> p.tier).sorted().toList();
             case MUFFLER -> MufflerHatchConfig.getAllMufflerHatches().stream().map(m -> m.tier).sorted().toList();
             case COIL -> java.util.stream.IntStream.range(0, CoilConfig.getAllCoils().size()).boxed().toList();
-            case MAINTENANCE -> List.of(GTValues.LV, GTValues.MV, GTValues.HV, GTValues.EV); // Special tiers
+            case MAINTENANCE -> MaintenanceHatchConfig.getAvailableTiers();
             default -> List.of();
         };
     }
 
-    private static String getMaintenanceHatchPath(int tier) {
-        return switch (tier) {
-            case GTValues.LV -> "gtceu:maintenance_hatch";
-            case GTValues.MV -> "gtceu:configurable_maintenance_hatch";
-            case GTValues.HV -> "gtceu:cleaning_maintenance_hatch";
-            case GTValues.EV -> "gtceu:auto_maintenance_hatch";
-            default -> null;
-        };
-    }
-
-    private static String getMaintenanceDisplayName(int tier) {
-        return switch (tier) {
-            case GTValues.LV -> "Maintenance Hatch";
-            case GTValues.MV -> "Configurable Maintenance Hatch";
-            case GTValues.HV -> "Cleaning Maintenance Hatch";
-            case GTValues.EV -> "Auto Maintenance Hatch";
-            default -> null;
-        };
+    public static String getTierName(int targetTier) {
+        return "";
     }
 }

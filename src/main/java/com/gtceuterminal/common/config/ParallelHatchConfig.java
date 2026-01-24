@@ -16,22 +16,22 @@ import java.util.*;
 public class ParallelHatchConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParallelHatchConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    
+
     private static final String CONFIG_DIR = "config/gtceuterminal";
     private static final String CONFIG_FILE = "parallel_hatches.json";
-    
+
     private static List<ParallelHatchEntry> parallelHatches = new ArrayList<>();
     private static boolean initialized = false;
 
     public static class ParallelHatchEntry {
         public String blockId;           // "gtceu:iv_parallel_hatch"
-        public String displayName;       // "Parallel Hatch"
+        public String displayName;       // "IV Parallel Hatch"
         public String tierName;          // "IV"
         public int tier;                 // 5
         public int maxParallel;          // max parallel operations
-        
+
         public ParallelHatchEntry() {}
-        
+
         public ParallelHatchEntry(String blockId, String displayName, String tierName, int tier, int maxParallel) {
             this.blockId = blockId;
             this.displayName = displayName;
@@ -42,8 +42,8 @@ public class ParallelHatchConfig {
 
         @Override
         public String toString() {
-            return String.format("ParallelHatchEntry{tier=%d (%s), maxParallel=%d, block=%s}", 
-                tier, tierName, maxParallel, blockId);
+            return String.format("ParallelHatchEntry{tier=%d (%s), maxParallel=%d, block=%s}",
+                    tier, tierName, maxParallel, blockId);
         }
     }
 
@@ -61,9 +61,9 @@ public class ParallelHatchConfig {
         }
 
         LOGGER.info("Initializing parallel hatch configuration...");
-        
+
         Path configPath = Paths.get(CONFIG_DIR, CONFIG_FILE);
-        
+
         if (Files.exists(configPath)) {
             loadConfig(configPath);
         } else {
@@ -71,41 +71,48 @@ public class ParallelHatchConfig {
             createDefaultConfig(configPath);
             loadConfig(configPath);
         }
-        
+
         organizeHatches();
         LOGGER.info("Parallel hatch configuration initialized: {} hatches", parallelHatches.size());
-        
+
         initialized = true;
     }
 
     private static void createDefaultConfig(Path configPath) {
         ParallelHatchConfiguration config = new ParallelHatchConfiguration();
-        
-        // Default parallel hatches
-        Map<String, Integer> tierMap = new LinkedHashMap<>();
-        tierMap.put("iv", 5);
-        tierMap.put("luv", 6);
-        tierMap.put("zpm", 7);
-        tierMap.put("uv", 8);
-        
-        int[] maxParallels = {4, 16, 64, 256}; // Parallel count per tier
-        int idx = 0;
-        
-        for (Map.Entry<String, Integer> entry : tierMap.entrySet()) {
-            String tier = entry.getKey();
-            String tierUpper = tier.toUpperCase();
-            int tierNum = entry.getValue();
-            int maxParallel = maxParallels[idx++];
-            
-            config.parallelHatches.add(new ParallelHatchEntry(
-                "gtceu:" + tier + "_parallel_hatch",
-                "Parallel Hatch",  // Note: No tier in display name, it's shown separately
-                tierUpper,
-                tierNum,
-                maxParallel
-            ));
-        }
-        
+
+        config.parallelHatches.add(new ParallelHatchEntry(
+                "gtceu:iv_parallel_hatch",
+                "Elite Parallel Control Hatch",
+                "IV",
+                5,  // IV
+                4
+        ));
+
+        config.parallelHatches.add(new ParallelHatchEntry(
+                "gtceu:luv_parallel_hatch",
+                "Master Parallel Control Hatch",
+                "LUV",
+                6,  // LUV
+                16
+        ));
+
+        config.parallelHatches.add(new ParallelHatchEntry(
+                "gtceu:zpm_parallel_hatch",
+                "Ultimate Parallel Control Hatch",
+                "ZPM",
+                7,  // ZPM
+                64
+        ));
+
+        config.parallelHatches.add(new ParallelHatchEntry(
+                "gtceu:uv_parallel_hatch",
+                "Super Parallel Control Hatch",
+                "UV",
+                8,  // UV
+                256
+        ));
+
         saveConfig(configPath, config);
     }
 
@@ -113,11 +120,11 @@ public class ParallelHatchConfig {
         try {
             String json = Files.readString(configPath);
             ParallelHatchConfiguration config = GSON.fromJson(json, ParallelHatchConfiguration.class);
-            
+
             if (config != null && config.parallelHatches != null) {
                 parallelHatches.clear();
                 parallelHatches.addAll(config.parallelHatches);
-                
+
                 LOGGER.info("Loaded {} parallel hatches from config", config.parallelHatches.size());
             }
         } catch (IOException | JsonSyntaxException e) {

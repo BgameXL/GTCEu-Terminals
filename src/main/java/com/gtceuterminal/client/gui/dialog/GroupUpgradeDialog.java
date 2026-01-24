@@ -5,13 +5,21 @@ import com.gtceuterminal.common.material.MaterialAvailability;
 import com.gtceuterminal.common.material.MaterialCalculator;
 import com.gtceuterminal.common.multiblock.ComponentGroup;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
+import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.common.multiblock.MultiblockInfo;
-import com.gtceuterminal.common.upgrade.ComponentUpgrader;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
+import com.gtceuterminal.common.network.CPacketComponentUpgrade;
+import com.gtceuterminal.common.network.TerminalNetwork;
+
+import com.lowdragmc.lowdraglib.gui.texture.ColorBorderTexture;
+import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
+import com.lowdragmc.lowdraglib.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
+import com.lowdragmc.lowdraglib.gui.widget.*;
+import com.lowdragmc.lowdraglib.utils.Position;
+import com.lowdragmc.lowdraglib.utils.Size;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 
@@ -20,187 +28,300 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GroupUpgradeDialog extends Screen {
-
-    private final Screen parent;
+// Group Upgrade Confirmation Dialog
+public class GroupUpgradeDialog extends DialogWidget {
+    
+    private static final int DIALOG_WIDTH = 320;
+    private static final int DIALOG_HEIGHT = 260;
+    
+    // GTCEu Colors
+    private static final int COLOR_BG_DARK = 0xFF1A1A1A;
+    private static final int COLOR_BG_MEDIUM = 0xFF2B2B2B;
+    private static final int COLOR_BG_LIGHT = 0xFF3F3F3F;
+    private static final int COLOR_BORDER_LIGHT = 0xFF5A5A5A;
+    private static final int COLOR_BORDER_DARK = 0xFF0A0A0A;
+    private static final int COLOR_TEXT_WHITE = 0xFFFFFFFF;
+    private static final int COLOR_TEXT_GRAY = 0xFFAAAAAA;
+    private static final int COLOR_SUCCESS = 0xFF00FF00;
+    private static final int COLOR_ERROR = 0xFFFF0000;
+    private static final int COLOR_CREATIVE = 0xFF88FF88;
+    
     private final ComponentGroup group;
     private final int targetTier;
     private final MultiblockInfo multiblock;
     private final Player player;
     private final Runnable onSuccess;
-
-    private static final int DIALOG_WIDTH = 300;
-    private static final int DIALOG_HEIGHT = 200;
-
-    private int dialogX;
-    private int dialogY;
-
-    private Button confirmButton;
-    private Button cancelButton;
-
+    private final Runnable onClose;
+    
     private List<MaterialAvailability> materials;
     private boolean hasEnough;
-
+    
     public GroupUpgradeDialog(
-            Screen parent,
-            ComponentGroup group,
-            int targetTier,
-            MultiblockInfo multiblock,
-            Player player,
-            Runnable onSuccess
+        WidgetGroup parent,
+        ComponentGroup group,
+        int targetTier,
+        MultiblockInfo multiblock,
+        Player player,
+        Runnable onSuccess,
+        Runnable onClose
     ) {
-        super(Component.literal("Group Upgrade Confirmation"));
-        this.parent = parent;
+        super(parent, true);  // true = modal
         this.group = group;
         this.targetTier = targetTier;
         this.multiblock = multiblock;
         this.player = player;
         this.onSuccess = onSuccess;
+        this.onClose = onClose;
+        
+        initDialog();
     }
-
-    @Override
-    protected void init() {
-        dialogX = (width - DIALOG_WIDTH) / 2;
-        dialogY = (height - DIALOG_HEIGHT) / 2;
-
+    
+    private void initDialog() {
+        // Position on the LEFT side
+        int leftX = 2;
+        int centerY = (parent.getSize().height - DIALOG_HEIGHT) / 2;
+        
+        setSize(new Size(DIALOG_WIDTH, DIALOG_HEIGHT));
+        setSelfPosition(new Position(leftX, centerY));
+        
+        // Background
+        setBackground(new ColorRectTexture(COLOR_BG_DARK));
+        
+        // Borders
+        addWidget(new ImageWidget(0, 0, DIALOG_WIDTH, 2,
+                new ColorRectTexture(COLOR_BORDER_LIGHT)));
+        addWidget(new ImageWidget(0, 0, 2, DIALOG_HEIGHT,
+                new ColorRectTexture(COLOR_BORDER_LIGHT)));
+        addWidget(new ImageWidget(DIALOG_WIDTH - 2, 0, 2, DIALOG_HEIGHT,
+                new ColorRectTexture(COLOR_BORDER_DARK)));
+        addWidget(new ImageWidget(0, DIALOG_HEIGHT - 2, DIALOG_WIDTH, 2,
+                new ColorRectTexture(COLOR_BORDER_DARK)));
+        
+        // Calculate materials
+        calculateMaterials();
+        
+        // Header
+        addWidget(createHeader());
+        
+        // Group info
+        addWidget(createGroupInfo());
+        
+        // Materials list or creative message
+        addWidget(createMaterialsPanel());
+        
+        // Buttons
+        addWidget(createButtons());
+    }
+    
+    private void calculateMaterials() {
         boolean isCreative = player.isCreative();
-
         ComponentInfo rep = group.getRepresentative();
+        
         if (rep != null) {
             Map<Item, Integer> singleRequired = ComponentUpgradeHelper.getUpgradeItems(rep, targetTier);
             Map<Item, Integer> totalRequired = new HashMap<>();
-
+            
             for (var entry : singleRequired.entrySet()) {
                 totalRequired.put(entry.getKey(), entry.getValue() * group.getCount());
             }
-
+            
             if (isCreative) {
-                // Creative mode
                 materials = new ArrayList<>();
                 hasEnough = true;
             } else {
-                // Survival mode
-                materials = MaterialCalculator.checkMaterialsAvailability(totalRequired, player, minecraft.level);
+                materials = MaterialCalculator.checkMaterialsAvailability(
+                    totalRequired, player, Minecraft.getInstance().level);
                 hasEnough = MaterialCalculator.hasEnoughMaterials(materials);
             }
         } else {
             materials = new ArrayList<>();
             hasEnough = false;
         }
-
-        confirmButton = Button.builder(
-                        Component.literal(hasEnough ? "Upgrade All (" + group.getCount() + ")" : "Missing Materials"),
-                        btn -> {
-                            if (hasEnough) {
-                                performGroupUpgrade();
-                            }
-                        })
-                .bounds(dialogX + 20, dialogY + DIALOG_HEIGHT - 40, 120, 20)
-                .build();
-
-        confirmButton.active = hasEnough;
-        addRenderableWidget(confirmButton);
-
-        cancelButton = Button.builder(
-                        Component.literal("Cancel"),
-                        btn -> minecraft.setScreen(parent))
-                .bounds(dialogX + DIALOG_WIDTH - 140, dialogY + DIALOG_HEIGHT - 40, 120, 20)
-                .build();
-
-        addRenderableWidget(cancelButton);
     }
-
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics);
-
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xE0000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 20, 0xFF444444);
-
-        graphics.drawString(font, "Upgrade Group Confirmation",
-                dialogX + 10, dialogY + 6, 0xFFFFFF);
-
-        int y = dialogY + 30;
-
-        // Get proper display names
+    
+    private WidgetGroup createHeader() {
+        WidgetGroup header = new WidgetGroup(2, 2, DIALOG_WIDTH - 4, 28);
+        header.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
+        
+        LabelWidget title = new LabelWidget(DIALOG_WIDTH / 2 - 90, 10, 
+                "§l§fUpgrade Group Confirmation");
+        title.setTextColor(COLOR_TEXT_WHITE);
+        header.addWidget(title);
+        
+        return header;
+    }
+    
+    private WidgetGroup createGroupInfo() {
+        WidgetGroup info = new WidgetGroup(10, 35, DIALOG_WIDTH - 20, 60);
+        info.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
+        
+        int yPos = 8;
+        
+        // Component count and name
         String componentName = group.getType().getDisplayName();
+        LabelWidget countLabel = new LabelWidget(10, yPos, 
+                "§eUpgrade " + group.getCount() + "x " + componentName);
+        countLabel.setTextColor(COLOR_TEXT_WHITE);
+        info.addWidget(countLabel);
+        
+        yPos += 15;
+        
+        // From tier
         String fromName = getDisplayName(group.getType(), group.getTier());
+        LabelWidget fromLabel = new LabelWidget(10, yPos, "§7From: §f" + fromName);
+        fromLabel.setTextColor(COLOR_TEXT_WHITE);
+        info.addWidget(fromLabel);
+        
+        yPos += 12;
+        
+        // To tier
         String toName = getDisplayName(group.getType(), targetTier);
-
-        graphics.drawString(font, "§eUpgrade " + group.getCount() + "x " + componentName,
-                dialogX + 10, y, 0xFFFFFF);
-
-        y += 15;
-        graphics.drawString(font, "§7From: §f" + fromName,
-                dialogX + 10, y, 0xFFFFFF);
-
-        y += 12;
-        graphics.drawString(font, "§7To: §f" + toName,
-                dialogX + 10, y, 0xFFFFFF);
-
-        y += 20;
-
-        // Show materials only in survival mode
-        if (!player.isCreative()) {
-            graphics.drawString(font, "§7Required materials:",
-                    dialogX + 10, y, 0xFFFFFF);
-
-            y += 12;
-            for (MaterialAvailability mat : materials) {
-                String itemName = mat.getItemName();
-                int required = mat.getRequired();
-                long available = mat.getAvailable();
-
-                int color = available >= required ? 0x88FF88 : 0xFF8888;
-                graphics.drawString(font, "  " + itemName + ": " + available + "/" + required,
-                        dialogX + 10, y, color);
-                y += 10;
-            }
-        } else {
-            // Creative mode message
-            graphics.drawString(font, "§aCreative Mode - No materials required",
-                    dialogX + 10, y, 0x88FF88);
-            y += 15;
-        }
-
-        super.render(graphics, mouseX, mouseY, partialTick);
+        LabelWidget toLabel = new LabelWidget(10, yPos, "§7To: §f" + toName);
+        toLabel.setTextColor(COLOR_TEXT_WHITE);
+        info.addWidget(toLabel);
+        
+        return info;
     }
-
+    
+    private WidgetGroup createMaterialsPanel() {
+        if (player.isCreative()) {
+            return createCreativePanel();
+        } else {
+            return createSurvivalPanel();
+        }
+    }
+    
+    private WidgetGroup createCreativePanel() {
+        WidgetGroup panel = new WidgetGroup(10, 100, DIALOG_WIDTH - 20, 40);
+        panel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
+        
+        LabelWidget creativeMsg = new LabelWidget(10, 15, 
+                "§aCreative Mode - No materials required");
+        creativeMsg.setTextColor(COLOR_CREATIVE);
+        panel.addWidget(creativeMsg);
+        
+        return panel;
+    }
+    
+    private WidgetGroup createSurvivalPanel() {
+        int listHeight = Math.min(materials.size() * 12 + 25, 110);
+        WidgetGroup panel = new WidgetGroup(10, 100, DIALOG_WIDTH - 20, listHeight);
+        panel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
+        
+        // Header
+        LabelWidget headerLabel = new LabelWidget(10, 5, "§7Required materials:");
+        headerLabel.setTextColor(COLOR_TEXT_GRAY);
+        panel.addWidget(headerLabel);
+        
+        // Materials list
+        int yPos = 18;
+        for (MaterialAvailability mat : materials) {
+            String itemName = mat.getItemName();
+            int required = mat.getRequired();
+            long available = mat.getAvailable();
+            
+            int color = available >= required ? COLOR_SUCCESS : COLOR_ERROR;
+            String matText = "  " + itemName + ": " + available + "/" + required;
+            
+            LabelWidget matLabel = new LabelWidget(10, yPos, matText);
+            matLabel.setTextColor(color);
+            panel.addWidget(matLabel);
+            
+            yPos += 12;
+        }
+        
+        return panel;
+    }
+    
+    private WidgetGroup createButtons() {
+        WidgetGroup buttons = new WidgetGroup(10, DIALOG_HEIGHT - 35, DIALOG_WIDTH - 20, 28);
+        
+        // Confirm button
+        String confirmText = hasEnough ? "Upgrade All (" + group.getCount() + ")" : "Missing Materials";
+        ButtonWidget confirmBtn = new ButtonWidget(
+                0, 0, 150, 24,
+                new GuiTextureGroup(
+                        new ColorRectTexture(hasEnough ? COLOR_SUCCESS : COLOR_BG_MEDIUM),
+                        new ColorBorderTexture(1, hasEnough ? COLOR_SUCCESS : COLOR_BORDER_DARK)
+                ),
+                cd -> {
+                    if (hasEnough) {
+                        performGroupUpgrade();
+                    }
+                }
+        );
+        confirmBtn.setButtonTexture(new TextTexture(confirmText)
+                .setWidth(150)
+                .setType(TextTexture.TextType.NORMAL));
+        
+        if (hasEnough) {
+            confirmBtn.setHoverTexture(new GuiTextureGroup(
+                    new ColorRectTexture(COLOR_SUCCESS),
+                    new ColorBorderTexture(2, COLOR_TEXT_WHITE)
+            ));
+        }
+        
+        buttons.addWidget(confirmBtn);
+        
+        // Cancel button
+        ButtonWidget cancelBtn = new ButtonWidget(
+                DIALOG_WIDTH - 150, 0, 140, 24,
+                new GuiTextureGroup(
+                        new ColorRectTexture(COLOR_BG_MEDIUM),
+                        new ColorBorderTexture(1, COLOR_BORDER_DARK)
+                ),
+                cd -> closeDialog()
+        );
+        cancelBtn.setButtonTexture(new TextTexture("Cancel")
+                .setWidth(140)
+                .setType(TextTexture.TextType.NORMAL));
+        cancelBtn.setHoverTexture(new GuiTextureGroup(
+                new ColorRectTexture(COLOR_BG_MEDIUM),
+                new ColorBorderTexture(2, COLOR_TEXT_WHITE)
+        ));
+        
+        buttons.addWidget(cancelBtn);
+        
+        return buttons;
+    }
+    
     private void performGroupUpgrade() {
-        java.util.List<net.minecraft.core.BlockPos> positions = new java.util.ArrayList<>();
+        List<BlockPos> positions = new ArrayList<>();
         for (ComponentInfo comp : group.getComponents()) {
             positions.add(comp.getPosition());
         }
-
-        com.gtceuterminal.common.network.TerminalNetwork.CHANNEL.sendToServer(
-                new com.gtceuterminal.common.network.CPacketComponentUpgrade(positions, targetTier)
+        
+        TerminalNetwork.CHANNEL.sendToServer(
+                new CPacketComponentUpgrade(positions, targetTier)
         );
-
-        minecraft.setScreen(parent);
-
+        
         if (onSuccess != null) {
             onSuccess.run();
         }
+        
+        closeDialog();
     }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
+    
+    private void closeDialog() {
+        if (onClose != null) {
+            onClose.run();
+        }
+        if (parent != null) {
+            parent.waitToRemoved(this);
+        }
     }
-
-    private String getDisplayName(com.gtceuterminal.common.multiblock.ComponentType type, int tier) {
-        if (type == com.gtceuterminal.common.multiblock.ComponentType.COIL) {
-            // Coils: just material name
+    
+    private String getDisplayName(ComponentType type, int tier) {
+        if (type == ComponentType.COIL) {
             return getCoilName(tier);
-        } else if (type == com.gtceuterminal.common.multiblock.ComponentType.MAINTENANCE) {
-            // Maintenance: no tier
+        } else if (type == ComponentType.MAINTENANCE) {
             return type.getDisplayName();
         } else {
             String tierName = com.gregtechceu.gtceu.api.GTValues.VN[tier].toUpperCase(java.util.Locale.ROOT);
             return type.getDisplayName() + " (" + tierName + ")";
         }
     }
-
+    
     private String getCoilName(int tier) {
         return switch (tier) {
             case 0 -> "Cupronickel";

@@ -3,42 +3,39 @@ package com.gtceuterminal.common.item.behavior;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiPart;
+
 import com.gtceuterminal.GTCEUTerminalMod;
-import com.gtceuterminal.client.gui.SchematicInterfaceScreen;
+import com.gtceuterminal.client.ClientProxy;
 import com.gtceuterminal.common.data.SchematicData;
-import java.util.*;
-import net.minecraft.client.Minecraft;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+
 import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
+import net.minecraft.world.item.Items;
+import com.gtceuterminal.common.material.MaterialCalculator;
+import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
 
 public class SchematicInterfaceBehavior {
 
-    @NotNull
     public InteractionResult useOn(@NotNull UseOnContext context) {
         Player player = context.getPlayer();
         if (player == null) {
@@ -52,6 +49,7 @@ public class SchematicInterfaceBehavior {
         boolean shiftDown = player.isShiftKeyDown();
 
         if (shiftDown) {
+            // Try to copy multiblock
             MetaMachine machine = MetaMachine.getMachine(level, blockPos);
             if (machine instanceof IMultiController) {
                 IMultiController controller = (IMultiController) machine;
@@ -62,206 +60,180 @@ public class SchematicInterfaceBehavior {
                     return InteractionResult.sidedSuccess(level.isClientSide);
                 }
             }
+
+            // Open GUI if not clicking on a multiblock
             if (level.isClientSide) {
-                openSchematicGUI(itemStack, player);
+                GTCEUTerminalMod.LOGGER.info("Client: Requesting server to open Schematic UI");
+                ClientProxy.openSchematicGUI(itemStack, player, Collections.emptyList());
                 return InteractionResult.SUCCESS;
             }
+
             return InteractionResult.CONSUME;
         }
 
+        // Right click normal (paste)
         if (!level.isClientSide) {
-            pasteMultiblockAtLookPosition(itemStack, player, level);
+            // Match vanilla placement behavior:
+            // - If the clicked block is replaceable (tall grass, snow, etc.), place "into" it.
+            // - Otherwise place on the adjacent position of the clicked face.
+            // This prevents the controller anchor from ending up inside solid blocks when aiming at the ground.
+            BlockPos anchor = blockPos;
+            try {
+                BlockState clicked = level.getBlockState(blockPos);
+                if (clicked != null && !clicked.isAir() && !clicked.canBeReplaced()) {
+                    anchor = blockPos.relative(context.getClickedFace());
+                }
+            } catch (Exception ignored) {
+                anchor = blockPos.relative(context.getClickedFace());
+            }
+
+            pasteSchematic(itemStack, player, level, anchor, context.getClickedFace());
         }
+
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    @NotNull
-    public InteractionResultHolder<ItemStack> use(@NotNull Item item, @NotNull Level level,
-                                                  @NotNull Player player, @NotNull InteractionHand usedHand) {
+
+    // Handle right-click in air to paste at EXACT ghost preview position
+    public InteractionResultHolder<ItemStack> use(Item item, Level level, Player player, InteractionHand usedHand) {
         ItemStack itemStack = player.getItemInHand(usedHand);
 
-        // Use the actual Shift key state instead of "crouching" so it works while flying/in-air.
-        boolean shiftDown = player.isShiftKeyDown();
-
-        // Shift+Right Click in the air = open GUI (client) and consume the action (both sides)
-        if (shiftDown) {
+        if (player.isShiftKeyDown()) {
+            // Shift + Right-click in air: Open GUI
             if (level.isClientSide) {
-                openSchematicGUI(itemStack, player);
+                GTCEUTerminalMod.LOGGER.info("Client: Requesting server to open Schematic UI");
+                ClientProxy.openSchematicGUI(itemStack, player, Collections.emptyList());
+                return InteractionResultHolder.success(itemStack);
             }
-            return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide);
+            return InteractionResultHolder.consume(itemStack);
         }
 
-        // Right click in the air (no shift) = paste (server)
-        if (!level.isClientSide) {
-            pasteMultiblockAtLookPosition(itemStack, player, level);
+        // Right-click in air (no shift): Paste at EXACT ghost preview position
+        if (hasClipboard(itemStack)) {
+            if (!level.isClientSide) {
+                // Get schematic to calculate optimal distance (same as renderer)
+                CompoundTag itemTag = itemStack.getTag();
+                SchematicData clipboard = SchematicData.fromNBT(
+                        itemTag.getCompound("Clipboard"),
+                        level.registryAccess()
+                );
+
+                // Calculate same distance as SchematicPreviewRenderer
+                double distance = calculateOptimalDistance(clipboard);
+
+                // Use EXACT same logic as SchematicPreviewRenderer.getTargetPlacementPos()
+                BlockPos targetPos = getTargetPlacementPos(player, distance);
+                Direction facing = Direction.UP;
+
+                pasteSchematic(itemStack, player, level, targetPos, facing);
+                return InteractionResultHolder.success(itemStack);
+            }
+            return InteractionResultHolder.consume(itemStack);
         }
-        return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide);
+
+        return InteractionResultHolder.pass(itemStack);
     }
 
-    private void copyMultiblock(IMultiController controller, ItemStack stack, Player player,
-                                Level level, BlockPos controllerPos) {
-        try {
-            Set<BlockPos> positions = scanMultiblockArea(controller, level);
+    private double calculateOptimalDistance(SchematicData schematic) {
+        BlockPos size = schematic.getSize();
+        int maxDimension = Math.max(size.getX(), Math.max(size.getY(), size.getZ()));
 
-            if (positions.isEmpty()) {
-                player.displayClientMessage(Component.literal("Failed to scan multiblock!"), true);
-                return;
-            }
-
-            Map<BlockPos, BlockState> blocks = new HashMap<>();
-            Map<String, Integer> namespaceStats = new HashMap<>();
-
-            for (BlockPos pos : positions) {
-                BlockState state = level.getBlockState(pos);
-
-                if (state.isAir()) {
-                    continue;
-                }
-
-                String namespace = state.getBlock().builtInRegistryHolder()
-                        .key().location().getNamespace();
-                namespaceStats.put(namespace, namespaceStats.getOrDefault(namespace, 0) + 1);
-
-                BlockPos relativePos = pos.subtract(controllerPos);
-                blocks.put(relativePos, state);
-            }
-
-            Direction originalFacing = Direction.NORTH;
-            BlockState controllerState = level.getBlockState(controllerPos);
-
-            if (controllerState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-                originalFacing = controllerState.getValue(BlockStateProperties.HORIZONTAL_FACING);
-            } else if (controllerState.hasProperty(BlockStateProperties.FACING)) {
-                Direction facing = controllerState.getValue(BlockStateProperties.FACING);
-                if (facing.getAxis() != Direction.Axis.Y) {
-                    originalFacing = facing;
-                }
-            }
-
-            GTCEUTerminalMod.LOGGER.info("Copied multiblock with original facing: {}", originalFacing);
-            GTCEUTerminalMod.LOGGER.info("Copied {} blocks from {} different mods",
-                    blocks.size(), namespaceStats.size());
-
-            String multiblockType = controller.getClass().getSimpleName();
-            SchematicData clipboard = new SchematicData("Clipboard", multiblockType, blocks,
-                    originalFacing.getName());
-
-            CompoundTag stackTag = stack.getOrCreateTag();
-            CompoundTag clipboardTag = clipboard.toNBT();
-            stackTag.put("Clipboard", clipboardTag);
-
-            player.displayClientMessage(
-                    Component.literal("§aCopied " + blocks.size() + " blocks (will face you when pasted)"),
-                    true
-            );
-
-            level.playSound(null, controllerPos, SoundEvents.EXPERIENCE_ORB_PICKUP,
-                    SoundSource.BLOCKS, 1.0F, 1.5F);
-        } catch (Exception e) {
-            GTCEUTerminalMod.LOGGER.error("Error copying multiblock", e);
-            player.displayClientMessage(Component.literal("§cError copying multiblock!"), true);
-        }
+        double distance = 4.0 + (maxDimension / 2.0);
+        return Math.min(15.0, Math.max(4.0, distance));
     }
 
-    private void pasteMultiblockAtLookPosition(ItemStack stack, Player player, Level level) {
-        try {
-            CompoundTag stackTag = stack.getTag();
-            if (stackTag == null || !stackTag.contains("Clipboard")) {
-                player.displayClientMessage(
-                        Component.literal("No schematic in clipboard! Copy a multiblock first."),
-                        true
-                );
-                return;
-            }
+    private BlockPos getTargetPlacementPos(Player player, double distance) {
+        double raycastDistance = Math.max(10.0, distance + 5.0);
+        HitResult hitResult = player.pick(raycastDistance, 0.0f, false);
 
-            CompoundTag clipboardTag = stackTag.getCompound("Clipboard");
-            SchematicData clipboard = SchematicData.fromNBT(clipboardTag, level.registryAccess());
+        if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+            BlockHitResult blockHit = (BlockHitResult) hitResult;
+            return blockHit.getBlockPos().relative(blockHit.getDirection());
+        }
 
-            Direction originalFacing = Direction.NORTH;
-            try {
-                String facingStr = clipboard.getOriginalFacing();
-                if (facingStr != null && !facingStr.isEmpty()) {
-                    originalFacing = Direction.byName(facingStr);
-                }
-            } catch (Exception e) {
-                GTCEUTerminalMod.LOGGER.warn("Could not parse original facing, using NORTH");
-            }
+        Vec3 eyePos = player.getEyePosition();
+        Vec3 lookVec = player.getLookAngle();
+        Vec3 targetVec = eyePos.add(lookVec.scale(distance));
 
-            double distance = calculateOptimalDistance(clipboard);
-            BlockPos pasteOrigin = getTargetPlacementPosition(player, level, distance);
+        return new BlockPos(
+                (int) Math.floor(targetVec.x),
+                (int) Math.floor(targetVec.y),
+                (int) Math.floor(targetVec.z)
+        );
+    }
 
-            if (pasteOrigin == null) {
-                player.displayClientMessage(
-                        Component.literal("§eCouldn't find placement position!"),
-                        true
-                );
-                return;
-            }
 
-            Direction playerFacing = getPlayerHorizontalFacing(player);
+    // Check if item has clipboard data
+    private boolean hasClipboard(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getTag();
+        if (tag == null || !tag.contains("Clipboard")) {
+            return false;
+        }
+        CompoundTag clipboardTag = tag.getCompound("Clipboard");
+        return clipboardTag.contains("Blocks") && !clipboardTag.getList("Blocks", 10).isEmpty();
+    }
 
-            Direction targetFacing = playerFacing.getOpposite();
+    private void copyMultiblock(IMultiController controller, ItemStack itemStack, Player player, Level level, BlockPos blockPos) {
+        GTCEUTerminalMod.LOGGER.info("=== COPYING MULTIBLOCK ===");
 
-            Rotation rotation = getRotationBetweenFacings(originalFacing, targetFacing);
+        Set<BlockPos> positions = scanMultiblockArea(controller, level);
 
-            GTCEUTerminalMod.LOGGER.info("Player facing: {}", playerFacing);
-            GTCEUTerminalMod.LOGGER.info("Original multiblock facing: {}", originalFacing);
-            GTCEUTerminalMod.LOGGER.info("Target facing (toward player): {}", targetFacing);
-            GTCEUTerminalMod.LOGGER.info("Rotation applied: {}", rotation);
-
-            int placedCount = 0;
-            int failedCount = 0;
-            List<String> missingBlocks = new ArrayList<>();
-
-            for (Map.Entry<BlockPos, BlockState> entry : clipboard.getBlocks().entrySet()) {
-                BlockPos relativePos = entry.getKey();
-                BlockState state = entry.getValue();
-
-                BlockPos rotatedPos = rotatePosition(relativePos, rotation);
-                BlockPos targetPos = pasteOrigin.offset(rotatedPos);
-
-                BlockState rotatedState = state.rotate(rotation);
-
-                if (tryPlaceBlock(player, level, targetPos, rotatedState)) {
-                    placedCount++;
-                } else {
-                    failedCount++;
-                    String blockName = rotatedState.getBlock().getName().getString();
-                    if (!missingBlocks.contains(blockName)) {
-                        missingBlocks.add(blockName);
-                    }
-                }
-            }
-
-            if (placedCount > 0) {
-                player.displayClientMessage(
-                        Component.literal("§aPlaced " + placedCount + " blocks (facing you)" +
-                                (failedCount > 0 ? " §c(" + failedCount + " failed)" : "")),
-                        true
-                );
-
-                if (!missingBlocks.isEmpty() && missingBlocks.size() <= 5) {
-                    player.displayClientMessage(
-                            Component.literal("§eMissing: " + String.join(", ", missingBlocks)),
-                            false
-                    );
-                }
-
-                level.playSound(null, pasteOrigin, SoundEvents.ITEM_PICKUP,
-                        SoundSource.BLOCKS, 1.0F, 1.0F);
-            } else {
-                player.displayClientMessage(
-                        Component.literal("§cFailed to place any blocks! Check inventory/ME."),
-                        true
-                );
-            }
-        } catch (Exception e) {
-            GTCEUTerminalMod.LOGGER.error("Error pasting multiblock", e);
+        if (positions.isEmpty()) {
             player.displayClientMessage(
-                    Component.literal("§cError pasting multiblock!"),
+                    Component.literal("§cFailed to scan multiblock!"),
                     true
             );
+            GTCEUTerminalMod.LOGGER.warn("Scanned multiblock but got 0 positions");
+            return;
         }
+
+        Map<BlockPos, BlockState> blocks = new HashMap<>();
+        Map<BlockPos, CompoundTag> blockEntities = new HashMap<>();
+
+        BlockPos controllerPos = controller.self().getPos();
+
+        for (BlockPos pos : positions) {
+            BlockState state = level.getBlockState(pos);
+
+            if (state.isAir()) {
+                continue;
+            }
+
+            BlockPos relativePos = pos.subtract(controllerPos);
+            blocks.put(relativePos, state);
+
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be != null) {
+                try {
+                    CompoundTag tag = be.saveWithFullMetadata();
+                    blockEntities.put(relativePos, tag);
+                } catch (Exception e) {
+                    GTCEUTerminalMod.LOGGER.error("Failed to save block entity at {}", pos, e);
+                }
+            }
+        }
+
+        Direction facing = controller.self().getFrontFacing();
+        String multiblockType = controller.self().getDefinition().getId().toString();
+
+        SchematicData clipboard = new SchematicData(
+                "Clipboard",
+                multiblockType,
+                blocks,
+                blockEntities,
+                facing.getName()
+        );
+
+        CompoundTag itemTag = itemStack.getOrCreateTag();
+        itemTag.put("Clipboard", clipboard.toNBT());
+        itemStack.setTag(itemTag);
+
+        player.displayClientMessage(
+                Component.literal("§aMultiblock copied! " + blocks.size() + " blocks"),
+                true
+        );
+
+        GTCEUTerminalMod.LOGGER.info("Multiblock copied: {} blocks", blocks.size());
     }
 
     private Set<BlockPos> scanMultiblockArea(IMultiController controller, Level level) {
@@ -271,17 +243,22 @@ public class SchematicInterfaceBehavior {
             Collection<BlockPos> cachePos = controller.getMultiblockState().getCache();
             if (cachePos != null && !cachePos.isEmpty()) {
                 positions.addAll(cachePos);
+                GTCEUTerminalMod.LOGGER.info("Got {} positions from multiblock cache", positions.size());
                 return positions;
             }
         } catch (Exception e) {
+            GTCEUTerminalMod.LOGGER.warn("Failed to get positions from cache, using fallback method");
         }
 
         BlockPos controllerPos = controller.self().getPos();
         List<IMultiPart> parts = controller.getParts();
 
         if (parts.isEmpty()) {
+            GTCEUTerminalMod.LOGGER.warn("No parts found in multiblock");
             return positions;
         }
+
+        GTCEUTerminalMod.LOGGER.info("Scanning area around {} parts", parts.size());
 
         int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
@@ -312,165 +289,249 @@ public class SchematicInterfaceBehavior {
             }
         }
 
+        GTCEUTerminalMod.LOGGER.info("Scanned area and found {} blocks", positions.size());
         return positions;
     }
 
-    private void openSchematicGUI(ItemStack stack, Player player) {
-        try {
-            Minecraft mc = Minecraft.getInstance();
-            List<SchematicData> schematics = loadSchematics(stack, mc.level);
-
-            SchematicInterfaceScreen screen = new SchematicInterfaceScreen(
-                    stack,
-                    schematics,
-                    action -> {}
+    // Paste schematic at any position with proper rotation
+    private void pasteSchematic(ItemStack itemStack, Player player, Level level, BlockPos targetPos, Direction facing) {
+        CompoundTag itemTag = itemStack.getTag();
+        if (itemTag == null || !itemTag.contains("Clipboard")) {
+            player.displayClientMessage(
+                    Component.literal("§cNo schematic in clipboard!"),
+                    true
             );
-
-            mc.setScreen(screen);
-        } catch (Exception e) {
-            GTCEUTerminalMod.LOGGER.error("Error opening schematic GUI", e);
-        }
-    }
-
-    private List<SchematicData> loadSchematics(ItemStack stack, Level level) {
-        List<SchematicData> schematics = new ArrayList<>();
-
-        CompoundTag stackTag = stack.getTag();
-        if (stackTag == null || !stackTag.contains("SavedSchematics")) {
-            return schematics;
+            return;
         }
 
-        ListTag savedList = stackTag.getList("SavedSchematics", 10);
-        for (int i = 0; i < savedList.size(); i++) {
-            try {
-                CompoundTag schematicTag = savedList.getCompound(i);
-                schematics.add(SchematicData.fromNBT(schematicTag, level.registryAccess()));
-            } catch (Exception e) {
-                GTCEUTerminalMod.LOGGER.error("Error loading schematic {}: {}", i, e.getMessage());
-            }
-        }
-
-        return schematics;
-    }
-
-    private double calculateOptimalDistance(SchematicData schematic) {
-        BlockPos size = schematic.getSize();
-        int maxDimension = Math.max(size.getX(), Math.max(size.getY(), size.getZ()));
-        double distance = 4.0 + maxDimension / 2.0;
-        return Math.min(15.0, Math.max(4.0, distance));
-    }
-
-    private BlockPos getTargetPlacementPosition(Player player, Level level, double distance) {
-
-        double raycastDistance = Math.max(10.0, distance + 5.0);
-
-        Vec3 eyePos = player.getEyePosition(1.0F);
-        Vec3 lookVec = player.getLookAngle();
-        Vec3 endVec = eyePos.add(lookVec.scale(raycastDistance));
-
-        BlockHitResult hitResult = level.clip(new net.minecraft.world.level.ClipContext(
-                eyePos,
-                endVec,
-                net.minecraft.world.level.ClipContext.Block.OUTLINE,
-                net.minecraft.world.level.ClipContext.Fluid.NONE,
-                player
-        ));
-
-        if (hitResult != null && hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-            return hitResult.getBlockPos().relative(hitResult.getDirection());
-        }
-
-        Vec3 targetVec = eyePos.add(lookVec.scale(distance));
-
-        return new BlockPos(
-                (int)Math.floor(targetVec.x),
-                (int)Math.floor(targetVec.y),
-                (int)Math.floor(targetVec.z)
+        SchematicData clipboard = SchematicData.fromNBT(
+                itemTag.getCompound("Clipboard"),
+                level.registryAccess()
         );
+
+        // Get original facing from schematic
+        Direction originalFacing = Direction.SOUTH;
+        try {
+            String facingStr = clipboard.getOriginalFacing();
+            if (facingStr != null && !facingStr.isEmpty()) {
+                Direction byName = Direction.byName(facingStr);
+                if (byName != null) originalFacing = byName;
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Calculate player's horizontal facing
+        Direction playerFacing = getPlayerHorizontalFacing(player);
+        Direction targetFacing = playerFacing.getOpposite();
+
+        // Calculate rotation steps needed
+        int rotationSteps = getRotationSteps(originalFacing, targetFacing);
+
+        GTCEUTerminalMod.LOGGER.info("Pasting schematic at {} - Original facing: {}, Player facing: {}, Rotation steps: {}",
+                targetPos, originalFacing, playerFacing, rotationSteps);
+
+        // === FIRST PASS: compute placements + required materials ===
+        Map<Item, Integer> required = new HashMap<>();
+        List<Placement> placements = new ArrayList<>();
+
+        int skippedCount = 0;
+
+        for (Map.Entry<BlockPos, BlockState> entry : clipboard.getBlocks().entrySet()) {
+            BlockPos relativePos = entry.getKey();
+            BlockState state = entry.getValue();
+
+            // Apply rotation to position
+            BlockPos rotatedPos = rotatePositionSteps(relativePos, rotationSteps);
+            BlockPos worldPos = targetPos.offset(rotatedPos);
+
+            // Apply rotation to block state
+            BlockState rotatedState = rotateBlockStateSteps(state, rotationSteps);
+
+            // Bounds check
+            if (!level.isInWorldBounds(worldPos)) {
+                skippedCount++;
+                continue;
+            }
+
+            // Skip if can't be placed here
+            BlockState currentState = level.getBlockState(worldPos);
+            boolean canReplace = currentState.isAir() || currentState.canBeReplaced();
+            if (!canReplace) {
+                skippedCount++;
+                continue;
+            }
+
+            // If it's already exactly the same state, don't charge / place again
+            if (currentState == rotatedState || currentState.equals(rotatedState)) {
+                skippedCount++;
+                continue;
+            }
+
+            // Determine item cost for this block
+            Item item = rotatedState.getBlock().asItem();
+            if (item == Items.AIR) {
+                // Unplaceable via inventory (no item form) - skip it to avoid dupes
+                skippedCount++;
+                continue;
+            }
+
+            required.merge(item, 1, Integer::sum);
+            placements.add(new Placement(relativePos, worldPos, rotatedState));
+        }
+
+        // Nothing to place
+        if (placements.isEmpty()) {
+            player.displayClientMessage(
+                    Component.literal("§eNothing to paste here. Area may be occupied (or identical)."),
+                    true
+            );
+            return;
+        }
+
+        // === MATERIAL CHECK / EXTRACTION (SURVIVAL ONLY) ===
+        if (!player.getAbilities().instabuild) {
+            MENetworkItemExtractor.ExtractResult result =
+                    MENetworkItemExtractor.tryExtractFromMEOrInventory(itemStack, level, player, required);
+
+            if (!result.success) {
+                // Build missing list (Inventory + ME only)
+                Map<Item, Integer> inv = MaterialCalculator.scanPlayerInventory(player);
+
+                StringBuilder sb = new StringBuilder("§cMissing materials: ");
+                int shown = 0;
+
+                for (Map.Entry<Item, Integer> req : required.entrySet()) {
+                    Item it = req.getKey();
+                    int need = req.getValue();
+
+                    int haveInv = inv.getOrDefault(it, 0);
+                    long haveME = MENetworkItemExtractor.checkItemAvailability(itemStack, level, player, it);
+
+                    long have = (long) haveInv + haveME;
+                    long miss = need - have;
+
+                    if (miss > 0) {
+                        if (shown > 0) sb.append("§7, ");
+                        sb.append("§f").append(it.getDescription().getString()).append("§7 x").append(miss);
+                        shown++;
+                        if (shown >= 6) {
+                            sb.append("§7 ...");
+                            break;
+                        }
+                    }
+                }
+
+                player.displayClientMessage(Component.literal(sb.toString()), true);
+                return;
+            }
+        }
+
+        // === SECOND PASS: place blocks (now that we paid) ===
+        int placedCount = 0;
+
+        for (Placement p : placements) {
+            // Place block
+            level.setBlock(p.worldPos, p.state, 3);
+            placedCount++;
+
+            // Copy block entity data if exists (use original relative key)
+            if (clipboard.getBlockEntities().containsKey(p.relativeKey)) {
+                CompoundTag beTag = clipboard.getBlockEntities().get(p.relativeKey);
+                BlockEntity be = level.getBlockEntity(p.worldPos);
+                if (be != null) {
+                    try {
+                        be.load(beTag);
+                    } catch (Exception e) {
+                        GTCEUTerminalMod.LOGGER.error("Failed to load block entity at {}", p.worldPos, e);
+                    }
+                }
+            }
+        }
+
+        player.displayClientMessage(
+                Component.literal(String.format("§aSchematic pasted! §f%d §ablocks placed", placedCount) +
+                        (skippedCount > 0 ? String.format(" §7(%d skipped)", skippedCount) : "")),
+                true
+        );
+
+        GTCEUTerminalMod.LOGGER.info("Schematic pasted: {} blocks placed, {} skipped", placedCount, skippedCount);
     }
 
+    private record Placement(BlockPos relativeKey, BlockPos worldPos, BlockState state) {}
+
+
+    // Get player's horizontal facing direction
     private Direction getPlayerHorizontalFacing(Player player) {
-        return Direction.fromYRot(player.getYRot());
-    }
+        float yaw = (player.getYRot() % 360 + 360) % 360;
 
-    private Rotation getRotationBetweenFacings(Direction from, Direction to) {
-        if (from == to) return Rotation.NONE;
-
-        int fromIndex = getHorizontalIndex(from);
-        int toIndex = getHorizontalIndex(to);
-
-        int diff = (toIndex - fromIndex + 4) % 4;
-
-        return switch (diff) {
-            case 1 -> Rotation.CLOCKWISE_90;        // 90°
-            case 2 -> Rotation.CLOCKWISE_180;       // 180°
-            case 3 -> Rotation.COUNTERCLOCKWISE_90; // 90°
-            default -> Rotation.NONE;               // 0°
-        };
-    }
-
-    private int getHorizontalIndex(Direction dir) {
-        return switch (dir) {
-            case SOUTH -> 0;
-            case WEST -> 1;
-            case NORTH -> 2;
-            case EAST -> 3;
-            default -> 0;
-        };
-    }
-
-    private BlockPos rotatePosition(BlockPos pos, Rotation rotation) {
-        return switch (rotation) {
-            case CLOCKWISE_90 -> new BlockPos(-pos.getZ(), pos.getY(), pos.getX());
-            case CLOCKWISE_180 -> new BlockPos(-pos.getX(), pos.getY(), -pos.getZ());
-            case COUNTERCLOCKWISE_90 -> new BlockPos(pos.getZ(), pos.getY(), -pos.getX());
-            default -> pos;
-        };
-    }
-
-    private boolean hasBlockInInventory(Player player, BlockState state) {
-        Item item = state.getBlock().asItem();
-        if (item == Items.AIR) {
-            return false;
+        if (yaw >= 315 || yaw < 45) {
+            return Direction.SOUTH;
+        } else if (yaw >= 45 && yaw < 135) {
+            return Direction.WEST;
+        } else if (yaw >= 135 && yaw < 225) {
+            return Direction.NORTH;
+        } else {
+            return Direction.EAST;
         }
+    }
 
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (!stack.isEmpty() && stack.getItem() == item) {
-                return true;
+
+    // Calculate rotation steps between two directions
+    private int getRotationSteps(Direction from, Direction to) {
+        return (to.get2DDataValue() - from.get2DDataValue() + 4) % 4;
+    }
+
+
+    // Rotate position by given steps
+    private BlockPos rotatePositionSteps(BlockPos pos, int steps) {
+        BlockPos result = pos;
+        for (int i = 0; i < steps; i++) {
+            // (x, z) -> (-z, x)
+            result = new BlockPos(-result.getZ(), result.getY(), result.getX());
+        }
+        return result;
+    }
+
+
+    // Rotate block state by given steps
+    private BlockState rotateBlockStateSteps(BlockState state, int steps) {
+        BlockState result = state;
+        for (int i = 0; i < steps; i++) {
+            result = rotateBlockStateOnce(result);
+        }
+        return result;
+    }
+
+
+    // Rotate block state once (90 degrees clockwise)
+    private BlockState rotateBlockStateOnce(BlockState state) {
+        try {
+            // HORIZONTAL_FACING
+            if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
+                Direction facing = state.getValue(
+                        net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
+                if (facing.getAxis().isHorizontal()) {
+                    return state.setValue(
+                            net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING,
+                            facing.getClockWise()
+                    );
+                }
             }
-        }
 
-        return false;
-    }
-
-    private boolean removeBlockFromInventory(Player player, BlockState state) {
-        Item item = state.getBlock().asItem();
-        if (item == Items.AIR) {
-            return false;
-        }
-
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (!stack.isEmpty() && stack.getItem() == item) {
-                stack.shrink(1);
-                return true;
+            // FACING
+            if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING)) {
+                Direction facing = state.getValue(
+                        net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING);
+                if (facing.getAxis().isHorizontal()) {
+                    return state.setValue(
+                            net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING,
+                            facing.getClockWise()
+                    );
+                }
             }
+        } catch (Exception ignored) {
         }
 
-        return false;
-    }
-
-    private boolean tryPlaceBlock(Player player, Level level, BlockPos pos, BlockState state) {
-        if (player.isCreative()) {
-            return level.setBlock(pos, state, 3);
-        }
-
-        if (hasBlockInInventory(player, state) && level.setBlock(pos, state, 3)) {
-            removeBlockFromInventory(player, state);
-            return true;
-        }
-
-        return false;
+        return state;
     }
 }

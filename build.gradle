@@ -81,13 +81,10 @@ dependencies {
 
     implementation fg.deobf("maven.modrinth:ldlib:mc1.20.1-1.0.40.b-forge")
 
-    implementation fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:7.0.0")
+    implementation fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:7.4.1")
 
-    // Applied Energistics 2 (compile only - will use runtime version)
-    compileOnly files('libs/appliedenergistics2-forge-15.4.10.jar')
+    compileOnly fg.deobf("appeng:appliedenergistics2-forge:15.4.10")
 
-    // GuideMe (optional, for reference)
-    // compileOnly files('libs/guideme-20.1.14.jar')
 }
 
 tasks.named('processResources', ProcessResources).configure {

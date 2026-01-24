@@ -2,6 +2,7 @@ package com.gtceuterminal.client.highlight;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -13,10 +14,11 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
 import org.joml.Matrix4f;
 
 
-  // Renders multiblock highlights in the world (needs more polish, next update)
+  // Renders multiblock highlights in the world (needs more polish)
 
 @Mod.EventBusSubscriber(modid = "gtceuterminal", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class HighlightRenderer {

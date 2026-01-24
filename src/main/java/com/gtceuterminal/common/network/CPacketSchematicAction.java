@@ -3,9 +3,6 @@ package com.gtceuterminal.common.network;
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.data.SchematicData;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -15,6 +12,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 public class CPacketSchematicAction {
     private final ActionType actionType;
@@ -55,7 +56,6 @@ public class CPacketSchematicAction {
 
             switch (this.actionType) {
                 case SAVE:
-                    // Verificar que hay clipboard
                     if (!stackTag.contains("Clipboard")) {
                         player.displayClientMessage(Component.literal("§eNo clipboard to save!"), true);
                         return;
@@ -67,10 +67,8 @@ public class CPacketSchematicAction {
                         return;
                     }
 
-                    // Cargar clipboard CON su originalFacing
                     SchematicData clipboard = SchematicData.fromNBT(clipboardTag, player.level().registryAccess());
 
-                    // Verificar duplicados
                     List<SchematicData> existingSchematics = loadSchematics(stack, player);
                     boolean isDuplicate = existingSchematics.stream()
                             .anyMatch(s -> s.getName().equals(this.schematicName));
@@ -80,12 +78,12 @@ public class CPacketSchematicAction {
                         return;
                     }
 
-                    // CORREGIDO: Crear nuevo schematic PRESERVANDO el originalFacing del clipboard
                     SchematicData namedSchematic = new SchematicData(
                             this.schematicName,
                             clipboard.getMultiblockType(),
                             clipboard.getBlocks(),
-                            clipboard.getOriginalFacing()  // ← CRÍTICO: Preservar orientación original
+                            clipboard.getBlockEntities(),
+                            clipboard.getOriginalFacing()
                     );
 
                     existingSchematics.add(namedSchematic);
@@ -105,7 +103,6 @@ public class CPacketSchematicAction {
                     if (this.schematicIndex >= 0 && this.schematicIndex < schematics.size()) {
                         SchematicData schematic = schematics.get(this.schematicIndex);
 
-                        // Cargar schematic al clipboard preservando su originalFacing
                         stackTag.put("Clipboard", schematic.toNBT());
 
                         GTCEUTerminalMod.LOGGER.info("Loaded schematic '{}' with originalFacing: {}",
@@ -183,6 +180,6 @@ public class CPacketSchematicAction {
     public enum ActionType {
         SAVE,
         LOAD,
-        DELETE;
+        DELETE
     }
 }

@@ -16,7 +16,7 @@ public class TierProgression {
         "tritanium_coil_block"
     );
     
-    // Machine casing progression (it has a specific use, documentation later)
+    // Machine casing progression (it has a specific use, documentation and config files later)
     private static final List<String> CASING_TIERS = Arrays.asList(
         "lv_machine_casing",
         "mv_machine_casing",
@@ -124,7 +124,7 @@ public class TierProgression {
             if (path.contains(COIL_TIERS.get(i))) return i;
         }
         
-        // Casings (needs work later, some projects uses casings as tiered blocks, but not gtceu)
+        // Casings (needs work later, some projects uses casings as tiered blocks, but not gtceu by default)
         for (int i = 0; i < CASING_TIERS.size(); i++) {
             if (path.contains(CASING_TIERS.get(i))) return i;
         }

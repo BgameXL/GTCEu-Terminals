@@ -1,6 +1,7 @@
 package com.gtceuterminal.common.multiblock;
 
 import net.minecraft.world.level.block.state.BlockState;
+
 import java.util.*;
 
 public class BlockCategory {

@@ -1,6 +1,7 @@
 package com.gtceuterminal.common.ae2;
 
 import com.gtceuterminal.GTCEUTerminalMod;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -11,10 +12,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 /**
  * Extractor for removing items from Applied Energistics 2
  * uses reflection to avoid hard dependency on AE2
- * it doesnt work, next update maybe
+ * It works now!
  */
 public class MENetworkExtractor {
-    
 
     public static long extractFromMENetwork(Player player, Level level, BlockPos nodePos, Item item, long amount) {
         if (!MENetworkScanner.isAE2Available()) {
@@ -98,8 +98,7 @@ public class MENetworkExtractor {
                 }
             }
             
-            GTCEUTerminalMod.LOGGER.info("Extracted {} x{} from ME network at {}", item, extracted, nodePos);
-            
+            // GTCEUTerminalMod.LOGGER.info("Extracted {} x{} from ME network at {}", item, extracted, nodePos);
             return extracted;
             
         } catch (Exception e) {
@@ -107,10 +106,8 @@ public class MENetworkExtractor {
             return 0;
         }
     }
-    
 
      // Extract items from any nearby ME network
-
     public static long extractFromNearbyMENetwork(Player player, Level level, Item item, long amount, int radius) {
         if (!MENetworkScanner.isAE2Available()) {
             return 0;

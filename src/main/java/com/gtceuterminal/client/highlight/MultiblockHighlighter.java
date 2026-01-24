@@ -3,7 +3,9 @@ package com.gtceuterminal.client.highlight;
 import com.gtceuterminal.common.multiblock.MultiblockInfo;
 import com.gtceuterminal.common.multiblock.MultiblockScanner;
 import com.gtceuterminal.common.multiblock.MultiblockStatus;
+
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 
@@ -12,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-  // Manages multiblock highlighting on client side (going to be removed, next update)
+  // Manages multiblock highlighting on client side (going to be removed)
 
 public class MultiblockHighlighter {
 
