@@ -3,20 +3,22 @@ package com.gtceuterminal.common.scanner;
 import com.gregtechceu.gtceu.api.machine.IMachineBlockEntity;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
 import com.gregtechceu.gtceu.api.machine.multiblock.MultiblockControllerMachine;
-import com.gregtechceu.gtceu.api.machine.multiblock.PartAbility;
 import com.gregtechceu.gtceu.api.pattern.MultiblockState;
 import com.gtceuterminal.GTCEUTerminalMod;
+import com.gtceuterminal.common.config.ComponentPattern;
+import com.gtceuterminal.common.config.ComponentPatternRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import com.gtceuterminal.common.scanner.PartAbilityMapper;
+import com.gtceuterminal.common.multiblock.ComponentType;
+import com.gregtechceu.gtceu.api.machine.multiblock.part.MultiblockPartMachine;
+import com.gregtechceu.gtceu.api.machine.multiblock.PartAbility;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.ArrayDeque;
-import java.util.Set;
-import java.util.HashSet;
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Universal Multiblock Detection System
@@ -214,10 +216,14 @@ public class UniversalMultiblockScanner {
             Level level
     ) {
         Map<String, List<ComponentData>> components = new HashMap<>();
+        Set<BlockPos> alreadyScanned = new HashSet<>();  // ⭐ NUEVO: Track escaneados
 
         try {
             var parts = controller.getParts();
             if (parts == null || parts.isEmpty()) {
+                // ⭐ NUEVO: Incluso si no hay parts, escanear wireless components
+                GTCEUTerminalMod.LOGGER.warn("Multiblock has no parts, scanning for wireless components...");
+                detectWirelessAndAddonComponents(controller, level, components, alreadyScanned);
                 return components;
             }
 
@@ -230,17 +236,94 @@ public class UniversalMultiblockScanner {
                 if (data != null) {
                     components.computeIfAbsent(data.getCategory(), k -> new ArrayList<>())
                             .add(data);
+                    alreadyScanned.add(machine.getPos());  // ⭐ NUEVO: Marcar como escaneado
                 }
             }
 
             // Also extract structural components (coils, casings)
             extractStructureComponents(controller, level, components);
 
+            // ⭐ NUEVO: Detectar wireless y addon components que no estén en getParts()
+            detectWirelessAndAddonComponents(controller, level, components, alreadyScanned);
+
         } catch (Exception e) {
             GTCEUTerminalMod.LOGGER.error("Error extracting components: {}", e.getMessage());
         }
 
         return components;
+    }
+
+
+    private static void detectWirelessAndAddonComponents(
+            MultiblockControllerMachine controller,
+            Level level,
+            Map<String, List<ComponentData>> components,
+            Set<BlockPos> alreadyScanned) {
+
+        try {
+            BlockPos controllerPos = controller.getPos();
+
+            // Escanear un área de 5x5x5 alrededor del controller
+            // (ajustar si es necesario para multiblocks más grandes)
+            int scanRadius = 5;
+
+            for (BlockPos pos : BlockPos.betweenClosed(
+                    controllerPos.offset(-scanRadius, -scanRadius, -scanRadius),
+                    controllerPos.offset(scanRadius, scanRadius, scanRadius))) {
+
+                // Skip si ya escaneamos esta posición
+                if (alreadyScanned.contains(pos)) continue;
+
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be instanceof IMachineBlockEntity machineBlockEntity) {
+                    MetaMachine machine = machineBlockEntity.getMetaMachine();
+
+                    if (machine == null) continue;
+
+                    // Obtener el ID del bloque
+                    var definition = machine.getDefinition();
+                    if (definition == null) continue;
+
+                    String blockId = definition.getId().toString().toLowerCase();
+
+                    // Detectar wireless energy hatches
+                    if (blockId.contains("wireless")) {
+                        if (blockId.contains("energy")) {
+                            ComponentData data = analyzeComponent(machine, level);
+                            if (data != null) {
+                                components.computeIfAbsent(data.getCategory(), k -> new ArrayList<>())
+                                        .add(data);
+                                alreadyScanned.add(pos);
+
+                                GTCEUTerminalMod.LOGGER.info("Detected wireless component: {} at {}",
+                                        blockId, pos);
+                            }
+                        }
+                    }
+
+                    // Detectar otros componentes de addons que puedan no estar en getParts()
+                    // (laser hatches, data hatches, etc. de GTMThings, GT Community Additions, etc.)
+                    if (blockId.contains("laser") ||
+                            blockId.contains("data") ||
+                            blockId.contains("optical") ||
+                            blockId.contains("computation")) {
+
+                        ComponentData data = analyzeComponent(machine, level);
+                        if (data != null) {
+                            components.computeIfAbsent(data.getCategory(), k -> new ArrayList<>())
+                                    .add(data);
+                            alreadyScanned.add(pos);
+
+                            GTCEUTerminalMod.LOGGER.info("Detected addon component: {} at {}",
+                                    blockId, pos);
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            GTCEUTerminalMod.LOGGER.error("Error detecting wireless/addon components: {}", e.getMessage());
+        }
     }
 
     // Analyze an individual component and categorize it
@@ -275,75 +358,137 @@ public class UniversalMultiblockScanner {
 
             String id = definition.getId().toString().toLowerCase();
 
-            // Detect by PartAbility (In GTCEu)
-            // Energy
-            if (id.contains("input_energy") || id.contains("energy_hatch")) return "Energy Hatch";
-            if (id.contains("output_energy") || id.contains("dynamo")) return "Dynamo Hatch";
-            if (id.contains("substation_input_energy")) return "Substation Input Energy Hatch";
-            if (id.contains("substation_output_energy")) return "Substation Output Energy Hatch";
+            // ⭐ MÉTODO 1: Usar PatternRegistry (más flexible y fácil de mantener)
+            ComponentPattern pattern = ComponentPatternRegistry.findMatch(id);
+            if (pattern != null) {
+                GTCEUTerminalMod.LOGGER.debug("Matched pattern '{}' for block '{}'",
+                        pattern.getPattern(), id);
 
-            // Import/Export Items (Buses)
-            if (id.contains("import_items") || id.contains("input_bus")) return "Input Bus";
-            if (id.contains("export_items") || id.contains("output_bus")) return "Output Bus";
-            if (id.contains("steam_import_items")) return "Steam Input Bus";
-            if (id.contains("steam_export_items")) return "Steam Output Bus";
+                String displayName = pattern.getDisplayName();
 
-            // Import/Export Fluids (Hatches)
-            if (id.contains("import_fluids") || id.contains("input_hatch")) {
-                // Detectar tipo específico
-                if (id.contains("1x")) return "Input Hatch (1x)";
-                if (id.contains("4x")) return "Quad Input Hatch (4x)";
-                if (id.contains("9x")) return "Nonuple Input Hatch (9x)";
-                return "Input Hatch";
-            }
-            if (id.contains("export_fluids") || id.contains("output_hatch")) {
-                if (id.contains("1x")) return "Output Hatch (1x)";
-                if (id.contains("4x")) return "Quad Output Hatch (4x)";
-                if (id.contains("9x")) return "Nonuple Output Hatch (9x)";
-                return "Output Hatch";
+                // Detectar amperaje adicional en el ID
+                String amperage = detectAmperage(id);
+                if (amperage != null && !displayName.contains(amperage)) {
+                    displayName = amperage + " " + displayName;
+                }
+
+                return displayName;
             }
 
-            // Special Hatches
-            if (id.contains("muffler")) return "Muffler Hatch";
-            // Maintenance Hatches (4 tipos diferentes)
-            if (id.contains("maintenance")) {
-                // GTCEu tiene 4 tipos de maintenance hatches con diferentes tiers
-                if (id.contains("auto")) return "Auto-Maintenance Hatch";        // HV tier
-                if (id.contains("configurable")) return "Configurable Maintenance Hatch";  // LuV tier
-                if (id.contains("cleaning")) return "Cleaning Maintenance Hatch";  // ZPM tier
-                return "Maintenance Hatch";  // LV tier (básico)
+            // ⭐ MÉTODO 2: Usar PartAbility registry (fallback robusto)
+            if (machine instanceof MultiblockPartMachine) {
+                var block = machine.getBlockState().getBlock();
+                ComponentType type = PartAbilityMapper.detectFromBlock(block);
+
+                if (type != null) {
+                    GTCEUTerminalMod.LOGGER.debug("Detected by PartAbility registry: {}",
+                            type.getDisplayName());
+
+                    String amperage = detectAmperage(id);
+                    if (amperage != null) {
+                        return amperage + " " + type.getDisplayName();
+                    }
+
+                    if (type == null || type == ComponentType.UNKNOWN) {
+                        String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
+
+                        if (blockId.contains("wireless_energy_input")) {
+                            type = ComponentType.WIRELESS_ENERGY_INPUT;
+                        } else if (blockId.contains("wireless_energy_output")) {
+                            type = ComponentType.WIRELESS_ENERGY_OUTPUT;
+                        } else if (blockId.contains("wireless_laser_target")) {
+                            type = ComponentType.WIRELESS_LASER_INPUT;
+                        } else if (blockId.contains("wireless_laser_source")) {
+                            type = ComponentType.WIRELESS_LASER_OUTPUT;
+                        }
+                    }
+
+                    return type.getDisplayName();
+                }
             }
-            if (id.contains("rotor_holder")) return "Rotor Holder";
-            if (id.contains("pump_fluid_hatch")) return "Pump Fluid Hatch";
-            if (id.contains("tank_valve")) return "Tank Valve";
-            if (id.contains("passthrough_hatch")) return "Passthrough Hatch";
-            if (id.contains("parallel_hatch")) return "Parallel Hatch";
 
-            // Laser
-            if (id.contains("input_laser")) return "Input Laser Hatch";
-            if (id.contains("output_laser")) return "Output Laser Hatch";
+            // ⭐ MÉTODO 3: Fallback final por análisis de ID
+            String detected = detectByImprovedAnalysis(id);
+            if (detected != null) {
+                return detected;
+            }
 
-            // Data/Computation
-            if (id.contains("computation_data_reception")) return "Computation Data Reception Hatch";
-            if (id.contains("computation_data_transmission")) return "Computation Data Transmission Hatch";
-            if (id.contains("optical_data_reception")) return "Optical Data Reception Hatch";
-            if (id.contains("optical_data_transmission")) return "Optical Data Transmission Hatch";
-            if (id.contains("data_access")) return "Data Access Hatch";
-
-            // HPCA (High Performance Computing Array)
-            if (id.contains("hpca_component")) return "HPCA Component";
-            if (id.contains("object_holder")) return "Object Holder";
-
-            // Steam
-            if (id.contains("steam")) return "Steam Hatch";
-
-            // Fallback
             return definition.getDescriptionId();
 
         } catch (Exception e) {
             GTCEUTerminalMod.LOGGER.debug("Could not detect component type: {}", e.getMessage());
             return "Unknown Component";
         }
+    }
+
+    // ⭐ NUEVO: Detectar amperaje
+    private static String detectAmperage(String id) {
+        if (id.contains("_65536a")) return "65536A";
+        if (id.contains("_16384a")) return "16384A";
+        if (id.contains("_4096a")) return "4096A";
+        if (id.contains("_1024a")) return "1024A";
+        if (id.contains("_256a")) return "256A";
+        if (id.contains("_64a")) return "64A";
+        if (id.contains("_16a")) return "16A";
+        if (id.contains("_4a")) return "4A";
+        return null;
+    }
+
+    // ⭐ NUEVO: Análisis mejorado por ID (fallback robusto)
+    private static String detectByImprovedAnalysis(String id) {
+        // Wireless components (no tienen PartAbility estándar)
+        if (id.contains("wireless")) {
+            if (id.contains("energy")) {
+                if (id.contains("input")) return "Wireless Energy Hatch (Input)";
+                if (id.contains("output")) return "Wireless Energy Hatch (Output)";
+                return "Wireless Energy Hatch";
+            }
+            if (id.contains("laser")) {
+                if (id.contains("target")) return "Wireless Laser Target Hatch";
+                if (id.contains("source")) return "Wireless Laser Source Hatch";
+                return "Wireless Laser Hatch";
+            }
+        }
+
+        // Substation hatches
+        if (id.contains("substation")) {
+            if (id.contains("input")) return "Substation Input Energy Hatch";
+            if (id.contains("output")) return "Substation Output Energy Hatch";
+        }
+
+        // Energy hatches (fallback por si el registry no los encuentra)
+        if (id.contains("energy")) {
+            String amperage = detectAmperage(id);
+            String prefix = amperage != null ? amperage + " " : "";
+
+            if (id.contains("output") || id.contains("dynamo")) {
+                return prefix + "Dynamo Hatch";
+            }
+            if (id.contains("input")) {
+                return prefix + "Energy Hatch";
+            }
+        }
+
+        if (id.contains("dynamo")) {
+            String amperage = detectAmperage(id);
+            return (amperage != null ? amperage + " " : "") + "Dynamo Hatch";
+        }
+
+        // Coils (no tienen PartAbility)
+        if (id.contains("coil")) return "Heating Coil";
+
+        // Casings (no tienen PartAbility)
+        if (id.contains("casing")) return "Casing";
+
+        return null;
+    }
+
+    // Helper method
+    private static String getBaseComponentType(String id) {
+        if (id.contains("energy") && id.contains("input")) return "Energy Hatch";
+        if (id.contains("energy") && id.contains("output")) return "Dynamo Hatch";
+        if (id.contains("dynamo")) return "Dynamo Hatch";
+        return "Component";
     }
 
 

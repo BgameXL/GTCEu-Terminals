@@ -154,65 +154,64 @@ public class MultiblockScanner {
     private static ComponentType parseComponentType(String category) {
         String lower = category.toLowerCase();
 
-        // Energy
-        if (lower.contains("energy") && lower.contains("hatch")) return ComponentType.ENERGY_HATCH;
-        if (lower.contains("dynamo")) return ComponentType.DYNAMO_HATCH;
-        if (lower.contains("substation") && lower.contains("input")) return ComponentType.SUBSTATION_INPUT_ENERGY;
-        if (lower.contains("substation") && lower.contains("output")) return ComponentType.SUBSTATION_OUTPUT_ENERGY;
-
-        // Input/Output Buses (Items)
-        if (lower.contains("input") && lower.contains("bus")) return ComponentType.INPUT_BUS;
-        if (lower.contains("output") && lower.contains("bus")) return ComponentType.OUTPUT_BUS;
-        if (lower.contains("steam") && lower.contains("input") && lower.contains("bus")) return ComponentType.STEAM_INPUT_BUS;
-        if (lower.contains("steam") && lower.contains("export") && lower.contains("bus")) return ComponentType.STEAM_OUTPUT_BUS;
-
-        // Input/Output Hatches (Fluids)
-        if (lower.contains("input") && lower.contains("hatch")) {
-            if (lower.contains("4x") || lower.contains("quad")) return ComponentType.QUAD_INPUT_HATCH;
-            if (lower.contains("9x") || lower.contains("nonuple")) return ComponentType.NONUPLE_INPUT_HATCH;
-            return ComponentType.INPUT_HATCH;
-        }
-        if (lower.contains("output") && lower.contains("hatch")) {
-            if (lower.contains("4x") || lower.contains("quad")) return ComponentType.QUAD_OUTPUT_HATCH;
-            if (lower.contains("9x") || lower.contains("nonuple")) return ComponentType.NONUPLE_OUTPUT_HATCH;
-            return ComponentType.OUTPUT_HATCH;
+        // WIRELESS COMPONENTS
+        if (lower.contains("wireless")) {
+            if (lower.contains("energy")) {
+                if (lower.contains("output")) {
+                    return ComponentType.WIRELESS_ENERGY_OUTPUT;
+                }
+                return ComponentType.WIRELESS_ENERGY_INPUT;
+            }
+            if (lower.contains("laser")) {
+                if (lower.contains("source") || lower.contains("output")) {
+                    return ComponentType.WIRELESS_LASER_OUTPUT;
+                }
+                return ComponentType.WIRELESS_LASER_INPUT;
+            }
         }
 
-        // Special Hatches
-        if (lower.contains("muffler")) return ComponentType.MUFFLER;
-        if (lower.contains("maintenance")) return ComponentType.MAINTENANCE;
-        if (lower.contains("rotor_holder") || lower.contains("rotor holder")) return ComponentType.ROTOR_HOLDER;
-        if (lower.contains("pump_fluid") || lower.contains("pump fluid")) return ComponentType.PUMP_FLUID_HATCH;
-        if (lower.contains("tank_valve") || lower.contains("tank valve")) return ComponentType.TANK_VALVE;
-        if (lower.contains("passthrough")) return ComponentType.PASSTHROUGH_HATCH;
-        if (lower.contains("parallel")) return ComponentType.PARALLEL_HATCH;
+        // SUBSTATION HATCHES
+        if (lower.contains("substation")) {
+            if (lower.contains("input") || lower.contains("input energy")) {
+                return ComponentType.SUBSTATION_INPUT_ENERGY;
+            }
+            if (lower.contains("output") || lower.contains("output energy")) {
+                return ComponentType.SUBSTATION_OUTPUT_ENERGY;
+            }
+        }
 
-        // Laser Hatches
-        if (lower.contains("input_laser") || (lower.contains("input") && lower.contains("laser"))) return ComponentType.INPUT_LASER;
-        if (lower.contains("output_laser") || (lower.contains("output") && lower.contains("laser"))) return ComponentType.OUTPUT_LASER;
+        // LASER HATCHES
+        if (lower.contains("laser")) {
+            if (lower.contains("input") || lower.contains("target")) {
+                return ComponentType.INPUT_LASER;
+            }
+            if (lower.contains("output") || lower.contains("source")) {
+                return ComponentType.OUTPUT_LASER;
+            }
+        }
 
-        // Data/Computation Hatches
-        if (lower.contains("computation") && lower.contains("reception")) return ComponentType.COMPUTATION_DATA_RECEPTION;
-        if (lower.contains("computation") && lower.contains("transmission")) return ComponentType.COMPUTATION_DATA_TRANSMISSION;
-        if (lower.contains("optical") && lower.contains("reception")) return ComponentType.OPTICAL_DATA_RECEPTION;
-        if (lower.contains("optical") && lower.contains("transmission")) return ComponentType.OPTICAL_DATA_TRANSMISSION;
-        if (lower.contains("data_access") || lower.contains("data access")) return ComponentType.DATA_ACCESS;
+        // DIRECT MAPPING by display name
+        // This works because ComponentType.getDisplayName() matches
+        // what UniversalMultiblockScanner returns
+        for (ComponentType type : ComponentType.values()) {
+            // Try exact match first
+            if (type.getDisplayName().equalsIgnoreCase(category)) {
+                return type;
+            }
 
-        // HPCA (High Performance Computing Array)
-        if (lower.contains("hpca")) return ComponentType.HPCA_COMPONENT;
-        if (lower.contains("object_holder") || lower.contains("object holder")) return ComponentType.OBJECT_HOLDER;
+            // Try with amperage removed
+            // "4A Energy Hatch" -> "Energy Hatch"
+            String categoryWithoutAmperage = category.replaceFirst("^\\d+A\\s+", "");
+            if (type.getDisplayName().equalsIgnoreCase(categoryWithoutAmperage)) {
+                return type;
+            }
+        }
 
-        // Steam
-        if (lower.contains("steam")) return ComponentType.STEAM;
-
-        // Coils
+        // ⭐ FALLBACK: Special cases
         if (lower.contains("coil")) return ComponentType.COIL;
-
-        // Casings
         if (lower.contains("casing")) return ComponentType.CASING;
 
-        // Default: Unknown
-        GTCEUTerminalMod.LOGGER.debug("Unknown component type: {}", category);
+        GTCEUTerminalMod.LOGGER.warn("Unknown component type: {}", category);
         return ComponentType.UNKNOWN;
     }
 

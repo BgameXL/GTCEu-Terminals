@@ -11,7 +11,6 @@ import com.gtceuterminal.common.data.SchematicData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -194,10 +193,7 @@ public class SchematicInterfaceBehavior {
 
         for (BlockPos pos : positions) {
             BlockState state = level.getBlockState(pos);
-
-            if (state.isAir()) {
-                continue;
-            }
+            if (state.isAir()) continue;
 
             BlockPos relativePos = pos.subtract(controllerPos);
             blocks.put(relativePos, state);
@@ -206,7 +202,8 @@ public class SchematicInterfaceBehavior {
             if (be != null) {
                 try {
                     CompoundTag tag = be.saveWithFullMetadata();
-                    blockEntities.put(relativePos, tag);
+                    CompoundTag cleanTag = cleanNBTForSchematic(tag);
+                    blockEntities.put(relativePos, cleanTag);
                 } catch (Exception e) {
                     GTCEUTerminalMod.LOGGER.error("Failed to save block entity at {}", pos, e);
                 }
@@ -235,6 +232,71 @@ public class SchematicInterfaceBehavior {
 
         GTCEUTerminalMod.LOGGER.info("Multiblock copied: {} blocks", blocks.size());
     }
+
+        private CompoundTag cleanNBTForSchematic(CompoundTag originalTag) {
+            if (originalTag == null || originalTag.isEmpty()) {
+                return new CompoundTag();
+            }
+
+            CompoundTag cleanTag = new CompoundTag();
+
+            // 1. BlockID
+            if (originalTag.contains("id")) {
+                cleanTag.putString("id", originalTag.getString("id"));
+            }
+
+            // 2. Covers
+            if (originalTag.contains("CoverContainer")) {
+                cleanTag.put("CoverContainer", originalTag.get("CoverContainer").copy());
+            }
+            if (originalTag.contains("Covers")) {
+                cleanTag.put("Covers", originalTag.get("Covers").copy());
+            }
+
+            // 3. Upgrades
+            if (originalTag.contains("Upgrades")) {
+                cleanTag.put("Upgrades", originalTag.get("Upgrades").copy());
+            }
+
+            // 4. Tier/Material
+            if (originalTag.contains("Tier")) {
+                cleanTag.putInt("Tier", originalTag.getInt("Tier"));
+            }
+            if (originalTag.contains("Material")) {
+                cleanTag.putString("Material", originalTag.getString("Material"));
+            }
+
+            // 5. Facing/Rotation
+            if (originalTag.contains("Facing")) {
+                cleanTag.putString("Facing", originalTag.getString("Facing"));
+            }
+            if (originalTag.contains("FrontFacing")) {
+                cleanTag.putString("FrontFacing", originalTag.getString("FrontFacing"));
+            }
+
+            // 6. User's Configuration (WorkingEnabled, AllowInputFromOutputSide, etc.)
+            if (originalTag.contains("WorkingEnabled")) {
+                cleanTag.putBoolean("WorkingEnabled", originalTag.getBoolean("WorkingEnabled"));
+            }
+            if (originalTag.contains("AllowInputFromOutputSide")) {
+                cleanTag.putBoolean("AllowInputFromOutputSide", originalTag.getBoolean("AllowInputFromOutputSide"));
+            }
+
+            // 7. Custom name
+            if (originalTag.contains("CustomName")) {
+                cleanTag.putString("CustomName", originalTag.getString("CustomName"));
+            }
+
+            // 8. Multiblock-specific data (part index, etc.)
+            if (originalTag.contains("PartIndex")) {
+                cleanTag.putInt("PartIndex", originalTag.getInt("PartIndex"));
+            }
+
+            GTCEUTerminalMod.LOGGER.debug("Cleaned NBT - Original keys: {}, Clean keys: {}",
+                    originalTag.getAllKeys().size(), cleanTag.getAllKeys().size());
+
+            return cleanTag;
+        }
 
     private Set<BlockPos> scanMultiblockArea(IMultiController controller, Level level) {
         Set<BlockPos> positions = new HashSet<>();

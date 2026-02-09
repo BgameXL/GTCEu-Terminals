@@ -16,7 +16,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-
 // Renders a schematic preview as ghost blocks in the world
 public class SchematicPreviewRenderer {
 

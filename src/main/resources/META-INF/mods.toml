@@ -7,7 +7,7 @@ issueTrackerURL="https://github.com/BgameXl/gtceu-terminal-addon/issues"
 modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
-authors="${mod_author}"
+authors="${mod_authors}"
 description='''${mod_description}'''
 logoFile="assets/gtceuterminal/logo/advanced_terminal_logo.png"
 
@@ -29,5 +29,12 @@ logoFile="assets/gtceuterminal/logo/advanced_terminal_logo.png"
     modId="gtceu"
     mandatory=true
     versionRange="[7.0.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="ae2"
+    mandatory=true
+    versionRange="[15.4.0,)"
     ordering="AFTER"
     side="BOTH"

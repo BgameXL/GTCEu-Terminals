@@ -13,9 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-
-  // Manages multiblock highlighting on client side (going to be removed)
-
+// Manages multiblock highlighting on client side (going to be removed)
 public class MultiblockHighlighter {
 
     private static final Map<BlockPos, HighlightInfo> activeHighlights = new HashMap<>();

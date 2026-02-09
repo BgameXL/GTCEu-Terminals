@@ -1,16 +1,13 @@
 package com.gtceuterminal.client.gui.widget;
 
 import com.gtceuterminal.common.material.MaterialAvailability;
-import com.gtceuterminal.common.multiblock.DismantleScanner;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.widget.DraggableScrollableWidgetGroup;
 import com.lowdragmc.lowdraglib.gui.widget.ImageWidget;
 import com.lowdragmc.lowdraglib.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -19,7 +16,6 @@ import java.util.List;
 public class LDLMaterialListWidget extends WidgetGroup {
 
     private final List<MaterialAvailability> materials;
-    private int hoveredIndex = -1;
 
     // GTCEu colors
     private static final int BG_COLOR = 0xFF2B2B2B;
@@ -33,7 +29,6 @@ public class LDLMaterialListWidget extends WidgetGroup {
 
     private static final int TEXT_WHITE = 0xFFFFFFFF;
     private static final int TEXT_GRAY = 0xFFAAAAAA;
-    private static final int ME_HIGHLIGHT = 0xFF00DD00;
 
     public LDLMaterialListWidget(int x, int y, int width, int height, List<MaterialAvailability> materials) {
         super(x, y, width, height);
@@ -48,7 +43,7 @@ public class LDLMaterialListWidget extends WidgetGroup {
         // Background panel
         setBackground(new ColorRectTexture(BG_COLOR));
 
-        // Borders using ImageWidget
+        // Borders
         addWidget(new ImageWidget(0, 0, getSize().width, 2,
                 new ColorRectTexture(BORDER_LIGHT)));
         addWidget(new ImageWidget(0, 0, 2, getSize().height,
@@ -80,8 +75,6 @@ public class LDLMaterialListWidget extends WidgetGroup {
 
     private WidgetGroup createMaterialEntry(MaterialAvailability mat, int index, int yPos) {
         WidgetGroup entry = new WidgetGroup(0, yPos, getSize().width - 20, 14);
-
-        // Background
         entry.setBackground(new ColorRectTexture(0x00000000));
 
         // Status indicator
@@ -93,8 +86,6 @@ public class LDLMaterialListWidget extends WidgetGroup {
 
         // Item name
         String itemName = mat.getItemName();
-        int maxNameWidth = getSize().width - 120;
-
         LabelWidget nameLabel = new LabelWidget(12, 3, itemName);
         nameLabel.setTextColor(TEXT_WHITE);
         entry.addWidget(nameLabel);
@@ -157,9 +148,9 @@ public class LDLMaterialListWidget extends WidgetGroup {
             tooltip.add(Component.literal("  §8Chests: 0"));
         }
 
-        // ME Network (highlighted)
+        // ME Network - MODIFICADO para mostrar "(pending verification)"
         if (mat.getInMENetwork() > 0) {
-            tooltip.add(Component.literal("  §a§lME Network: §f" + mat.getInMENetwork()));
+            tooltip.add(Component.literal("  §e§lME Network: §f" + mat.getInMENetwork() + " §8(pending verification)"));
         } else {
             tooltip.add(Component.literal("  §8ME Network: 0"));
         }
@@ -168,7 +159,12 @@ public class LDLMaterialListWidget extends WidgetGroup {
         tooltip.add(Component.empty());
         if (mat.hasEnough()) {
             tooltip.add(Component.literal("§a✓ Sufficient materials"));
-            tooltip.add(Component.literal("§7Primary source: §f" + mat.getPrimarySource()));
+            String primarySource = mat.getPrimarySource();
+            if (primarySource.equals("ME Network")) {
+                tooltip.add(Component.literal("§7Primary source: §e" + primarySource + " §8(will verify on confirm)"));
+            } else {
+                tooltip.add(Component.literal("§7Primary source: §f" + primarySource));
+            }
         } else {
             tooltip.add(Component.literal("§c✗ Missing " + mat.getMissing() + " items"));
         }

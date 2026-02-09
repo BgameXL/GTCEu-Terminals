@@ -16,7 +16,7 @@ public class GTCEUTerminalTabs {
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, GTCEUTerminalMod.MOD_ID);
 
     public static final RegistryObject<CreativeModeTab> GTCEU_TERMINAL_TAB = CREATIVE_MODE_TABS.register(
-            "gtceu_terminal",
+            "gtceuterminal",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.gtceuterminal"))
 

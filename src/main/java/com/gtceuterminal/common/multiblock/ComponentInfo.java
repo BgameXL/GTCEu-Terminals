@@ -14,22 +14,15 @@ public class ComponentInfo {
     private final BlockPos position;
     private final BlockState state;
     private final String blockName;
+    private final String amperage;
 
     public ComponentInfo(ComponentType type, int tier, BlockPos position, BlockState state) {
         this.type = type;
         this.tier = tier;
         this.position = position;
         this.state = state;
-        // Use registry ID for more specific identification
         this.blockName = state.getBlock().builtInRegistryHolder().key().location().getPath();
-    }
-
-    public ComponentInfo(ComponentType type, int tier, BlockPos position, ComponentType type1, int tier1, BlockPos position1, BlockState state, String blockName) {
-        this.type = type1;
-        this.tier = tier1;
-        this.position = position1;
-        this.state = state;
-        this.blockName = blockName;
+        this.amperage = detectAmperageFromBlockName(this.blockName);  // ← AGREGAR
     }
 
     public ComponentType getType() {
@@ -58,12 +51,14 @@ public class ComponentInfo {
      */
     private int getMaxTierForType() {
         if (type == ComponentType.COIL) {
-            // Coils tienen 8 tipos (0-7): Cupronickel hasta Tritanium
-            // Usar CoilConfig para obtener el máximo dinámicamente
             return 7;
         }
 
-        // Standard components use voltage tiers
+        if (type == ComponentType.MAINTENANCE) {
+            return 4;
+        }
+
+        // Standard components use voltage tiers (0-14)
         return GTValues.VN.length - 1;
     }
 
@@ -161,6 +156,43 @@ public class ComponentInfo {
     }
 
     public Object getPos() {
+        return position;
+    }
+
+    // Detect amperage from block name using common naming patterns
+    private static String detectAmperageFromBlockName(String blockName) {
+        if (blockName == null) return null;
+
+        String lower = blockName.toLowerCase();
+
+        // Energy hatches
+        if (lower.contains("_16a") || lower.endsWith("_16a")) return "16A";
+        if (lower.contains("_8a") || lower.endsWith("_8a")) return "8A";
+        if (lower.contains("_4a") || lower.endsWith("_4a")) return "4A";
+        if (lower.contains("_2a") || lower.endsWith("_2a")) return "2A";
+
+        // High amperage
+        if (lower.contains("_65536a_") || lower.contains("_65536a")) return "65536A";
+        if (lower.contains("_16384a_") || lower.contains("_16384a")) return "16384A";
+        if (lower.contains("_4096a_") || lower.contains("_4096a")) return "4096A";
+        if (lower.contains("_1024a_") || lower.contains("_1024a")) return "1024A";
+        if (lower.contains("_256a_") || lower.contains("_256a")) return "256A";
+        if (lower.contains("_64a_") || lower.contains("_64a")) return "64A";
+
+        // Substation
+        if (lower.contains("substation")) return "64A";
+
+        // Wireless GTMThings
+        if (lower.contains("wireless")) {
+            if (lower.contains("_16a") || lower.endsWith("_16a")) return "16A";
+            if (lower.contains("_8a") || lower.endsWith("_8a")) return "8A";
+            if (lower.contains("_4a") || lower.endsWith("_4a")) return "4A";
+            if (lower.contains("_2a") || lower.endsWith("_2a")) return "2A";
+        }
+
         return null;
+    }
+    public String getAmperage() {
+        return amperage;
     }
 }

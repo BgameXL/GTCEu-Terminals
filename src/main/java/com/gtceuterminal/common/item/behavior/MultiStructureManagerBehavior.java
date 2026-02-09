@@ -97,8 +97,8 @@ public class MultiStructureManagerBehavior {
                         ManagerSettingsUI.Settings settings = new ManagerSettingsUI.Settings(itemStack);
                         ManagerSettingsUI.AutoBuildSettings buildSettings = settings.toAutoBuildSettings();
 
-                        GTCEUTerminalMod.LOGGER.info("Auto-building with settings: RepeatCount={}, NoHatchMode={}, TierMode={}",
-                                buildSettings.repeatCount, buildSettings.noHatchMode, buildSettings.tierMode);
+                        // GTCEUTerminalMod.LOGGER.info("Auto-building with settings: RepeatCount={}, NoHatchMode={}, TierMode={}, IsUseAE{}",
+                                // buildSettings.repeatCount, buildSettings.noHatchMode, buildSettings.tierMode, buildSettings.isUseAE);
 
                         try {
                             // Use AdvancedAutoBuilder with settings support

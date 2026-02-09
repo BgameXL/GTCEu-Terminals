@@ -3,6 +3,7 @@ package com.gtceuterminal.common.multiblock;
 import com.gregtechceu.gtceu.api.machine.multiblock.MultiblockControllerMachine;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -65,10 +66,6 @@ public class DismantleExecutor {
         return true;
     }
 
-    /**
-     * Creates the ItemStack to be refunded for a specific position, attempting to preserve the BlockEntity's NBT (covers, upgrades, configs, etc.).
-     * Note: If a block has no associated item (asItem() == AIR), it cannot be refunded as a stack.
-     */
     private static ItemStack createRefundStack(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         if (state.isAir()) return ItemStack.EMPTY;
@@ -83,13 +80,58 @@ public class DismantleExecutor {
         BlockEntity be = level.getBlockEntity(pos);
         if (be != null) {
             try {
-                // This saves BlockEntityTag to the item which makes it return with NBT when placed
                 be.saveToItem(stack);
+
+                cleanNBTForStacking(stack);
             } catch (Throwable ignored) {}
         }
         return stack;
     }
 
+    private static void cleanNBTForStacking(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null) return;
+
+        CompoundTag blockEntityTag = tag.getCompound("BlockEntityTag");
+        if (blockEntityTag.isEmpty()) return;
+
+        CompoundTag cleanTag = new CompoundTag();
+
+        if (blockEntityTag.contains("CoverContainer")) {
+            cleanTag.put("CoverContainer", blockEntityTag.get("CoverContainer").copy());
+        }
+        if (blockEntityTag.contains("Covers")) {
+            cleanTag.put("Covers", blockEntityTag.get("Covers").copy());
+        }
+
+        if (blockEntityTag.contains("Upgrades")) {
+            cleanTag.put("Upgrades", blockEntityTag.get("Upgrades").copy());
+        }
+
+        if (blockEntityTag.contains("WorkingEnabled")) {
+            cleanTag.putBoolean("WorkingEnabled", blockEntityTag.getBoolean("WorkingEnabled"));
+        }
+
+        if (blockEntityTag.contains("Tier")) {
+            cleanTag.putInt("Tier", blockEntityTag.getInt("Tier"));
+        }
+        if (blockEntityTag.contains("Material")) {
+            cleanTag.putString("Material", blockEntityTag.getString("Material"));
+        }
+
+        if (blockEntityTag.contains("CustomName")) {
+            cleanTag.putString("CustomName", blockEntityTag.getString("CustomName"));
+        }
+
+        if (!cleanTag.isEmpty()) {
+            tag.put("BlockEntityTag", cleanTag);
+        } else {
+            tag.remove("BlockEntityTag");
+        }
+        if (tag.isEmpty()) {
+            stack.setTag(null);
+        }
+    }
 
     // Combines identical stacks (same item + same NBT) respecting maxStackSize.
     private static void mergeInto(List<ItemStack> out, ItemStack in) {

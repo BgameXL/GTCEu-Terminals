@@ -1,7 +1,12 @@
 package com.gtceuterminal.common.pattern;
 
+import appeng.api.networking.IGrid;
+
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.client.gui.multiblock.ManagerSettingsUI;
+import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
+import com.gtceuterminal.common.config.ComponentRegistry;
+import com.gtceuterminal.common.config.ComponentRegistry.ComponentCategory;
 
 import com.gregtechceu.gtceu.api.block.MetaMachineBlock;
 import com.gregtechceu.gtceu.api.machine.IMachineBlockEntity;
@@ -25,7 +30,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
@@ -34,7 +38,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.material.Fluid;
 
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
@@ -47,6 +57,8 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Advanced Auto-Builder for GTCEu Multiblocks (rebased on GTCEu BlockPattern.autoBuild)
@@ -90,10 +102,7 @@ public class AdvancedAutoBuilder {
         }
     }
 
-    /**
-     * Perform advanced auto-build with settings support.
-     * This is intentionally a near-copy of GTCEu's BlockPattern#autoBuild, with small hooks for your settings.
-     */
+    // Perform advanced auto-build with settings support.
     public static boolean autoBuild(
             @NotNull Player player,
             @NotNull IMultiController controller,
@@ -137,6 +146,13 @@ public class AdvancedAutoBuilder {
 
             int placedCount = 0;
 
+            IFluidHandler fluidStorage = null;
+            try {
+                fluidStorage = getMENetworkFluidStorage(player);
+            } catch (Exception e) {
+                GTCEUTerminalMod.LOGGER.debug("No ME Network fluid storage available for auto-build");
+            }
+
             // NOTE: In GTCEu, fingerLength/thumbLength/palmLength are fields.
             // We can derive them from the array.
             final int fingerLength = blockMatches.length;
@@ -147,7 +163,6 @@ public class AdvancedAutoBuilder {
             for (int c = 0, z = minZ++, r; c < fingerLength; c++) {
 
                 // Default GTCEu: r < aisleRepetitions[c][0] (minimum)
-                // Your setting: if repeatCount==0 => use min; else clamp to [min.max] when max exists
                 int repsForSlice = getRepetitionsForSlice(c, aisleRepetitions, settings.repeatCount);
 
                 for (r = 0; r < repsForSlice; r++) {
@@ -176,19 +191,80 @@ public class AdvancedAutoBuilder {
                                 List<ItemStack> candidates = new ArrayList<>();
                                 if (infos != null) {
                                     for (BlockInfo info : infos) {
-                                        if (info.getBlockState().getBlock() != Blocks.AIR) {
+                                        if (!info.getBlockState().isAir()) {
                                             candidates.add(info.getItemStackForm());
                                         }
                                     }
                                 }
 
-                                // Settings hook: filter out hatches/buses if requested
-                                if (settings.noHatchMode == 1) {
+                                candidates = enrichWithCustomComponents(candidates, predicate);
+
+
+                                if (settings.noHatchMode != 0) {
                                     candidates = filterOutMultiblockParts(candidates);
                                 }
 
-                                // Settings hook: coil tier selection
                                 candidates = applyCoilTierPreference(candidates, settings.tierMode);
+
+                                // ===== FLUID PLACEMENT SUPPORT =====
+                                // Check if this position requires a fluid block
+                                boolean isFluidBlock = false;
+                                Fluid targetFluid = null;
+
+                                for (ItemStack candidate : candidates) {
+                                    BlockState candidateState = null;
+
+                                    if (candidate.getItem() instanceof BlockItem bi) {
+                                        candidateState = bi.getBlock().defaultBlockState();
+                                    }
+
+                                    if (candidateState != null && candidateState.getFluidState().isSource()) {
+                                        isFluidBlock = true;
+                                        targetFluid = candidateState.getFluidState().getType();
+                                        break;
+                                    }
+                                }
+
+                                // If this is a fluid position, handle it specially
+                                if (isFluidBlock && targetFluid != null) {
+                                    boolean placed = false;
+
+                                    if (!player.isCreative()) {
+                                        // Get player's item handler for bucket checking
+                                        LazyOptional<IItemHandler> playerInvCap = player.getCapability(ForgeCapabilities.ITEM_HANDLER);
+                                        IItemHandler playerInventory = playerInvCap.resolve().orElse(null);
+
+                                        // Try to place fluid from inventory or ME Network
+                                        placed = FluidPlacementHelper.tryPlaceFluid(
+                                                world,
+                                                pos,
+                                                player,
+                                                targetFluid,
+                                                playerInventory,  // player inventory for buckets
+                                                fluidStorage      // ME Network fluid storage (defined earlier)
+                                        );
+                                    } else {
+                                        // Creative mode: just place it without consuming
+                                        placed = FluidPlacementHelper.tryPlaceFluid(
+                                                world,
+                                                pos,
+                                                player,
+                                                targetFluid,
+                                                null,
+                                                null
+                                        );
+                                    }
+
+                                    if (placed) {
+                                        placedByUs.add(pos);
+                                        placedCount++;
+                                        blocks.put(pos, world.getBlockState(pos));
+                                    }
+
+                                    // Skip normal block placement for fluid blocks
+                                    continue;
+                                }
+                                // ===== END FLUID PLACEMENT SUPPORT =====
 
                                 // Now place exactly like GTCEu
                                 ItemStack found = null;
@@ -197,7 +273,11 @@ public class AdvancedAutoBuilder {
 
                                 if (!player.isCreative()) {
                                     IntObjectPair<IItemHandler> foundHandler = getMatchStackWithHandler(
-                                            candidates, player.getCapability(ForgeCapabilities.ITEM_HANDLER));
+                                            candidates,
+                                            player.getCapability(ForgeCapabilities.ITEM_HANDLER),
+                                            player,
+                                            settings.isUseAE);
+
                                     if (foundHandler != null) {
                                         foundSlot = foundHandler.firstInt();
                                         handler = foundHandler.second();
@@ -266,8 +346,8 @@ public class AdvancedAutoBuilder {
                 }
             });
 
-            GTCEUTerminalMod.LOGGER.info("AdvancedAutoBuilder: placed {} blocks (repeatCount={}, noHatchMode={}, tierMode={})",
-                    placedCount, settings.repeatCount, settings.noHatchMode, settings.tierMode);
+            // GTCEUTerminalMod.LOGGER.info("AdvancedAutoBuilder: placed {} blocks (repeatCount={}, noHatchMode={}, tierMode={}, isUseAE={})",
+                    // placedCount, settings.repeatCount, settings.noHatchMode, settings.tierMode, settings.isUseAE);
 
             return placedCount > 0;
 
@@ -275,12 +355,13 @@ public class AdvancedAutoBuilder {
             GTCEUTerminalMod.LOGGER.error("AdvancedAutoBuilder failed", t);
             return false;
         }
+
+
     }
 
     // -------------------------------
     // Settings hooks
     // -------------------------------
-
     private static List<ItemStack> filterOutMultiblockParts(List<ItemStack> candidates) {
         if (candidates.isEmpty()) return candidates;
 
@@ -298,9 +379,7 @@ public class AdvancedAutoBuilder {
                             continue; // filtered out
                         }
                     }
-                } catch (Throwable ignored) {
-                    // If anything goes wrong, be conservative and keep it
-                }
+                } catch (Throwable ignored) {}
             }
             out.add(stack);
         }
@@ -335,10 +414,111 @@ public class AdvancedAutoBuilder {
         return filtered.isEmpty() ? candidates : filtered;
     }
 
+    private static List<ItemStack> enrichWithCustomComponents(
+            List<ItemStack> originalCandidates,
+            TraceabilityPredicate predicate) {
+
+        if (originalCandidates.isEmpty()) {
+            return originalCandidates;
+        }
+
+        // Detect component category based on the original candidates and predicate context
+        ComponentCategory category = detectComponentCategory(originalCandidates);
+
+        if (category == null) {
+            return originalCandidates;
+        }
+
+        // Get custom components for this category from the registry
+        List<ItemStack> customComponents = ComponentRegistry.getMatchingItemStacks(category);
+
+        if (customComponents.isEmpty()) {
+            return originalCandidates;
+        }
+
+        // Combine original candidates with custom components, avoiding duplicates
+        Set<String> existing = new HashSet<>();
+        List<ItemStack> enriched = new ArrayList<>(originalCandidates);
+
+        // Track existing candidates
+        for (ItemStack stack : originalCandidates) {
+            String id = ForgeRegistries.ITEMS.getKey(stack.getItem()).toString();
+            existing.add(id);
+        }
+
+        // Add custom components
+        for (ItemStack stack : customComponents) {
+            String id = ForgeRegistries.ITEMS.getKey(stack.getItem()).toString();
+            if (!existing.contains(id)) {
+                enriched.add(stack);
+                existing.add(id);
+            }
+        }
+
+        int added = enriched.size() - originalCandidates.size();
+        if (added > 0) {
+            GTCEUTerminalMod.LOGGER.debug("Enriched {} with {} custom components",
+                    category.getDisplayName(), added);
+        }
+
+        return enriched;
+    }
+
+
+    private static ComponentCategory detectComponentCategory(List<ItemStack> candidates) {
+        if (candidates.isEmpty()) return null;
+
+        for (ItemStack stack : candidates) {
+            if (stack.isEmpty()) continue;
+
+            Item item = stack.getItem();
+            if (!(item instanceof BlockItem blockItem)) continue;
+
+            Block block = blockItem.getBlock();
+            String blockId = ForgeRegistries.BLOCKS.getKey(block).toString().toLowerCase();
+
+            if (blockId.contains("energy") && blockId.contains("hatch")) {
+                return ComponentCategory.ENERGY_HATCH;
+            }
+            if (blockId.contains("fluid") && blockId.contains("hatch")) {
+                return ComponentCategory.FLUID_HATCH;
+            }
+            if (blockId.contains("item") && (blockId.contains("bus") || blockId.contains("hatch"))) {
+                return ComponentCategory.ITEM_HATCH;
+            }
+            if (blockId.contains("maintenance") && blockId.contains("hatch")) {
+                return ComponentCategory.MAINTENANCE_HATCH;
+            }
+            if (blockId.contains("muffler")) {
+                return ComponentCategory.MUFFLER_HATCH;
+            }
+            if (blockId.contains("laser") && blockId.contains("hatch")) {
+                return ComponentCategory.LASER_HATCH;
+            }
+            if (blockId.contains("rotor")) {
+                return ComponentCategory.ROTOR_HOLDER;
+            }
+            if (blockId.contains("coil")) {
+                return ComponentCategory.COIL;
+            }
+            if (blockId.contains("casing")) {
+                return ComponentCategory.CASING;
+            }
+
+            // Fallback: if it's a MetaMachineBlock that creates a MultiblockPartMachine, treat as OTHER (hatch/bus/etc.)
+            if (block instanceof MetaMachineBlock machineBlock) {
+                try {
+                    return ComponentCategory.OTHER;
+                } catch (Exception ignored) {}
+            }
+        }
+
+        return null;
+    }
+
     // -------------------------------
     // GTCEu autoBuild logic helpers
     // -------------------------------
-
     private static int getRepetitionsForSlice(int slice, int[][] aisleRepetitions, int repeatCount) {
         if (aisleRepetitions == null || slice < 0 || slice >= aisleRepetitions.length) return 1;
 
@@ -420,7 +600,6 @@ public class AdvancedAutoBuilder {
     // -------------------------------
     // Orientation
     // -------------------------------
-
     private static BlockPos setActualRelativeOffset(RelativeDirection[] structureDir,
                                                     int x, int y, int z,
                                                     Direction facing, Direction upwardsFacing,
@@ -510,7 +689,6 @@ public class AdvancedAutoBuilder {
     // -------------------------------
     // Facing reset
     // -------------------------------
-
     private static void resetFacing(BlockPos pos, BlockState blockState, Direction facing,
                                     BiPredicate<BlockPos, Direction> checker, Consumer<BlockState> consumer) {
         if (blockState.hasProperty(BlockStateProperties.FACING)) {
@@ -539,26 +717,102 @@ public class AdvancedAutoBuilder {
     // -------------------------------
     // Inventory matching
     // -------------------------------
-
     @Nullable
-    private static IntObjectPair<IItemHandler> getMatchStackWithHandler(List<ItemStack> candidates,
-                                                                        LazyOptional<IItemHandler> cap) {
+    private static IntObjectPair<IItemHandler> getMatchStackWithHandler(
+            List<ItemStack> candidates,
+            LazyOptional<IItemHandler> cap,
+            Player player,
+            int isUseAE) {
+
         IItemHandler handler = cap.resolve().orElse(null);
-        if (handler == null) return null;
+        if (handler == null) {
+            return null;
+        }
 
         for (int i = 0; i < handler.getSlots(); i++) {
-            @NotNull ItemStack stack = handler.getStackInSlot(i);
+            ItemStack stack = handler.getStackInSlot(i);
             if (stack.isEmpty()) continue;
 
-            @NotNull LazyOptional<IItemHandler> stackCap = stack.getCapability(ForgeCapabilities.ITEM_HANDLER);
-            if (stackCap.isPresent()) {
-                IntObjectPair<IItemHandler> rt = getMatchStackWithHandler(candidates, stackCap);
-                if (rt != null) return rt;
-            } else if (candidates.stream().anyMatch(candidate -> ItemStack.isSameItemSameTags(candidate, stack)) &&
-                    !stack.isEmpty() && stack.getItem() instanceof BlockItem) {
-                return IntObjectPair.of(i, handler);
+            // Check if this is a wireless terminal and AE2 is enabled
+            if (isUseAE == 1 &&
+                    stack.getItem() instanceof appeng.items.tools.powered.WirelessTerminalItem terminalItem &&
+                    stack.hasTag() &&
+                    stack.getTag().contains("accessPoint", 10)) {
+
+                try {
+                    IGrid grid = terminalItem.getLinkedGrid(stack, player.level(), player);
+                    if (grid != null) {
+                        var storage = grid.getStorageService().getInventory();
+
+                        // Try to extract each candidate from ME Network
+                        for (ItemStack candidate : candidates) {
+                            long extracted = storage.extract(
+                                    appeng.api.stacks.AEItemKey.of(candidate),
+                                    1,
+                                    appeng.api.config.Actionable.MODULATE,
+                                    null
+                            );
+
+                            if (extracted > 0) {
+                                // Create temporary handler with the extracted item
+                                net.minecraft.core.NonNullList<ItemStack> stacks =
+                                        net.minecraft.core.NonNullList.withSize(1, candidate.copy());
+                                net.minecraftforge.items.IItemHandler tempHandler =
+                                        new net.minecraftforge.items.ItemStackHandler(stacks);
+
+                                GTCEUTerminalMod.LOGGER.debug("Extracted {} from ME Network",
+                                        candidate.getItem().getDescription().getString());
+
+                                return it.unimi.dsi.fastutil.ints.IntObjectPair.of(0, tempHandler);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    GTCEUTerminalMod.LOGGER.error("Failed to extract from ME Network", e);
+                }
+            }
+
+            // Original logic: check if item matches candidates
+            if (candidates.stream().anyMatch(candidate ->
+                    ItemStack.isSameItemSameTags(candidate, stack)) &&
+                    !stack.isEmpty() &&
+                    stack.getItem() instanceof net.minecraft.world.item.BlockItem) {
+                return it.unimi.dsi.fastutil.ints.IntObjectPair.of(i, handler);
             }
         }
+
+        return null;
+    }
+    // -------------------------------
+    // ME Network Integration
+    // -------------------------------
+    @Nullable
+    private static IFluidHandler getMENetworkFluidStorage(@NotNull Player player) {
+        // This is a placeholder for ME Network integration
+
+        /* Example implementation:
+
+        try {
+            // Check if player has a wireless terminal
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack stack = player.getInventory().getItem(i);
+
+                if (stack.getItem() instanceof WirelessTerminalItem terminal) {
+                    IGridNode node = terminal.getGridNode(stack);
+                    if (node != null && node.isActive()) {
+                        IStorageService storage = node.getGrid().getService(IStorageService.class);
+                        return new MENetworkFluidHandlerWrapper(storage);
+                    }
+                }
+            }
+
+            // Also check for nearby terminals the player might be using
+
+        } catch (Exception e) {
+            GTCEUTerminalMod.LOGGER.error("Error accessing ME Network for fluid storage", e);
+        }
+
+        */
         return null;
     }
 
@@ -627,4 +881,99 @@ public class AdvancedAutoBuilder {
             }
         }
     }
-} // This is the second WORST file
+
+     // Pre-calculate all materials needed for construction.
+    private static Map<Item, Integer> preCalculateMaterials(
+            Player player,
+            IMultiController controller,
+            ManagerSettingsUI.AutoBuildSettings settings,
+            TraceabilityPredicate[][][] blockMatches,
+            int[][] aisleRepetitions,
+            RelativeDirection[] structureDir,
+            int[] centerOffset,
+            Object2IntOpenHashMap<SimplePredicate> cacheGlobal,
+            Object2IntOpenHashMap<SimplePredicate> cacheLayer,
+            Map<BlockPos, Object> blocks,
+            BlockPos centerPos,
+            Direction facing,
+            Direction upwardsFacing,
+            boolean isFlipped,
+            Level world
+    ) {
+        Map<Item, Integer> required = new HashMap<>();
+
+        int minZ = -centerOffset[4];
+        final int fingerLength = blockMatches.length;
+        final int thumbLength = fingerLength > 0 ? blockMatches[0].length : 0;
+        final int palmLength = (thumbLength > 0) ? blockMatches[0][0].length : 0;
+
+        // Simulate construction to count materials
+        for (int c = 0, z = minZ++, r; c < fingerLength; c++) {
+            int repsForSlice = getRepetitionsForSlice(c, aisleRepetitions, settings.repeatCount);
+
+            for (r = 0; r < repsForSlice; r++) {
+                for (int b = 0, y = -centerOffset[1]; b < thumbLength; b++, y++) {
+                    for (int a = 0, x = -centerOffset[0]; a < palmLength; a++, x++) {
+                        TraceabilityPredicate predicate = blockMatches[c][b][a];
+                        BlockPos pos = setActualRelativeOffset(structureDir, x, y, z, facing, upwardsFacing, isFlipped)
+                                .offset(centerPos.getX(), centerPos.getY(), centerPos.getZ());
+
+                        // Skip if position already has a block
+                        if (!world.isEmptyBlock(pos)) {
+                            continue;
+                        }
+
+                        // Get candidates for this position
+                        BlockInfo[] infos = pickInfosForPredicate(predicate, cacheGlobal, cacheLayer);
+                        List<ItemStack> candidates = new ArrayList<>();
+
+                        if (infos != null) {
+                            for (BlockInfo info : infos) {
+                                if (!info.getBlockState().isAir()) {
+                                    candidates.add(info.getItemStackForm());
+                                }
+                            }
+                        }
+
+                        candidates = enrichWithCustomComponents(candidates, predicate);
+
+                        // Apply filters
+                        if (settings.noHatchMode != 0) {
+                            candidates = filterOutMultiblockParts(candidates);
+                        }
+                        candidates = applyCoilTierPreference(candidates, settings.tierMode);
+
+                        // Check if it's a fluid block
+                        boolean isFluidBlock = false;
+                        for (ItemStack candidate : candidates) {
+                            if (candidate.getItem() instanceof BlockItem bi) {
+                                BlockState candidateState = bi.getBlock().defaultBlockState();
+                                if (candidateState.getFluidState().isSource()) {
+                                    isFluidBlock = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Skip fluid blocks (handled separately)
+                        if (isFluidBlock) {
+                            continue;
+                        }
+
+                        // Find first valid candidate
+                        for (ItemStack candidate : candidates) {
+                            if (!candidate.isEmpty() && candidate.getItem() instanceof BlockItem) {
+                                Item item = candidate.getItem();
+                                required.merge(item, 1, Integer::sum);
+                                break;
+                            }
+                        }
+                    }
+                }
+                z++;
+            }
+        }
+
+        return required;
+    }
+} // This is the second WORST file in the entire codebase, only beaten by ManagerSettingsUI.java. It's a mess of intertwined logic, but at least it's decently commented. Refactoring this would be a nightmare, so I'll just add comments and try to keep it as is.

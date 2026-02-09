@@ -6,16 +6,26 @@ public enum ComponentType {
     // ============================================
     // ENERGY
     // ============================================
-
     ENERGY_HATCH("Energy Hatch", "input_energy"),
     DYNAMO_HATCH("Dynamo Hatch", "output_energy"),
+
+    // ============================================
+    // WIRELESS (GTMThings)
+    // ============================================
+    WIRELESS_ENERGY_INPUT("Wireless Energy Input Hatch", "wireless_energy_input"),
+    WIRELESS_ENERGY_OUTPUT("Wireless Energy Output Hatch", "wireless_energy_output"),
+    WIRELESS_LASER_INPUT("Wireless Laser Target Hatch", "wireless_laser_input"),
+    WIRELESS_LASER_OUTPUT("Wireless Laser Source Hatch", "wireless_laser_output"),
+
+    // ============================================
+    // SUBSTATION
+    // ============================================
     SUBSTATION_INPUT_ENERGY("Substation Input Energy", "substation_input_energy"),
     SUBSTATION_OUTPUT_ENERGY("Substation Output Energy", "substation_output_energy"),
 
     // ============================================
     // BUSES (Item I/O)
     // ============================================
-
     INPUT_BUS("Input Bus", "import_items"),
     OUTPUT_BUS("Output Bus", "export_items"),
     STEAM_INPUT_BUS("Steam Input Bus", "steam_import_items"),
@@ -24,7 +34,6 @@ public enum ComponentType {
     // ============================================
     // HATCHES (Fluid I/O)
     // ============================================
-
     INPUT_HATCH("Input Hatch", "import_fluids"),
     OUTPUT_HATCH("Output Hatch", "export_fluids"),
 
@@ -43,7 +52,6 @@ public enum ComponentType {
     // ============================================
     // SPECIAL HATCHES
     // ============================================
-
     MUFFLER("Muffler Hatch", "muffler"),
     MAINTENANCE("Maintenance Hatch", "maintenance"),
     ROTOR_HOLDER("Rotor Holder", "rotor_holder"),
@@ -56,14 +64,12 @@ public enum ComponentType {
     // ============================================
     // LASER
     // ============================================
-
     INPUT_LASER("Input Laser Hatch", "input_laser"),
     OUTPUT_LASER("Output Laser Hatch", "output_laser"),
 
     // ============================================
     // DATA/COMPUTATION (Research Multiblocks)
     // ============================================
-
     COMPUTATION_DATA_RECEPTION("Computation Data Reception Hatch", "computation_data_reception"),
     COMPUTATION_DATA_TRANSMISSION("Computation Data Transmission Hatch", "computation_data_transmission"),
     OPTICAL_DATA_RECEPTION("Optical Data Reception Hatch", "optical_data_reception"),
@@ -73,7 +79,6 @@ public enum ComponentType {
     // ============================================
     // HPCA (High Performance Computing Array)
     // ============================================
-
     HPCA_COMPONENT("HPCA Component", "hpca_component"),
     OBJECT_HOLDER("Object Holder", "object_holder"),
 
@@ -83,10 +88,6 @@ public enum ComponentType {
 
     COIL("Heating Coil", "coil"),
     CASING("Casing", "casing"),
-
-    // ============================================
-    // ADDON SUPPORT (GTNH, TecTech, etc.)
-    // ============================================
 
     // This one is a VERY specific hatch
     MACHINE_HATCH("Machine Hatch", "machine_hatch"),
@@ -100,7 +101,6 @@ public enum ComponentType {
     // ============================================
     // FIELDS & METHODS
     // ============================================
-
     private final String displayName;
     private final String abilityId;
 
@@ -151,10 +151,14 @@ public enum ComponentType {
     public boolean isEnergyHandler() {
         return this == ENERGY_HATCH ||
                 this == DYNAMO_HATCH ||
+                this == WIRELESS_ENERGY_INPUT ||      // ⭐ NUEVO
+                this == WIRELESS_ENERGY_OUTPUT ||     // ⭐ NUEVO
                 this == SUBSTATION_INPUT_ENERGY ||
                 this == SUBSTATION_OUTPUT_ENERGY ||
                 this == INPUT_LASER ||
-                this == OUTPUT_LASER;
+                this == OUTPUT_LASER ||
+                this == WIRELESS_LASER_INPUT ||       // ⭐ NUEVO
+                this == WIRELESS_LASER_OUTPUT;        // ⭐ NUEVO
     }
 
     // Check if it is a data/computing component

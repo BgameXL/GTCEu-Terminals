@@ -2,8 +2,7 @@ package com.gtceuterminal.common.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
-
+import com.gregtechceu.gtceu.api.GTValues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+// Parallel Hatch configuration
 public class ParallelHatchConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParallelHatchConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -20,45 +20,51 @@ public class ParallelHatchConfig {
     private static final String CONFIG_DIR = "config/gtceuterminal";
     private static final String CONFIG_FILE = "parallel_hatches.json";
 
-    private static List<ParallelHatchEntry> parallelHatches = new ArrayList<>();
+    private static List<ParallelHatchEntry> allHatches = new ArrayList<>();
     private static boolean initialized = false;
 
     public static class ParallelHatchEntry {
-        public String blockId;           // "gtceu:iv_parallel_hatch"
-        public String displayName;       // "IV Parallel Hatch"
-        public String tierName;          // "IV"
-        public int tier;                 // 5
-        public int maxParallel;          // max parallel operations
+        public String blockId;
+        public String displayName;
+        public String tierName;
+        public int tier;
+        public String variant;       // "STANDARD" or "MK"
 
         public ParallelHatchEntry() {}
 
-        public ParallelHatchEntry(String blockId, String displayName, String tierName, int tier, int maxParallel) {
+        public ParallelHatchEntry(String blockId, String displayName, String tierName,
+                                  int tier, String variant) {
             this.blockId = blockId;
             this.displayName = displayName;
             this.tierName = tierName;
             this.tier = tier;
-            this.maxParallel = maxParallel;
+            this.variant = variant;
         }
+    }
 
-        @Override
-        public String toString() {
-            return String.format("ParallelHatchEntry{tier=%d (%s), maxParallel=%d, block=%s}",
-                    tier, tierName, maxParallel, blockId);
+    public static class ParallelHatchPattern {
+        public String blockIdPattern;
+        public String componentType;
+        public Integer minTier;
+        public Integer maxTier;
+
+        public ParallelHatchPattern() {}
+
+        public ParallelHatchPattern(String blockIdPattern, String componentType) {
+            this.blockIdPattern = blockIdPattern;
+            this.componentType = componentType;
         }
     }
 
     private static class ParallelHatchConfiguration {
-        public String version = "1.0";
+        public String version = "2.0";
         public String description = "GTCEu Terminal - Parallel Hatch Configuration";
-        public String note = "Parallel hatches enable parallel processing in multiblocks. Higher tiers = more parallels.";
-        public List<ParallelHatchEntry> parallelHatches = new ArrayList<>();
+        public List<ParallelHatchEntry> hatches = new ArrayList<>();
+        public List<ParallelHatchPattern> patterns = new ArrayList<>();
     }
 
     public static void initialize() {
-        if (initialized) {
-            LOGGER.debug("Parallel hatch config already initialized");
-            return;
-        }
+        if (initialized) return;
 
         LOGGER.info("Initializing parallel hatch configuration...");
 
@@ -67,53 +73,31 @@ public class ParallelHatchConfig {
         if (Files.exists(configPath)) {
             loadConfig(configPath);
         } else {
-            LOGGER.info("Parallel hatch config not found, creating default...");
+            LOGGER.info("Parallel hatch config not found, creating default with patterns...");
             createDefaultConfig(configPath);
             loadConfig(configPath);
         }
 
-        organizeHatches();
-        LOGGER.info("Parallel hatch configuration initialized: {} hatches", parallelHatches.size());
-
+        LOGGER.info("Parallel hatch configuration initialized: {} entries", allHatches.size());
         initialized = true;
     }
 
     private static void createDefaultConfig(Path configPath) {
         ParallelHatchConfiguration config = new ParallelHatchConfiguration();
 
-        config.parallelHatches.add(new ParallelHatchEntry(
-                "gtceu:iv_parallel_hatch",
-                "Elite Parallel Control Hatch",
-                "IV",
-                5,  // IV
-                4
-        ));
+        // Standard parallel hatches (all tiers)
+        config.patterns.add(new ParallelHatchPattern("gtceu:*_parallel_hatch", "PARALLEL_HATCH"));
 
-        config.parallelHatches.add(new ParallelHatchEntry(
-                "gtceu:luv_parallel_hatch",
-                "Master Parallel Control Hatch",
-                "LUV",
-                6,  // LUV
-                16
-        ));
+        // MK variant parallel hatches
+        config.patterns.add(new ParallelHatchPattern("gtceu:*_parallel_hatch_mk*", "PARALLEL_HATCH_MK"));
 
-        config.parallelHatches.add(new ParallelHatchEntry(
-                "gtceu:zpm_parallel_hatch",
-                "Ultimate Parallel Control Hatch",
-                "ZPM",
-                7,  // ZPM
-                64
-        ));
-
-        config.parallelHatches.add(new ParallelHatchEntry(
-                "gtceu:uv_parallel_hatch",
-                "Super Parallel Control Hatch",
-                "UV",
-                8,  // UV
-                256
-        ));
-
-        saveConfig(configPath, config);
+        try {
+            Files.createDirectories(configPath.getParent());
+            Files.writeString(configPath, GSON.toJson(config));
+            LOGGER.info("Created default parallel hatch config with patterns");
+        } catch (IOException e) {
+            LOGGER.error("Failed to create default config", e);
+        }
     }
 
     private static void loadConfig(Path configPath) {
@@ -121,53 +105,103 @@ public class ParallelHatchConfig {
             String json = Files.readString(configPath);
             ParallelHatchConfiguration config = GSON.fromJson(json, ParallelHatchConfiguration.class);
 
-            if (config != null && config.parallelHatches != null) {
-                parallelHatches.clear();
-                parallelHatches.addAll(config.parallelHatches);
+            allHatches.clear();
 
-                LOGGER.info("Loaded {} parallel hatches from config", config.parallelHatches.size());
+            if (config.patterns != null) {
+                for (ParallelHatchPattern pattern : config.patterns) {
+                    allHatches.addAll(expandPattern(pattern));
+                }
             }
-        } catch (IOException | JsonSyntaxException e) {
-            LOGGER.error("Failed to load parallel hatch config: {}", e.getMessage());
+
+            if (config.hatches != null) {
+                allHatches.addAll(config.hatches);
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("Failed to load config", e);
+            createHardcodedDefaults();
         }
     }
 
-    private static void saveConfig(Path configPath, ParallelHatchConfiguration config) {
-        try {
-            Files.createDirectories(configPath.getParent());
-            String json = GSON.toJson(config);
-            Files.writeString(configPath, json);
-            LOGGER.info("Saved parallel hatch config to {}", configPath);
-        } catch (IOException e) {
-            LOGGER.error("Failed to save parallel hatch config: {}", e.getMessage());
+    private static List<ParallelHatchEntry> expandPattern(ParallelHatchPattern pattern) {
+        List<ParallelHatchEntry> entries = new ArrayList<>();
+
+        String variant = pattern.componentType.contains("MK") ? "MK" : "STANDARD";
+
+        int minTier = pattern.minTier != null ? pattern.minTier : 0;
+        int maxTier = pattern.maxTier != null ? pattern.maxTier : GTValues.VN.length - 1;
+
+        for (int tier = minTier; tier <= maxTier && tier < GTValues.VN.length; tier++) {
+            String tierName = GTValues.VN[tier];
+            String tierLower = tierName.toLowerCase();
+
+            String blockId = pattern.blockIdPattern.replace("*", tierLower);
+            String displayName = generateDisplayName(tierName, pattern.componentType);
+
+            entries.add(new ParallelHatchEntry(blockId, displayName, tierName, tier, variant));
         }
+
+        return entries;
     }
 
-    private static void organizeHatches() {
-        parallelHatches.sort(Comparator.comparingInt(h -> h.tier));
+    private static String generateDisplayName(String tierName, String componentType) {
+        String baseName = componentType
+                .replace("_", " ")
+                .toLowerCase();
+        String readableType = capitalizeWords(baseName);
+
+
+        return tierName + " " + baseName;
     }
 
-    // Public API
+    private static void createHardcodedDefaults() {
+        allHatches.clear();
+        ParallelHatchPattern pattern = new ParallelHatchPattern("gtceu:*_parallel_hatch", "PARALLEL_HATCH");
+        allHatches.addAll(expandPattern(pattern));
+    }
+
+    public static List<ParallelHatchEntry> getAllHatches() {
+        if (!initialized) initialize();
+        return new ArrayList<>(allHatches);
+    }
+
+    public static ParallelHatchEntry getHatchForTier(int tier) {
+        if (!initialized) initialize();
+
+        return allHatches.stream()
+                .filter(h -> h.tier == tier)
+                .filter(h -> "STANDARD".equals(h.variant))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static void reload() {
+        LOGGER.info("Reloading parallel hatch configuration");
+        initialized = false;
+        initialize();
+    }
+
+    private static String capitalizeWords(String text) {
+        if (text == null || text.isEmpty()) return text;
+
+        String[] words = text.split(" ");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                result.append(Character.toUpperCase(word.charAt(0)));
+                if (word.length() > 1) {
+                    result.append(word.substring(1).toLowerCase());
+                }
+                result.append(" ");
+            }
+        }
+
+        return result.toString().trim();
+    }
+
     public static List<ParallelHatchEntry> getAllParallelHatches() {
-        return new ArrayList<>(parallelHatches);
+        return getAllHatches();
     }
 
-    public static ParallelHatchEntry getParallelHatchByBlock(String blockId) {
-        for (ParallelHatchEntry hatch : parallelHatches) {
-            if (hatch.blockId.equals(blockId)) return hatch;
-        }
-        return null;
-    }
-
-    public static ParallelHatchEntry getParallelHatchByTier(int tier) {
-        for (ParallelHatchEntry hatch : parallelHatches) {
-            if (hatch.tier == tier) return hatch;
-        }
-        return null;
-    }
-
-    public static int getMaxParallelForTier(int tier) {
-        ParallelHatchEntry hatch = getParallelHatchByTier(tier);
-        return hatch != null ? hatch.maxParallel : 1;
-    }
 }

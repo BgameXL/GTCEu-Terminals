@@ -70,6 +70,11 @@ public class MultiblockInfo {
         java.util.Map<String, ComponentGroup> groups = new java.util.HashMap<>();
 
         for (ComponentInfo comp : components) {
+            // Filter out non-upgradeable components, as they don't have meaningful tiers and would just clutter the UI.
+            if (!comp.getType().isUpgradeable()) {
+                continue;
+            }
+
             String blockName = comp.getBlockName();
             String key = ComponentGroup.getGroupKey(comp.getType(), comp.getTier(), blockName);
 

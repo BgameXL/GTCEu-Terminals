@@ -5,17 +5,11 @@ import com.gtceuterminal.common.config.*;
 import com.gtceuterminal.common.data.GTCEUTerminalItems;
 import com.gtceuterminal.common.data.GTCEUTerminalTabs;
 import com.gtceuterminal.common.network.TerminalNetwork;
-import com.gtceuterminal.client.gui.factory.MultiStructureUIFactory;
-import com.gtceuterminal.client.gui.factory.DismantlerUIFactory;
-
-import com.lowdragmc.lowdraglib.gui.factory.UIFactory;
 
 import com.mojang.logging.LogUtils;
 
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -23,11 +17,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
-import net.minecraft.world.SimpleMenuProvider;
-import net.minecraft.network.chat.Component;
-
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Mod(GTCEUTerminalMod.MOD_ID)
 public class GTCEUTerminalMod {
@@ -78,6 +68,16 @@ public class GTCEUTerminalMod {
             ParallelHatchConfig.initialize();
 
             MaintenanceHatchConfig.initialize();
+
+            ComponentRegistry.init();
+
+            LaserHatchConfig.initialize();
+
+            WirelessHatchConfig.initialize();
+
+            SubstationHatchConfig.initialize();
+
+            DualHatchConfig.initialize();
 
             LOGGER.info("All component configurations initialized successfully");
 

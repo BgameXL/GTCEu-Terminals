@@ -1,141 +1,178 @@
 plugins {
+    id 'java'
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.91'
 }
 
-version = project.findProperty("mod_version") ?: "0.0.0"
-group = "com.${mod_id}"
+version = mod_version
+group = maven_group
 
 base {
-    archivesName = "${mod_id}"
+    archivesName = archives_base_name
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-minecraft {
-    mappings channel: "${mapping_channel}", version: "${mapping_version}"
-
-    runs {
-        configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'forge.enabledGameTestNamespaces', mod_id
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        client {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        server {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
-        }
-
-        data {
-            workingDirectory project.file('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-        }
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    mavenLocal()
     mavenCentral()
-    maven {
-        name = 'MinecraftForge'
-        url = 'https://maven.minecraftforge.net/'
-    }
+
+    maven { url = 'https://maven.minecraftforge.net/' }
+
+    // Parchment mappings repository
+    maven { url = 'https://maven.parchmentmc.org' }
+
+    // JEI repository
+    maven { url = 'https://maven.blamejared.com' }
+
+    // GTCEu Maven
     maven {
         name = 'GTCEu Maven'
         url = 'https://maven.gtceu.com'
-        content { includeGroup 'com.gregtechceu.gtceu' }
     }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = "https://api.modrinth.com/maven"
-            }
-        }
-        forRepositories(fg.repository)
-        filter { includeGroup "maven.modrinth" }
-    }
+
+    // Registrate (dependencia de GTCEu)
     maven {
-        name = 'Modmaven'
-        url = 'https://modmaven.dev/'
+        url = 'https://maven.tterrag.com/'
+        content {
+            includeGroup('com.tterrag.registrate')
+        }
+    }
+
+    // FirstDarkDev - LDLib y Photon
+    maven {
+        name = 'FirstDarkDev'
+        url = 'https://maven.firstdarkdev.xyz/snapshots/'
+    }
+
+    // EMI
+    maven {
+        name = 'TerraformersMC'
+        url = 'https://maven.terraformersmc.com/'
+    }
+
+    // Modrinth maven
+    maven { url = "https://api.modrinth.com/maven" }
+
+    // CurseMaven
+    maven { url = "https://www.cursemaven.com" }
+}
+
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
+
+    parchment {
+        minecraftVersion = minecraft_version
+        mappingsVersion = mapping_version
+    }
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('run')
+        }
+        server {
+            server()
+            gameDirectory = project.file('run')
+        }
+        data {
+            data()
+            gameDirectory = project.file('run')
+            programArguments.addAll(
+                    '--mod', mod_id,
+                    '--all',
+                    '--output', file('src/generated/resources/').absolutePath,
+                    '--existing', file('src/main/resources/').absolutePath
+            )
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
     }
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    implementation fg.deobf("maven.modrinth:ldlib:mc1.20.1-1.0.40.b-forge")
+    // JetBrains Annotations
+    compileOnly'org.jetbrains:annotations:24.0.1'
 
-    implementation fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:7.4.1")
+    // Lombok
+    modRuntimeOnly'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
-    compileOnly fg.deobf("appeng:appliedenergistics2-forge:15.4.10")
+    // EMI
+    modRuntimeOnly"dev.emi:emi-forge:${emi_version}+${minecraft_version}"
+
+    // JEI
+    modRuntimeOnly"mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
+    modRuntimeOnly"mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    modRuntimeOnly"mezz.jei:jei-${minecraft_version}-forge:${jei_version}"
+
+    // GTCEu
+    modImplementation("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") {
+        transitive = false
+    }
+
+    //LDLib
+    modImplementation("com.lowdragmc.ldlib:ldlib-forge-${minecraft_version}:${ldlib_version}") {
+        transitive = false
+    }
+    modImplementation("com.tterrag.registrate:Registrate:${registrate_version}")
+
+    //Configuration
+    modImplementation("curse.maven:configuration-444699:4710266") {
+        transitive = false
+    }
+    modRuntimeOnly("curse.maven:jade-324717:6271651")
+
+    // AE2 and dependencies
+    modImplementation("curse.maven:applied-energistics-2-223794:7096071")
+    modRuntimeOnly("curse.maven:guideme-1173950:7127447")
+
+    //Compile
+    modRuntimeOnly("curse.maven:kubejs-238086:5853326")
+    modRuntimeOnly("curse.maven:architectury-api-419699:5137938")
+    modRuntimeOnly("curse.maven:rhino-416294:6186971")
+    modRuntimeOnly("curse.maven:gtmthings-1104310:6843500")
 
 }
 
-tasks.named('processResources', ProcessResources).configure {
-    var replaceProperties = [
-            minecraft_version: minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version,
-            forge_version_range: forge_version_range,
-            loader_version_range: loader_version_range,
-            mod_id: mod_id,
-            mod_name: mod_name,
-            mod_version: mod_version,
-            mod_author: mod_author,
-            mod_description: mod_description,
-    ]
-
-    inputs.properties replaceProperties
-
-    filesMatching(['META-INF/mods.toml']) {
-        expand replaceProperties + [project: project]
-    }
-}
-
-tasks.named('jar', Jar).configure {
-    manifest {
-        attributes([
-                'Specification-Title'     : mod_id,
-                'Specification-Vendor'    : mod_author,
-                'Specification-Version'   : '1',
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_author,
-        ])
-    }
-
-    finalizedBy 'reobfJar'
-}
-
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            artifact jar
-        }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/mcmodsrepo"
-        }
-    }
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+// Configuración unificada de processResources
+processResources {
+    def replaceProperties = [
+            minecraft_version: project.minecraft_version,
+            minecraft_version_range: project.minecraft_version_range,
+            forge_version: project.forge_version,
+            forge_version_range: project.forge_version_range,
+            loader_version_range: project.loader_version_range,
+            mod_id: project.mod_id,
+            mod_name: project.mod_name,
+            mod_license: project.mod_license,
+            mod_version: project.mod_version,
+            mod_authors: project.mod_authors,
+            mod_description: project.mod_description,
+    ]
+
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
 }

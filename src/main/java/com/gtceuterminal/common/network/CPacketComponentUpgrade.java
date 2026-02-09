@@ -22,18 +22,26 @@ public class CPacketComponentUpgrade {
 
     private List<BlockPos> positions = new ArrayList<>();
     private final int targetTier;
+    private final String targetUpgradeId; // optional (e.g. maintenance hatch variant)
 
     // Main constructor used by decode
-    public CPacketComponentUpgrade(List<BlockPos> positions, int targetTier) {
+    public CPacketComponentUpgrade(List<BlockPos> positions, int targetTier, String targetUpgradeId) {
         this.positions = positions;
         this.targetTier = targetTier;
+        this.targetUpgradeId = targetUpgradeId;
     }
 
     // Convenient constructor for a single component
-    public CPacketComponentUpgrade(BlockPos position, int targetTier, BlockPos controllerPos) {
+    public CPacketComponentUpgrade(BlockPos position, int targetTier, String targetUpgradeId, BlockPos controllerPos) {
         this.positions = new ArrayList<>();
         this.positions.add(position);  // IMPORTANTE: Agregar la posición
         this.targetTier = targetTier;
+        this.targetUpgradeId = targetUpgradeId;
+    }
+
+    // Backward compatible constructors (tier-only)
+    public CPacketComponentUpgrade(List<BlockPos> positions, int targetTier) {
+        this(positions, targetTier, null);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -42,6 +50,11 @@ public class CPacketComponentUpgrade {
             buf.writeBlockPos(pos);
         }
         buf.writeInt(targetTier);
+
+        // optional upgradeId
+        boolean hasId = targetUpgradeId != null && !targetUpgradeId.isBlank();
+        buf.writeBoolean(hasId);
+        if (hasId) buf.writeUtf(targetUpgradeId);
     }
 
     public static CPacketComponentUpgrade decode(FriendlyByteBuf buf) {
@@ -51,7 +64,15 @@ public class CPacketComponentUpgrade {
             positions.add(buf.readBlockPos());
         }
         int targetTier = buf.readInt();
-        return new CPacketComponentUpgrade(positions, targetTier);
+
+        String upgradeId = null;
+        // If older client/server mismatch happens, this may throw, but protocol is controlled by mod.
+        boolean hasId = buf.readBoolean();
+        if (hasId) {
+            upgradeId = buf.readUtf(32767);
+        }
+
+        return new CPacketComponentUpgrade(positions, targetTier, upgradeId);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
@@ -72,7 +93,8 @@ public class CPacketComponentUpgrade {
                 ComponentType type = detectComponentType(block);
                 int currentTier = detectTier(block);
 
-                if (type == null) {
+                boolean hasId = targetUpgradeId != null && !targetUpgradeId.isBlank();
+                if (type == null && !hasId) {
                     failed++;
                     continue;
                 }
@@ -83,6 +105,7 @@ public class CPacketComponentUpgrade {
                 ComponentUpgrader.UpgradeResult result = ComponentUpgrader.upgradeComponent(
                         component,
                         targetTier,
+                        targetUpgradeId,
                         player,
                         player.level(),
                         true,
@@ -141,6 +164,30 @@ public class CPacketComponentUpgrade {
     private ComponentType detectComponentType(net.minecraft.world.level.block.Block block) {
         String blockId = block.builtInRegistryHolder().key().location().toString().toLowerCase();
 
+        // WIRELESS COMPONENTS
+        if (blockId.contains("wireless")) {
+            if (blockId.contains("energy")) {
+                if (blockId.contains("input")) return ComponentType.WIRELESS_ENERGY_INPUT;
+                if (blockId.contains("output")) return ComponentType.WIRELESS_ENERGY_OUTPUT;
+            }
+            if (blockId.contains("laser")) {
+                if (blockId.contains("target") || blockId.contains("input")) return ComponentType.WIRELESS_LASER_INPUT;
+                if (blockId.contains("source") || blockId.contains("output")) return ComponentType.WIRELESS_LASER_OUTPUT;
+            }
+        }
+
+        // SUBSTATION HATCHES
+        if (blockId.contains("substation")) {
+            if (blockId.contains("input")) return ComponentType.SUBSTATION_INPUT_ENERGY;
+            if (blockId.contains("output")) return ComponentType.SUBSTATION_OUTPUT_ENERGY;
+        }
+
+        // LASER HATCHES
+        if (blockId.contains("laser")) {
+            if (blockId.contains("target") || blockId.contains("input")) return ComponentType.INPUT_LASER;
+            if (blockId.contains("source") || blockId.contains("output")) return ComponentType.OUTPUT_LASER;
+        }
+
         // Energy hatches
         if (blockId.contains("energy") && blockId.contains("input")) return ComponentType.ENERGY_HATCH;
         if (blockId.contains("dynamo")) return ComponentType.DYNAMO_HATCH;
@@ -150,10 +197,6 @@ public class CPacketComponentUpgrade {
         if (blockId.contains("coil")) return ComponentType.COIL;
 
         // Fluid hatches
-        if (blockId.contains("input_hatch") && !blockId.contains("quadruple") && !blockId.contains("nonuple"))
-            return ComponentType.INPUT_HATCH;
-        if (blockId.contains("output_hatch") && !blockId.contains("quadruple") && !blockId.contains("nonuple"))
-            return ComponentType.OUTPUT_HATCH;
         if (blockId.contains("quadruple") && blockId.contains("input"))
             return ComponentType.QUAD_INPUT_HATCH;
         if (blockId.contains("quadruple") && blockId.contains("output"))
@@ -163,15 +206,18 @@ public class CPacketComponentUpgrade {
         if (blockId.contains("nonuple") && blockId.contains("output"))
             return ComponentType.NONUPLE_OUTPUT_HATCH;
 
+        // General fluid hatches (after specific types)
+        if (blockId.contains("input_hatch")) return ComponentType.INPUT_HATCH;
+        if (blockId.contains("output_hatch")) return ComponentType.OUTPUT_HATCH;
+
         // Item buses
         if (blockId.contains("input_bus")) return ComponentType.INPUT_BUS;
         if (blockId.contains("output_bus")) return ComponentType.OUTPUT_BUS;
 
-        // Maintenance
+        // Special hatches
         if (blockId.contains("maintenance")) return ComponentType.MAINTENANCE;
-
-        // Muffler
         if (blockId.contains("muffler")) return ComponentType.MUFFLER;
+        if (blockId.contains("parallel")) return ComponentType.PARALLEL_HATCH;
 
         return null;
     }

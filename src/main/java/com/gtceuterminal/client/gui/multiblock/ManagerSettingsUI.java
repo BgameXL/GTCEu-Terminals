@@ -13,13 +13,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-
 // Manager Settings UI - Auto-Build Configuration
 public class ManagerSettingsUI {
 
     private static final int GUI_WIDTH = 200;
     // Smaller UI: removed Increase Radius option
-    private static final int GUI_HEIGHT = 110;
+    private static final int GUI_HEIGHT = 175;
 
     // GTCEu Colors
     private static final int COLOR_BG_DARK = 0xFF1A1A1A;
@@ -84,6 +83,7 @@ public class ManagerSettingsUI {
                 new ColorRectTexture(COLOR_BG_DARK),
                 cd -> toggleNoHatchMode(itemStack));
         hatchToggle.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
+        hatchLabel.setHoverTooltips(Component.literal("§7Build without hatches (Hatches will be ignored when placing blocks)"));
         panel.addWidget(hatchToggle);
 
         LabelWidget hatchValue = new LabelWidget(GUI_WIDTH - 54, yPos + 2,
@@ -107,6 +107,8 @@ public class ManagerSettingsUI {
         TextFieldWidget tierInput = new TextFieldWidget(GUI_WIDTH - 70, yPos - 2, 50, 16,
                 () -> String.valueOf(getTierMode(itemStack)),
                 value -> setTierMode(parseIntSafe(value, 1), itemStack));
+        tierInput.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
+        tierLabel.setHoverTooltips(Component.literal("§7Component tier to use (Example: 1 = LV, 2 = MV, etc.)"));
         tierInput.setNumbersOnly(1, 16);
         tierInput.setTextColor(COLOR_TEXT_WHITE);
         tierInput.setBackground(new ColorRectTexture(COLOR_BG_DARK));
@@ -118,13 +120,61 @@ public class ManagerSettingsUI {
         tierHint.setTextColor(0xFF666666);
         panel.addWidget(tierHint);
 
+        yPos += 30;
+
+        // ═══════════════════════════════════════════════════════════════
+        // 3. Repeat Count (Number of times to repeat the structure)
+        // ═══════════════════════════════════════════════════════════════
+        LabelWidget repeatLabel = new LabelWidget(8, yPos, "§7Repeat Count");
+        repeatLabel.setTextColor(COLOR_TEXT_GRAY);
+        panel.addWidget(repeatLabel);
+
+        TextFieldWidget repeatInput = new TextFieldWidget(GUI_WIDTH - 70, yPos - 2, 50, 16,
+                () -> String.valueOf(getRepeatCount(itemStack)),
+                value -> setRepeatCount(parseIntSafe(value, 0), itemStack));
+        repeatInput.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
+        repeatLabel.setHoverTooltips(Component.literal("§7Number of times to repeat the structure"));
+        repeatInput.setNumbersOnly(0, 32);
+        repeatInput.setTextColor(COLOR_TEXT_WHITE);
+        repeatInput.setBackground(new ColorRectTexture(COLOR_BG_DARK));
+        repeatInput.setWheelDur(1); // Scroll wheel support
+        panel.addWidget(repeatInput);
+
+        // Hint text
+        LabelWidget repeatHint = new LabelWidget(8, yPos + 14, "§8Repeatable layers (0-99)");
+        repeatHint.setTextColor(0xFF666666);
+        panel.addWidget(repeatHint);
+
+        yPos += 30;
+
+        // ═══════════════════════════════════════════════════════════════
+        // 4. Use AE2 (Wireless Terminal required for auto-importing materials from AE2)
+        // ═══════════════════════════════════════════════════════════════
+        LabelWidget aeLabel = new LabelWidget(8, yPos, "§7Use AE2");
+        panel.addWidget(aeLabel);
+
+        ButtonWidget aeToggle = new ButtonWidget(GUI_WIDTH - 70, yPos - 2, 50, 16,
+                new ColorRectTexture(COLOR_BG_DARK),
+                cd -> toggleIsUseAE(itemStack));
+        aeToggle.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
+        aeLabel.setHoverTooltips(Component.literal("§7Wireless Terminal is required"));
+        panel.addWidget(aeToggle);
+
+        LabelWidget aeValue = new LabelWidget(GUI_WIDTH - 54, yPos + 2,
+                () -> getIsUseAE(itemStack) == 1 ? "§aYes" : "§cNo");
+        panel.addWidget(aeValue);
+
+        // Hint text
+        LabelWidget aeHint = new LabelWidget(8, yPos + 14, "§8← Use AE2 for materials");
+        aeHint.setTextColor(0xFF666666);
+        panel.addWidget(aeHint);
+
         return panel;
     }
 
     // ═══════════════════════════════════════════════════════════════
     // NO HATCH MODE
     // ═══════════════════════════════════════════════════════════════
-
     private int getNoHatchMode(ItemStack itemStack) {
         CompoundTag tag = itemStack.getTag();
         if (tag != null && tag.contains("NoHatchMode")) {
@@ -144,7 +194,6 @@ public class ManagerSettingsUI {
     // ═══════════════════════════════════════════════════════════════
     // TIER MODE
     // ═══════════════════════════════════════════════════════════════
-
     private int getTierMode(ItemStack itemStack) {
         CompoundTag tag = itemStack.getTag();
         if (tag != null && tag.contains("TierMode")) {
@@ -161,9 +210,45 @@ public class ManagerSettingsUI {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // REPEAT COUNT
+    // ═══════════════════════════════════════════════════════════════
+    private int getRepeatCount(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getTag();
+        if (tag != null && tag.contains("RepeatCount")) {
+            return tag.getInt("RepeatCount");
+        }
+        return 0; // Default: 0 repeticiones
+    }
+
+    private void setRepeatCount(int count, ItemStack itemStack) {
+        CompoundTag tag = itemStack.getOrCreateTag();
+        tag.putInt("RepeatCount", Math.max(0, Math.min(99, count)));
+        itemStack.setTag(tag);
+        GTCEUTerminalMod.LOGGER.info("Repeat Count set to: {}", count);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // USE AE2
+    // ═══════════════════════════════════════════════════════════════
+    private int getIsUseAE(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getTag();
+        if (tag != null && tag.contains("IsUseAE")) {
+            return tag.getInt("IsUseAE");
+        }
+        return 0; // Default: No usar AE2
+    }
+
+    private void toggleIsUseAE(ItemStack itemStack) {
+        int current = getIsUseAE(itemStack);
+        CompoundTag tag = itemStack.getOrCreateTag();
+        tag.putInt("IsUseAE", current == 1 ? 0 : 1);
+        itemStack.setTag(tag);
+        GTCEUTerminalMod.LOGGER.info("Use AE2 toggled to: {}", current == 1 ? 0 : 1);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // UTILITY
     // ═══════════════════════════════════════════════════════════════
-
     private int parseIntSafe(String value, int defaultValue) {
         try {
             return Integer.parseInt(value);
@@ -172,38 +257,43 @@ public class ManagerSettingsUI {
         }
     }
 
-
     // Static helper class to read settings from item
     public static class Settings {
-        public final int noHatchMode;     // 0 = place hatches, 1 = don't place hatches
-        public final int tierMode;         // Component tier (1-16)
+        public final int noHatchMode;
+        public final int tierMode;
+        public final int repeatCount;
+        public final int isUseAE;
 
         public Settings(ItemStack itemStack) {
             CompoundTag tag = itemStack.getTag();
             if (tag != null) {
-                //  Store as int directly (0 or 1)
                 this.noHatchMode = tag.contains("NoHatchMode") ? tag.getInt("NoHatchMode") : 0;
                 this.tierMode = tag.contains("TierMode") ? tag.getInt("TierMode") : 1;
+                this.repeatCount = tag.contains("RepeatCount") ? tag.getInt("RepeatCount") : 0;
+                this.isUseAE = tag.contains("IsUseAE") ? tag.getInt("IsUseAE") : 0;
             } else {
-                this.noHatchMode = 0; // Default: 0 = place hatches
+                this.noHatchMode = 0;
                 this.tierMode = 1;
+                this.repeatCount = 0;
+                this.isUseAE = 0;
             }
         }
 
         public AutoBuildSettings toAutoBuildSettings() {
             AutoBuildSettings settings = new AutoBuildSettings();
-            settings.noHatchMode = this.noHatchMode; // Pass directly: 0 or 1
+            settings.noHatchMode = this.noHatchMode;
             settings.tierMode = this.tierMode;
-            settings.repeatCount = this.tierMode; // Use same value for repetitions
+            settings.repeatCount = this.repeatCount;
+            settings.isUseAE = this.isUseAE;
             return settings;
         }
     }
-
 
     // Auto-build settings for use when constructing multiblocks
     public static class AutoBuildSettings {
         public int repeatCount = 0;  // Number of repetitions (0 = use default)
         public int noHatchMode = 0;  // 0 = place hatches, 1 = don't place hatches
         public int tierMode = 1;     // Component tier to use
+        public int isUseAE = 0;
     }
 }

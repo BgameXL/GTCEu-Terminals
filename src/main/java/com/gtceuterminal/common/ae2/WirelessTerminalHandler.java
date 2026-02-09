@@ -20,6 +20,10 @@ import org.jetbrains.annotations.Nullable;
 public class WirelessTerminalHandler {
 
     private static final String TAG_ACCESS_POINT_POS = "accessPoint";
+    public static boolean isWirelessTerminal(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() instanceof appeng.items.tools.powered.WirelessTerminalItem;
+    }
+
 
     // Check if the item is linked to a Wireless Access Point
     public static boolean isLinked(ItemStack stack) {

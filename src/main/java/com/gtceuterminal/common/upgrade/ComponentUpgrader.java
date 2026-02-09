@@ -7,6 +7,11 @@ import com.gtceuterminal.common.material.MaterialCalculator;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
 import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.GTCEUTerminalMod;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
@@ -36,19 +41,47 @@ public class ComponentUpgrader {
     public static UpgradeResult upgradeComponent(
             ComponentInfo component,
             int targetTier,
+            String targetUpgradeId,
             Player player,
             Level level,
             boolean consumeMaterials,
             ItemStack wirelessTerminal
     ) {
+
+       /** boolean hasId = targetUpgradeId != null && !targetUpgradeId.isBlank();
+        if (hasId) {
+            ResourceLocation rl = ResourceLocation.tryParse(targetUpgradeId);
+            if (rl == null) return UpgradeResult.fail("Invalid upgrade id: " + targetUpgradeId);
+
+            Block targetBlock = BuiltInRegistries.BLOCK.get(rl);
+            if (targetBlock == Blocks.AIR) return UpgradeResult.fail("Unknown upgrade block: " + targetUpgradeId);
+
+        }**/
+
         boolean isCreative = player.isCreative();
         String extractionSource = "";
 
-        if (!isCreative && !ComponentUpgradeHelper.canUpgrade(component, targetTier)) {
-            return new UpgradeResult(false, "Cannot upgrade to tier " + targetTier);
+        // If a concrete target ID is provided, validate it and resolve required items by ID.
+        // Otherwise, fall back to the standard tier-based upgrade path.
+        if (targetUpgradeId != null && !targetUpgradeId.isBlank()) {
+            /**ResourceLocation rl = ResourceLocation.tryParse(targetUpgradeId);
+            if (rl == null) {
+                return new UpgradeResult(false, "Invalid upgrade id: " + targetUpgradeId);
+            }
+
+            Block targetBlock = BuiltInRegistries.BLOCK.get(rl);
+            if (targetBlock == Blocks.AIR) {
+                return new UpgradeResult(false, "Unknown upgrade block: " + targetUpgradeId);
+            } **/
+        } else {
+            if (!isCreative && !ComponentUpgradeHelper.canUpgrade(component, targetTier)) {
+                return new UpgradeResult(false, "Cannot upgrade to tier " + targetTier);
+            }
         }
 
-        Map<Item, Integer> required = ComponentUpgradeHelper.getUpgradeItems(component, targetTier);
+        Map<Item, Integer> required = (targetUpgradeId != null && !targetUpgradeId.isBlank())
+                ? ComponentUpgradeHelper.getUpgradeItemsForBlockId(targetUpgradeId)
+                : ComponentUpgradeHelper.getUpgradeItems(component, targetTier);
         if (required.isEmpty()) {
             return new UpgradeResult(false, "No upgrade item found for this component");
         }
@@ -119,8 +152,24 @@ public class ComponentUpgrader {
             oldStack = new ItemStack(oldItem, 1);
         }
 
-        Item upgradeItem = required.keySet().iterator().next();
-        Block newBlock = Block.byItem(upgradeItem);
+        Block newBlock;
+
+        boolean hasId = targetUpgradeId != null && !targetUpgradeId.isBlank();
+        if (hasId) {
+            ResourceLocation rl = ResourceLocation.tryParse(targetUpgradeId);
+            if (rl == null) {
+                // Refund materials if we failed due to invalid ID (in theory this shouldn't happen since we check upfront,
+                return new UpgradeResult(false, "Invalid upgrade id: " + targetUpgradeId);
+            }
+
+            newBlock = BuiltInRegistries.BLOCK.get(rl);
+            if (newBlock == Blocks.AIR) {
+                return new UpgradeResult(false, "Unknown upgrade block: " + targetUpgradeId);
+            }
+        } else {
+            Item upgradeItem = required.keySet().iterator().next();
+            newBlock = Block.byItem(upgradeItem);
+        }
 
         if (newBlock == null || newBlock == net.minecraft.world.level.block.Blocks.AIR) {
             if (consumeMaterials && oldStack != null) {
@@ -169,17 +218,32 @@ public class ComponentUpgrader {
             if (!player.getInventory().add(oldStack)) {
                 player.drop(oldStack, false);
             }
-            GTCEUTerminalMod.LOGGER.info("Returned old block {} to player", oldItem);
+            // GTCEUTerminalMod.LOGGER.info("Returned old block {} to player", oldItem);
         }
+
+        String targetLabel = (targetUpgradeId != null && !targetUpgradeId.isBlank())
+                ? targetUpgradeId
+                : com.gregtechceu.gtceu.api.GTValues.VN[targetTier];
 
         GTCEUTerminalMod.LOGGER.info("Upgraded {} at {} from {} to {} (Block: {} -> {}){}",
                 component.getType(), pos, component.getTierName(),
-                com.gregtechceu.gtceu.api.GTValues.VN[targetTier],
+                targetLabel,
                 oldBlock.getDescriptionId(), newBlock.getDescriptionId(),
                 extractionSource.replace("§a", "").replace("§7", ""));
 
-        return new UpgradeResult(true, "Successfully upgraded to " +
-                com.gregtechceu.gtceu.api.GTValues.VN[targetTier] + extractionSource);
+        return new UpgradeResult(true, "Successfully upgraded to " + targetLabel + extractionSource);
+    }
+
+    // Backward compatibility - upgrade without explicit upgrade ID
+    public static UpgradeResult upgradeComponent(
+            ComponentInfo component,
+            int targetTier,
+            Player player,
+            Level level,
+            boolean consumeMaterials,
+            ItemStack wirelessTerminal
+    ) {
+        return upgradeComponent(component, targetTier, null, player, level, consumeMaterials, wirelessTerminal);
     }
 
 
