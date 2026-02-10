@@ -38,6 +38,7 @@ public class SchematicPreviewWidget extends WidgetGroup {
     private float rotationX = 30.0F;
     private float rotationY = 45.0F;
     private float zoom = 1.0F;
+    private int rotSteps = 0;
 
     private boolean isDragging = false;
     private double lastMouseX = 0;
@@ -138,10 +139,25 @@ public class SchematicPreviewWidget extends WidgetGroup {
             return;
         }
 
+        // ===Logic Rotation===
+        Map<BlockPos, BlockState> rotatedBlocks = new HashMap<>();
+        Map<BlockPos, CompoundTag> rotatedBEs = new HashMap<>();
+
+        for (Map.Entry<BlockPos, BlockState> entry : schematic.getBlocks().entrySet()) {
+            BlockPos rp = rotatePositionSteps(entry.getKey(), rotSteps);
+            BlockState rs = rotateBlockStateSteps(entry.getValue(), rotSteps);
+            rotatedBlocks.put(rp, rs);
+        }
+
+        for (Map.Entry<BlockPos, CompoundTag> entry : schematic.getBlockEntities().entrySet()) {
+            BlockPos rp = rotatePositionSteps(entry.getKey(), rotSteps);
+            rotatedBEs.put(rp, entry.getValue().copy());
+        }
+
         int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
 
-        for (BlockPos pos : schematic.getBlocks().keySet()) {
+        for (BlockPos pos : rotatedBlocks.keySet()) {
             minX = Math.min(minX, pos.getX());
             minY = Math.min(minY, pos.getY());
             minZ = Math.min(minZ, pos.getZ());
@@ -156,7 +172,7 @@ public class SchematicPreviewWidget extends WidgetGroup {
         if (needsRebuild) {
             renderCache.clear();
 
-            List<Map.Entry<BlockPos, BlockState>> sorted = new ArrayList<>(schematic.getBlocks().entrySet());
+            List<Map.Entry<BlockPos, BlockState>> sorted = new ArrayList<>(rotatedBlocks.entrySet());
             sorted.sort((a, b) -> {
                 int cmp = Integer.compare(a.getKey().getY(), b.getKey().getY());
                 if (cmp != 0) return cmp;
@@ -173,12 +189,78 @@ public class SchematicPreviewWidget extends WidgetGroup {
 
             // Rebuild preview level for CTM + ModelData queries
             previewLevel = new PreviewLevel(
-                    new HashMap<>(schematic.getBlocks()),
-                    new HashMap<>(schematic.getBlockEntities())
+                    rotatedBlocks,
+                    rotatedBEs
             );
 
             needsRebuild = false;
         }
+    }
+
+    // Logic rotation helpers (GhostBlockRenderer)
+    private BlockPos rotatePositionSteps(BlockPos pos, int steps) {
+        BlockPos result = pos;
+        for (int i = 0; i < steps; i++) {
+            // (x, z) -> (-z, x)
+            result = new BlockPos(-result.getZ(), result.getY(), result.getX());
+        }
+        return result;
+    }
+
+    private BlockState rotateBlockStateSteps(BlockState state, int steps) {
+        BlockState result = state;
+        for (int i = 0; i < steps; i++) {
+            result = rotateBlockStateOnce(result);
+        }
+        return result;
+    }
+
+    private BlockState rotateBlockStateOnce(BlockState state) {
+        try {
+            // HORIZONTAL_FACING
+            if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
+                var facing = state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
+                if (facing.getAxis().isHorizontal()) {
+                    state = state.setValue(
+                            net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING,
+                            facing.getClockWise()
+                    );
+                }
+            }
+
+            // FACING
+            if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING)) {
+                var facing = state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING);
+                if (facing.getAxis().isHorizontal()) {
+                    state = state.setValue(
+                            net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING,
+                            facing.getClockWise()
+                    );
+                }
+            }
+
+            // AXIS: X <-> Z
+            if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS)) {
+                var axis = state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS);
+                if (axis == net.minecraft.core.Direction.Axis.X) {
+                    state = state.setValue(
+                            net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
+                            net.minecraft.core.Direction.Axis.Z
+                    );
+                } else if (axis == net.minecraft.core.Direction.Axis.Z) {
+                    state = state.setValue(
+                            net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
+                            net.minecraft.core.Direction.Axis.X
+                    );
+                }
+            }
+        } catch (Exception ignored) {}
+
+        return state;
+    }
+
+    public int getRotSteps() {
+        return rotSteps;
     }
 
     @Override
@@ -373,18 +455,31 @@ public class SchematicPreviewWidget extends WidgetGroup {
 
     @Override
     public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
-        if (isMouseOverElement(mouseX, mouseY)) {
+        if (!isMouseOverElement(mouseX, mouseY)) {
+            return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
+        }
+
+        // Ctrl + wheel = zoom
+        if (net.minecraft.client.gui.screens.Screen.hasControlDown()) {
             zoom += (float) wheelDelta * ZOOM_STEP;
             zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
             return true;
         }
-        return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
+
+        // Wheel = rotación lógica
+        int dir = wheelDelta > 0 ? 1 : -1;
+        rotSteps = (rotSteps + dir) & 3;
+
+        needsRebuild = true; // IMPORTANTÍSIMO: esto fuerza rotación real del cache
+        return true;
     }
 
     public void resetView() {
         rotationX = 30.0F;
         rotationY = 45.0F;
         zoom = 1.0F;
+        rotSteps = 0;
+        needsRebuild = true;
     }
 
     public float getRotationX() {

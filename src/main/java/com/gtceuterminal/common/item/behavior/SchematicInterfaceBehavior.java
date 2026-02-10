@@ -389,6 +389,17 @@ public class SchematicInterfaceBehavior {
         // Calculate rotation steps needed
         int rotationSteps = getRotationSteps(originalFacing, targetFacing);
 
+        int userRot = 0;
+        try {
+            CompoundTag clipTag = itemTag.getCompound("Clipboard");
+            if (clipTag.contains("UserRot")) {
+                userRot = clipTag.getInt("UserRot") & 3;
+            }
+        } catch (Exception ignored) {}
+
+        rotationSteps = (rotationSteps + userRot) & 3;
+
+
         GTCEUTerminalMod.LOGGER.info("Pasting schematic at {} - Original facing: {}, Player facing: {}, Rotation steps: {}",
                 targetPos, originalFacing, playerFacing, rotationSteps);
 
@@ -591,6 +602,19 @@ public class SchematicInterfaceBehavior {
                     );
                 }
             }
+
+            // AXIS: X <-> Z, for GhostBlock rotation (Will gonna implemented in the future)
+            if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS)) {
+                var axis = state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS);
+                if (axis == net.minecraft.core.Direction.Axis.X) {
+                    return state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
+                            net.minecraft.core.Direction.Axis.Z);
+                } else if (axis == net.minecraft.core.Direction.Axis.Z) {
+                    return state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
+                            net.minecraft.core.Direction.Axis.X);
+                }
+            }
+
         } catch (Exception ignored) {
         }
 
