@@ -13,6 +13,7 @@ import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.*;
 import com.lowdragmc.lowdraglib.utils.Size;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
@@ -21,8 +22,8 @@ import java.util.List;
 // Multi-Structure Manager UI
 public class MultiStructureManagerUI {
 
-    private static final int GUI_WIDTH = 320;
-    private static final int GUI_HEIGHT = 240;
+    private static final int dialogW = 320;
+    private static final int dialogH = 240;
     private static final int SCAN_RADIUS = 32;
 
     private static final int COLOR_BG_DARK = 0xFF1A1A1A;
@@ -57,15 +58,23 @@ public class MultiStructureManagerUI {
     }
 
     public ModularUI createUI() {
-        WidgetGroup mainGroup = new WidgetGroup(0, 0, GUI_WIDTH, GUI_HEIGHT);
+        WidgetGroup mainGroup = new WidgetGroup(0, 0, dialogW, dialogH);
         mainGroup.setBackground(new ColorRectTexture(COLOR_BG_DARK));
+
+        int sw = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        int sh = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        int margin = 8;
+
+        int uiW = Math.min(dialogW, sw - margin * 2);
+        int uiH = Math.min(dialogH, sh - margin * 2);
+
 
         mainGroup.addWidget(createMainPanel());
         mainGroup.addWidget(createHeader());
         mainGroup.addWidget(createMultiblockList());
         mainGroup.addWidget(createRefreshButton());
 
-        this.gui = new ModularUI(new Size(GUI_WIDTH, GUI_HEIGHT), holder, player);
+        this.gui = new ModularUI(new Size(dialogW, dialogH), holder, player);
         gui.widget(mainGroup);
         gui.background(new ColorRectTexture(0x90000000));
 
@@ -73,22 +82,22 @@ public class MultiStructureManagerUI {
     }
 
     private WidgetGroup createMainPanel() {
-        WidgetGroup panel = new WidgetGroup(0, 0, GUI_WIDTH, GUI_HEIGHT);
+        WidgetGroup panel = new WidgetGroup(0, 0, dialogW, dialogH);
 
-        panel.addWidget(new ImageWidget(0, 0, GUI_WIDTH, 2,
+        panel.addWidget(new ImageWidget(0, 0, dialogW, 2,
                 new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        panel.addWidget(new ImageWidget(0, 0, 2, GUI_HEIGHT,
+        panel.addWidget(new ImageWidget(0, 0, 2, dialogH,
                 new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        panel.addWidget(new ImageWidget(GUI_WIDTH - 2, 0, 2, GUI_HEIGHT,
+        panel.addWidget(new ImageWidget(dialogW - 2, 0, 2, dialogH,
                 new ColorRectTexture(COLOR_BORDER_DARK)));
-        panel.addWidget(new ImageWidget(0, GUI_HEIGHT - 2, GUI_WIDTH, 2,
+        panel.addWidget(new ImageWidget(0, dialogH - 2, dialogW, 2,
                 new ColorRectTexture(COLOR_BORDER_DARK)));
 
         return panel;
     }
 
     private WidgetGroup createHeader() {
-        WidgetGroup header = new WidgetGroup(2, 2, GUI_WIDTH - 4, 28);
+        WidgetGroup header = new WidgetGroup(2, 2, dialogW - 4, 28);
         header.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         String title = "Nearby Multiblocks (" + multiblocks.size() + ")";
@@ -100,7 +109,7 @@ public class MultiStructureManagerUI {
     }
 
     private WidgetGroup createMultiblockList() {
-        WidgetGroup listGroup = new WidgetGroup(10, 35, GUI_WIDTH - 20, 180);
+        WidgetGroup listGroup = new WidgetGroup(10, 35, dialogW - 20, 180);
 
         listGroup.setBackground(new GuiTextureGroup(
                 new ColorRectTexture(COLOR_BG_DARK),
@@ -108,7 +117,7 @@ public class MultiStructureManagerUI {
         ));
 
         DraggableScrollableWidgetGroup scrollWidget = new DraggableScrollableWidgetGroup(
-                2, 2, GUI_WIDTH - 30, 176
+                2, 2, dialogW - 30, 176
         );
         this.multiblockScroll = scrollWidget;
         scrollWidget.setYScrollBarWidth(8);
@@ -130,11 +139,11 @@ public class MultiStructureManagerUI {
     }
 
     private WidgetGroup createMultiblockEntry(MultiblockInfo mb, int index, int yPos) {
-        WidgetGroup entry = new WidgetGroup(0, yPos, GUI_WIDTH - 40, 20);
+        WidgetGroup entry = new WidgetGroup(0, yPos, dialogW - 40, 20);
 
         boolean isSelected = (index == selectedIndex);
 
-        ButtonWidget clickBtn = new ButtonWidget(0, 0, GUI_WIDTH - 40, 20,
+        ButtonWidget clickBtn = new ButtonWidget(0, 0, dialogW - 40, 20,
                 new ColorRectTexture(isSelected ? COLOR_HOVER : 0x00000000),
                 cd -> {
                     selectedIndex = index;
@@ -156,7 +165,7 @@ public class MultiStructureManagerUI {
         entry.addWidget(distLabel);
 
         int statusColor = mb.getStatus().getColor();
-        entry.addWidget(new ImageWidget(GUI_WIDTH - 70, 6, 8, 8,
+        entry.addWidget(new ImageWidget(dialogW - 70, 6, 8, 8,
                 new ColorRectTexture(statusColor)));
 
         return entry;
@@ -165,7 +174,7 @@ public class MultiStructureManagerUI {
     // Refresh Button
     private ButtonWidget createRefreshButton() {
         ButtonWidget refreshBtn = new ButtonWidget(
-                GUI_WIDTH - 38, 5, 28, 22,
+                dialogW - 38, 5, 28, 22,
                 new GuiTextureGroup(
                         new ColorRectTexture(COLOR_BG_MEDIUM),
                         new ColorBorderTexture(1, COLOR_BORDER_LIGHT)
@@ -196,18 +205,17 @@ public class MultiStructureManagerUI {
             multiblockScroll.setActive(false);
         }
 
-        com.gtceuterminal.client.gui.dialog.ComponentDetailDialog detailDialog =
-                new com.gtceuterminal.client.gui.dialog.ComponentDetailDialog(
-                        (WidgetGroup) gui.mainGroup,
-                        player,
-                        multiblock,
-                        () -> {
-                            // Re-enable list when the dialog closes
-                            if (multiblockScroll != null) {
-                                multiblockScroll.setActive(true);
-                            }
-                        }
-                );
+        new com.gtceuterminal.client.gui.dialog.ComponentDetailDialog(
+                gui.mainGroup,
+                player,
+                multiblock,
+                () -> {
+                    // Re-enable list when the dialog closes
+                    if (multiblockScroll != null) {
+                        multiblockScroll.setActive(true);
+                    }
+                }
+        );
     }
 
     private void refreshUI() {

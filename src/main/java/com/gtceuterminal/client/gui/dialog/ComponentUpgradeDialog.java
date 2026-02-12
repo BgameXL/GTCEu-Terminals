@@ -26,6 +26,9 @@ import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.*;
+import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib.utils.Size;
+import com.lowdragmc.lowdraglib.utils.Position;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -33,6 +36,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.util.Mth;
+import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -44,9 +49,9 @@ import java.util.Objects;
 // Upgrade Dialog for Components
 public class ComponentUpgradeDialog extends DialogWidget {
 
-    private static final int DIALOG_WIDTH = 400;
-    private static final int DIALOG_HEIGHT = 350;
-    private static final int DIALOG_SPACING = 10;
+    private static final int dialogW = 400;
+    private static final int dialogH = 350;
+    private static final int dialogS = 10;
 
     private static final int COLOR_BG_DARK = 0xFF1A1A1A;
     private static final int COLOR_BG_MEDIUM = 0xFF2B2B2B;
@@ -58,10 +63,10 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private static final int COLOR_SUCCESS = 0xFF00FF00;
     private static final int COLOR_ERROR = 0xFFFF0000;
 
-    private final ComponentDetailDialog parentDialog;
     private final ComponentGroup group;
     private final MultiblockInfo multiblock;
     private final Player player;
+    private final DialogWidget parentDialog;
     private UniversalUpgradeCatalog universalCatalog;
 
     private Integer tierFilter = null; // null = ALL
@@ -80,14 +85,15 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private WidgetGroup materialsPanel;
     private ButtonWidget confirmButton;
 
-    public ComponentUpgradeDialog(WidgetGroup parent,
-                                  ComponentDetailUI parentUI,
-                                  ComponentDetailDialog parentDialog,
-                                  ComponentGroup group,
-                                  MultiblockInfo multiblock,
-                                  Player player) {
+    public ComponentUpgradeDialog(
+            WidgetGroup parent,
+            ComponentDetailUI parentUI,
+            DialogWidget parentDialog, // <- type base
+            ComponentGroup group,
+            MultiblockInfo multiblock,
+            Player player
+    ) {
         super(parent, true);
-
         this.parentDialog = parentDialog;
         this.group = group;
         this.multiblock = multiblock;
@@ -96,24 +102,63 @@ public class ComponentUpgradeDialog extends DialogWidget {
         initDialog();
     }
 
+    private int getGuiW(){
+        try {
+            return Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        } catch (Throwable t) {
+            return parent.getSize().width;
+        }
+    }
+
+    private int getGuiH(){
+        try {
+            return Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        } catch (Throwable t) {
+            return parent.getSize().height;
+        }
+    }
+
     private void initDialog() {
-        int detailDialogWidth = 400;
-        int totalWidth = DIALOG_WIDTH + DIALOG_SPACING + detailDialogWidth;
+        // Obtain screen dimensions
+        var mc = Minecraft.getInstance();
+        int sw = mc.screen != null ? mc.screen.width : mc.getWindow().getGuiScaledWidth();
+        int sh = mc.screen != null ? mc.screen.height : mc.getWindow().getGuiScaledHeight();
 
-        int centerX = (parent.getSize().width - totalWidth) / 2;
-        int leftX = centerX;
-        int centerY = (parent.getSize().height - DIALOG_HEIGHT) / 2;
+        int margin = 10;
 
-        setSize(new com.lowdragmc.lowdraglib.utils.Size(DIALOG_WIDTH, DIALOG_HEIGHT));
-        setSelfPosition(new com.lowdragmc.lowdraglib.utils.Position(leftX, centerY));
+        int w = dialogW;
+        int h = dialogH;
+
+        // Adjust size if screen is too small
+        int maxW = sw - margin * 2;
+        int maxH = sh - margin * 2;
+        if (w > maxW) w = maxW;
+        if (h > maxH) h = maxH;
+
+        setSize(new Size(w, h));
+
+        // Dialog centered on screen
+        int screenX = (sw - w) / 2;
+        int screenY = (sh - h) / 2;
+
+        // Clamp
+        screenX = Mth.clamp(screenX, margin, sw - w - margin);
+        screenY = Mth.clamp(screenY, margin, sh - h - margin);
+
+        // Convert screen coordinates to parent-relative coordinates
+        Position parentAbsPos = parent.getPosition();
+        int x = screenX - parentAbsPos.x;
+        int y = screenY - parentAbsPos.y;
+
+        setSelfPosition(new Position(x, y));
 
         setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
         // Borders
-        addWidget(new ImageWidget(0, 0, DIALOG_WIDTH, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(0, 0, 2, DIALOG_HEIGHT, new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(DIALOG_WIDTH - 2, 0, 2, DIALOG_HEIGHT, new ColorRectTexture(COLOR_BORDER_DARK)));
-        addWidget(new ImageWidget(0, DIALOG_HEIGHT - 2, DIALOG_WIDTH, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
+        addWidget(new ImageWidget(0, 0, w, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+        addWidget(new ImageWidget(0, 0, 2, h, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+        addWidget(new ImageWidget(w - 2, 0, 2, h, new ColorRectTexture(COLOR_BORDER_DARK)));
+        addWidget(new ImageWidget(0, h - 2, w, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
 
         addWidget(createHeader());
         addWidget(createInfoPanel());
@@ -133,7 +178,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createHeader() {
-        WidgetGroup header = new WidgetGroup(2, 2, DIALOG_WIDTH - 4, 24);
+        WidgetGroup header = new WidgetGroup(2, 2, dialogW - 4, 24);
         header.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         String title = "§l§fUpgrade " + group.getType().name().replace("_", " ");
@@ -145,7 +190,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createInfoPanel() {
-        WidgetGroup panel = new WidgetGroup(10, 30, DIALOG_WIDTH - 20, 36);
+        WidgetGroup panel = new WidgetGroup(10, 30, dialogW - 20, 36);
         panel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         ComponentInfo rep = group.getRepresentative();
@@ -166,7 +211,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
     // Tier selection / Option selection
     private WidgetGroup createTierSelection() {
-        WidgetGroup panel = new WidgetGroup(10, 70, DIALOG_WIDTH - 20, 75);
+        WidgetGroup panel = new WidgetGroup(10, 70, dialogW - 20, 75);
         panel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         ComponentInfo rep = group.getRepresentative();
@@ -187,7 +232,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
         // Scroll area
         DraggableScrollableWidgetGroup scroll = new DraggableScrollableWidgetGroup(
-                10, 18, (DIALOG_WIDTH - 20) - 20, 55
+                10, 18, (dialogW - 20) - 20, 55
         );
         panel.addWidget(scroll);
         this.optionsScroll = scroll;
@@ -205,9 +250,9 @@ public class ComponentUpgradeDialog extends DialogWidget {
             return panel;
         }
 
-        // --- Default: universal candidates grid (por blockId real) ---
+        // --- Default: universal candidates grid ---
         if (!buildUniversalCandidatesGrid(rep, scroll, tierFilter)){
-            // fallback al sistema viejo si no se pudo
+            // fallback
             List<Integer> tiers = ComponentUpgradeHelper.getAvailableTiers(rep.getType());
             buildTierGrid(rep, scroll, tiers);
         }
@@ -479,7 +524,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createButtons() {
-        WidgetGroup buttons = new WidgetGroup(10, DIALOG_HEIGHT - 35, DIALOG_WIDTH - 20, 25);
+        WidgetGroup buttons = new WidgetGroup(10, dialogH - 35, dialogW - 20, 25);
 
         confirmButton = new ButtonWidget(
                 0, 0, 140, 22,
@@ -499,7 +544,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
         ));
 
         ButtonWidget cancel = new ButtonWidget(
-                DIALOG_WIDTH - 20 - 140, 0, 140, 22,
+                dialogW - 20 - 140, 0, 140, 22,
                 new GuiTextureGroup(
                         new ColorRectTexture(COLOR_BG_LIGHT),
                         new ColorBorderTexture(1, COLOR_BORDER_LIGHT)
@@ -607,7 +652,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
         // 1) rebuild options list (universal o fallback) with current filter
         if (!buildUniversalCandidatesGrid(currentRep, optionsScroll, tierFilter)) {
-            // Old falback
+            // Old fallback
             List<Integer> tiers = ComponentUpgradeHelper.getAvailableTiers(currentRep.getType());
             buildTierGrid(currentRep, optionsScroll, tiers);
         }
@@ -654,7 +699,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
         this.selectedUpgradeId = upgradeId;
         this.selectedTier = tier; // keep tier for validation/materials
 
-        refreshTierSelectionPanel();
+        // refreshTierSelectionPanel();
         calculateMaterials();
         refreshMaterialsPanel();
 
@@ -693,7 +738,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createMaterialsPanel() {
-        WidgetGroup panel = new WidgetGroup(10, 149, DIALOG_WIDTH - 20, 156);
+        WidgetGroup panel = new WidgetGroup(10, 149, dialogW - 20, 156);
 
         LabelWidget label = new LabelWidget(5, 4, "§l§7Required Materials:");
         label.setTextColor(COLOR_TEXT_WHITE);
@@ -725,7 +770,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private void refreshMaterialsPanel() {
         waitToRemoved.add(materialsPanel);
 
-        materialsPanel = new WidgetGroup(10, 149, DIALOG_WIDTH - 20, 156);
+        materialsPanel = new WidgetGroup(10, 149, dialogW - 20, 156);
 
         LabelWidget label = new LabelWidget(5, 4, "§l§7Required Materials:");
         label.setTextColor(COLOR_TEXT_WHITE);
@@ -742,7 +787,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
             int height = player.isCreative() ? 121 : 133;
 
             LDLMaterialListWidget list = new LDLMaterialListWidget(
-                    0, yOffset, DIALOG_WIDTH - 20, height, materials
+                    0, yOffset, dialogW - 20, height, materials
             );
             materialsPanel.addWidget(list);
         } else {
@@ -763,14 +808,14 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private ItemStack getWirelessTerminal(Player player) {
         if (player == null) return ItemStack.EMPTY;
 
-        // manos
+        // Hands~
         ItemStack main = player.getMainHandItem();
         if (WirelessTerminalHandler.isWirelessTerminal(main)) return main;
 
         ItemStack off = player.getOffhandItem();
         if (WirelessTerminalHandler.isWirelessTerminal(off)) return off;
 
-        // inventario
+        // Inventory
         for (ItemStack s : player.getInventory().items) {
             if (WirelessTerminalHandler.isWirelessTerminal(s)) return s;
         }
@@ -778,7 +823,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private void performUpgrade() {
-        List<net.minecraft.core.BlockPos> positions = new java.util.ArrayList<>();
+        List<net.minecraft.core.BlockPos> positions = new ArrayList<>();
         for (ComponentInfo component : group.getComponents()) {
             positions.add(component.getPosition());
         }
@@ -799,5 +844,28 @@ public class ComponentUpgradeDialog extends DialogWidget {
         close();
         if (parentDialog != null) parentDialog.close();
 
+    }
+
+    private void openUpgradeDialog(ComponentGroup group) {
+        // Close other dialogs
+        for (Widget widget : new ArrayList<>(parent.widgets)) {
+            if (widget instanceof ComponentUpgradeDialog d) d.close();
+        }
+
+        // Desactivate input on parent dialog
+        this.setActive(false);
+        var upgrade = new ComponentUpgradeDialog(parent, null, this, group, multiblock, player);
+        bringToFront(parent, upgrade);
+    }
+
+    private static void bringToFront(WidgetGroup parent, Widget w) {
+        parent.widgets.remove(w);
+        parent.widgets.add(w);
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        if (parentDialog != null) parentDialog.setActive(true);
     }
 } // First worst file.
