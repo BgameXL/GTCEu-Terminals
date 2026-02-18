@@ -7,12 +7,12 @@ import com.gtceuterminal.common.material.MaterialCalculator;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
 import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.GTCEUTerminalMod;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Player;
@@ -20,6 +20,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashMap;
@@ -205,6 +206,10 @@ public class ComponentUpgrader {
             return new UpgradeResult(false, "Failed to place upgraded block");
         }
 
+        if (!level.isClientSide && level instanceof ServerLevel sl) {
+            postPlaceInitialize(sl, pos, player);
+        }
+
         level.sendBlockUpdated(pos, oldState, newState, 3);
         level.blockUpdated(pos, newBlock);
 
@@ -232,6 +237,24 @@ public class ComponentUpgrader {
                 extractionSource.replace("§a", "").replace("§7", ""));
 
         return new UpgradeResult(true, "Successfully upgraded to " + targetLabel + extractionSource);
+    }
+
+    private static void postPlaceInitialize(ServerLevel level, BlockPos pos, Player player) {
+        BlockState state = level.getBlockState(pos);
+
+        // 1) Many mods bind owner here
+        state.getBlock().setPlacedBy(level, pos, state, player, ItemStack.EMPTY);
+
+        // 2) Some mods set extra data when the BE is first created/loaded; ensure it's marked + synced
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be != null) {
+            be.setChanged();
+        }
+
+        // 3) Force client update + neighbor update
+        level.sendBlockUpdated(pos, state, state, 3);
+        level.updateNeighborsAt(pos, state.getBlock());
+        state.getBlock().onPlace(state, level, pos, level.getBlockState(pos), false);
     }
 
     // Backward compatibility - upgrade without explicit upgrade ID
@@ -477,7 +500,7 @@ public class ComponentUpgrader {
             level.getChunkSource().getLightEngine().checkBlock(pos);
         }
 
-        GTCEUTerminalMod.LOGGER.info("Updated CTM for block at {} and 6 neighbors", pos);
+        // GTCEUTerminalMod.LOGGER.info("Updated CTM for block at {} and 6 neighbors", pos);
     }
 
     private static String formatMissing(Map<Item, Integer> missing) {

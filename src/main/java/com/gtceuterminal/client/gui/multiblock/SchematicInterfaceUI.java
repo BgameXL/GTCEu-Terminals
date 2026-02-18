@@ -123,11 +123,55 @@ public class SchematicInterfaceUI {
 
         mainGroup.addWidget(createButtonSection());
 
-        this.gui = new ModularUI(new Size(GUI_WIDTH, GUI_HEIGHT), holder, player);
-        gui.widget(mainGroup);
-        gui.background(new ColorRectTexture(0x90000000));
+        ModularUI ui = createUIWithViewport(mainGroup);
+        this.gui = ui;
+        return ui;
+    }
 
-        return gui;
+    private ModularUI createUIWithViewport(WidgetGroup content) {
+        try {
+            var mc = net.minecraft.client.Minecraft.getInstance();
+            int sw = mc.getWindow().getGuiScaledWidth();
+            int sh = mc.getWindow().getGuiScaledHeight();
+
+            int margin = 10;
+            int maxW = sw - margin * 2;
+            int maxH = sh - margin * 2;
+
+            if (GUI_WIDTH <= maxW && GUI_HEIGHT <= maxH) {
+                // Cabe sin scroll
+                ModularUI ui = new ModularUI(new Size(GUI_WIDTH, GUI_HEIGHT), holder, player);
+                ui.widget(content);
+                ui.background(new ColorRectTexture(0x90000000));
+                return ui;
+            } else {
+                // Necesita scroll
+                int viewportW = Math.min(GUI_WIDTH, maxW);
+                int viewportH = Math.min(GUI_HEIGHT, maxH);
+
+                DraggableScrollableWidgetGroup viewport =
+                        new DraggableScrollableWidgetGroup(0, 0, viewportW, viewportH);
+                viewport.setYScrollBarWidth(8);
+                viewport.setYBarStyle(
+                        new ColorRectTexture(COLOR_BORDER_DARK),
+                        new ColorRectTexture(COLOR_BORDER_LIGHT)
+                );
+                viewport.addWidget(content);
+
+                WidgetGroup root = new WidgetGroup(0, 0, viewportW, viewportH);
+                root.addWidget(viewport);
+
+                ModularUI ui = new ModularUI(new Size(viewportW, viewportH), holder, player);
+                ui.widget(root);
+                ui.background(new ColorRectTexture(0x90000000));
+                return ui;
+            }
+        } catch (Throwable t) {
+            ModularUI ui = new ModularUI(new Size(GUI_WIDTH, GUI_HEIGHT), holder, player);
+            ui.widget(content);
+            ui.background(new ColorRectTexture(0x90000000));
+            return ui;
+        }
     }
 
     private WidgetGroup createBorders() {
@@ -163,8 +207,8 @@ public class SchematicInterfaceUI {
     }
 
     private WidgetGroup createLeftPanel() {
-        int panelWidth = 220;
-        WidgetGroup leftPanel = new WidgetGroup(4, 38, panelWidth, GUI_HEIGHT - 82);
+        int panelWidth = 160;
+        WidgetGroup leftPanel = new WidgetGroup(10, 35, 160, GUI_HEIGHT - 45);
         leftPanel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         LabelWidget nameLabel = new LabelWidget(8, 8, "§7Schematic Name:");
@@ -266,13 +310,13 @@ public class SchematicInterfaceUI {
     }
 
     private WidgetGroup createRightPanel() {
-        int panelX = 228;
+        int panelX = 180;
         int panelWidth = GUI_WIDTH - panelX - 4;
         WidgetGroup rightPanel = new WidgetGroup(panelX, 38, panelWidth, GUI_HEIGHT - 82);
         rightPanel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         int previewSize = panelWidth - 16;
-        int previewHeight = GUI_HEIGHT - 82 - 20;
+        int previewHeight = GUI_HEIGHT - 82 - 16;
         WidgetGroup previewArea = new WidgetGroup(8, 8, previewSize, previewHeight);
         previewArea.setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
@@ -304,50 +348,49 @@ public class SchematicInterfaceUI {
         GTCEUTerminalMod.LOGGER.info("Creating preview for schematic: {} with {} blocks",
                 schematic.getName(), schematic.getBlocks().size());
 
-        int previewHeight = size - 60;
+        int actualWidth = area.getSize() != null ? area.getSize().width : size;
+        int actualHeight = area.getSize() != null ? area.getSize().height : size;
+        int previewHeight = actualHeight - 90;
 
-        // Only create preview widget on CLIENT side
-        // On dedicated server, SchematicPreviewWidget causes ClassNotFoundException because it uses net.minecraft.client.renderer.MultiBufferSource (I learned it the hard way)
-        if (holder.isRemote()) {
-            // CLIENT: Create actual 3D preview
+        // Preview 3D
+        if (player.level().isClientSide) {
             SchematicPreviewWidget previewWidget = new SchematicPreviewWidget(
-                    5, 5, size - 10, previewHeight, schematic
+                    5, 5, actualWidth - 10, previewHeight, schematic
             );
             previewWidget.setBackground(new ColorRectTexture(0xFF0A0A0A));
             area.addWidget(previewWidget);
-
-            GTCEUTerminalMod.LOGGER.info("Preview widget added at position (5, 5) with size {}x{}",
-                    size - 10, previewHeight);
-        } else {
-            // SERVER: Add placeholder (will be replaced on client)
-            GTCEUTerminalMod.LOGGER.info("Skipping preview widget creation on server (will be created on client)");
-            LabelWidget placeholder = new LabelWidget(10, previewHeight / 2, "§7Preview loading...");
-            placeholder.setTextColor(COLOR_TEXT_GRAY);
-            area.addWidget(placeholder);
         }
 
-        int textY = size - 50;
+        int textY = 5 + previewHeight + 5;
 
-        // Name label (shown on both server and client)
+        // Name label
         String displayName = getMultiblockName(schematic);
-        if (displayName.length() > 25) {
-            displayName = displayName.substring(0, 22) + "...";
-        }
+        if (displayName.length() > 25) displayName = displayName.substring(0, 22) + "...";
+
         LabelWidget nameLabel = new LabelWidget(10, textY, "§f§l" + displayName);
         nameLabel.setTextColor(COLOR_TEXT_WHITE);
         area.addWidget(nameLabel);
-        textY += 15;
+        textY += 14;
 
-        // Type label
+        // Info label
         BlockPos size1 = schematic.getSize();
         String infoText = String.format("§7%d blocks | %dx%dx%d",
                 schematic.getBlocks().size(),
-                size1.getX(),
-                size1.getY(),
-                size1.getZ());
+                size1.getX(), size1.getY(), size1.getZ());
+
         LabelWidget infoLabel = new LabelWidget(10, textY, infoText);
         infoLabel.setTextColor(COLOR_TEXT_GRAY);
         area.addWidget(infoLabel);
+
+        textY += 12;
+        LabelWidget zoomHint = new LabelWidget(10, textY, "§8Ctrl + Mouse wheel for zoom");
+        zoomHint.setTextColor(0xFF666666);
+        area.addWidget(zoomHint);
+
+        textY += 12;
+        LabelWidget rotation = new LabelWidget(10, textY, "§8Mouse wheel to rotate preview");
+        rotation.setTextColor(0xFF666666);
+        area.addWidget(rotation);
     }
 
     private WidgetGroup createButtonSection() {
@@ -424,6 +467,7 @@ public class SchematicInterfaceUI {
         return buttonSection;
     }
 
+    // Helper methods
     private String getMultiblockName(SchematicData schematic) {
         if (schematic == null || schematic.getBlocks().isEmpty()) {
             return "Multiblock Structure";
@@ -484,10 +528,10 @@ public class SchematicInterfaceUI {
 
         rightPanel.clearAllWidgets();
 
-        int panelX = 228;
+        int panelX = 180;
         int panelWidth = GUI_WIDTH - panelX - 4;
         int previewSize = panelWidth - 16;
-        int previewHeight = GUI_HEIGHT - 82 - 20;
+        int previewHeight = GUI_HEIGHT - 82 - 16;
 
         WidgetGroup previewArea = new WidgetGroup(8, 8, previewSize, previewHeight);
         previewArea.setBackground(new ColorRectTexture(COLOR_BG_DARK));

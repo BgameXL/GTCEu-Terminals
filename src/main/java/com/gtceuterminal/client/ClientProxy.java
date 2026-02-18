@@ -2,11 +2,7 @@ package com.gtceuterminal.client;
 
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.data.SchematicData;
-import com.gtceuterminal.common.network.CPacketOpenDismantlerUI;
-import com.gtceuterminal.common.network.CPacketOpenMultiStructureUI;
-import com.gtceuterminal.common.network.CPacketOpenSchematicUI;
-import com.gtceuterminal.common.network.CPacketOpenManagerSettings;
-import com.gtceuterminal.common.network.TerminalNetwork;
+import com.gtceuterminal.common.network.*;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
@@ -51,4 +47,39 @@ public class ClientProxy {
         GTCEUTerminalMod.LOGGER.info("Client: Sending CPacketOpenDismantlerUI to server at {}...", controllerPos);
         TerminalNetwork.CHANNEL.sendToServer(new CPacketOpenDismantlerUI(controllerPos));
     }
+
+
+    /** Request server to open Power Logger UI
+    public static void openPowerLoggerGUI(ItemStack stack, Player player) {
+        if (player == null) {
+            GTCEUTerminalMod.LOGGER.error("ClientProxy.openPowerLoggerGUI: player is null!");
+            return;
+        }
+        GTCEUTerminalMod.LOGGER.info("ClientProxy: openPowerLoggerGUI called for player {}", player.getName().getString());
+        GTCEUTerminalMod.LOGGER.info("ClientProxy: Sending CPacketOpenPowerLoggerUI to server...");
+
+        try {
+            TerminalNetwork.CHANNEL.sendToServer(new CPacketOpenPowerLoggerUI());
+            GTCEUTerminalMod.LOGGER.info("ClientProxy: Packet sent successfully");
+        } catch (Exception e) {
+            GTCEUTerminalMod.LOGGER.error("ClientProxy: Error sending packet", e);
+        }
+    }
+
+
+    // Request server to open Power Monitor UI
+    public static void openPowerMonitorGUI(net.minecraft.core.BlockPos monitorPos, Player player) {
+        if (player == null) {
+            GTCEUTerminalMod.LOGGER.error("ClientProxy.openPowerMonitorGUI: player is null!");
+            return;
+        }
+        GTCEUTerminalMod.LOGGER.info("ClientProxy: Sending CPacketOpenPowerMonitorUI to server for pos {}", monitorPos);
+
+        try {
+            TerminalNetwork.CHANNEL.sendToServer(new CPacketOpenPowerMonitorUI(monitorPos));
+            GTCEUTerminalMod.LOGGER.info("ClientProxy: Packet sent successfully");
+        } catch (Exception e) {
+            GTCEUTerminalMod.LOGGER.error("ClientProxy: Error sending packet", e);
+        }
+    } **/
 }

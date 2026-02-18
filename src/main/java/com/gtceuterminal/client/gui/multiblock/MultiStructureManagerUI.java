@@ -13,7 +13,6 @@ import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.*;
 import com.lowdragmc.lowdraglib.utils.Size;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
@@ -61,14 +60,6 @@ public class MultiStructureManagerUI {
         WidgetGroup mainGroup = new WidgetGroup(0, 0, dialogW, dialogH);
         mainGroup.setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
-        int sw = Minecraft.getInstance().getWindow().getGuiScaledWidth();
-        int sh = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-        int margin = 8;
-
-        int uiW = Math.min(dialogW, sw - margin * 2);
-        int uiH = Math.min(dialogH, sh - margin * 2);
-
-
         mainGroup.addWidget(createMainPanel());
         mainGroup.addWidget(createHeader());
         mainGroup.addWidget(createMultiblockList());
@@ -77,7 +68,6 @@ public class MultiStructureManagerUI {
         this.gui = new ModularUI(new Size(dialogW, dialogH), holder, player);
         gui.widget(mainGroup);
         gui.background(new ColorRectTexture(0x90000000));
-
         return gui;
     }
 

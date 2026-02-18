@@ -28,7 +28,18 @@ public class GTCEUTerminalMod {
     public GTCEUTerminalMod() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        // Register items
         GTCEUTerminalItems.ITEMS.register(modEventBus);
+
+        /** Register blocks
+        GTCEUTerminalBlocks.BLOCKS.register(modEventBus);
+        GTCEUTerminalBlocks.BLOCK_ITEMS.register(modEventBus);
+
+        // Register block entities
+        GTCEUTerminalBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+         **/
+
+        // Register creative tabs
         GTCEUTerminalTabs.CREATIVE_TABS.register(modEventBus);
 
         // Register network IMMEDIATELY

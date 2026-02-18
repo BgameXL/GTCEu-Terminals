@@ -24,4 +24,7 @@ public class GTCEUTerminalItems {
 
     public static final RegistryObject<Item> DISMANTLER = ITEMS.register("dismantler",
             () -> new DismantlerItem(new Item.Properties().stacksTo(1)));
+
+    // public static final RegistryObject<Item> POWER_LOGGER = ITEMS.register("power_logger",
+            // () -> new PowerLoggerItem(new Item.Properties().stacksTo(1)));
 }

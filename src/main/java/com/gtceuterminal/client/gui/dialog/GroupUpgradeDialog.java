@@ -1,5 +1,6 @@
 package com.gtceuterminal.client.gui.dialog;
 
+import com.gregtechceu.gtceu.api.GTValues;
 import com.gtceuterminal.common.material.ComponentUpgradeHelper;
 import com.gtceuterminal.common.material.MaterialAvailability;
 import com.gtceuterminal.common.material.MaterialCalculator;
@@ -24,10 +25,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.util.Mth;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 // Group Upgrade Confirmation Dialog
 public class GroupUpgradeDialog extends DialogWidget {
@@ -52,6 +50,9 @@ public class GroupUpgradeDialog extends DialogWidget {
     private final Player player;
     private final Runnable onSuccess;
     private final Runnable onClose;
+    private BlockPos controllerPos;
+    private int W = dialogW;
+    private int H = dialogH;
 
     private List<MaterialAvailability> materials;
     private boolean hasEnough;
@@ -71,6 +72,7 @@ public class GroupUpgradeDialog extends DialogWidget {
         this.player = player;
         this.onSuccess = onSuccess;
         this.onClose = onClose;
+        this.controllerPos = controllerPos;
 
         initDialog();
     }
@@ -82,27 +84,32 @@ public class GroupUpgradeDialog extends DialogWidget {
 
         int margin = 10;
 
-        int x = (sw - dialogW) / 2;
-        int y = (sh - dialogH) / 2;
+        int w = dialogW;
+        int h = dialogH;
 
-        x = Mth.clamp(x, margin, sw - dialogW - margin);
-        y = Mth.clamp(y, margin, sh - dialogH - margin);
+        int maxW = sw - margin * 2;
+        int maxH = sh - margin * 2;
+        if (w > maxW) w = maxW;
+        if (h > maxH) h = maxH;
 
-        setSize(new Size(dialogW, dialogH));
+        this.W = w;
+        this.H = h;
+
+        int x = (sw - w) / 2;
+        int y = (sh - h) / 2;
+
+        x = Mth.clamp(x, margin, sw - w - margin);
+        y = Mth.clamp(y, margin, sh - h - margin);
+
+        setSize(new Size(w, h));
         setSelfPosition(new Position(x, y));
 
-        // Background
         setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
-        // Borders
-        addWidget(new ImageWidget(0, 0, dialogW, 2,
-                new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(0, 0, 2, dialogH,
-                new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(dialogW - 2, 0, 2, dialogH,
-                new ColorRectTexture(COLOR_BORDER_DARK)));
-        addWidget(new ImageWidget(0, dialogH - 2, dialogW, 2,
-                new ColorRectTexture(COLOR_BORDER_DARK)));
+        addWidget(new ImageWidget(0, 0, w, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+        addWidget(new ImageWidget(0, 0, 2, h, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+        addWidget(new ImageWidget(w - 2, 0, 2, h, new ColorRectTexture(COLOR_BORDER_DARK)));
+        addWidget(new ImageWidget(0, h - 2, w, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
 
         // Calculate materials
         calculateMaterials();
@@ -147,11 +154,10 @@ public class GroupUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createHeader() {
-        WidgetGroup header = new WidgetGroup(2, 2, dialogW - 4, 28);
+        WidgetGroup header = new WidgetGroup(2, 2, W - 4, 28);
         header.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
-        LabelWidget title = new LabelWidget(dialogW / 2 - 90, 10,
-                "§l§fUpgrade Group Confirmation");
+        LabelWidget title = new LabelWidget(W / 2 - 90, 10, "§l§fUpgrade Group Confirmation");
         title.setTextColor(COLOR_TEXT_WHITE);
         header.addWidget(title);
 
@@ -159,7 +165,7 @@ public class GroupUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createGroupInfo() {
-        WidgetGroup info = new WidgetGroup(10, 35, dialogW - 20, 60);
+        WidgetGroup info = new WidgetGroup(10, 35, W - 20, 60);
         info.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         int yPos = 8;
@@ -199,7 +205,7 @@ public class GroupUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createCreativePanel() {
-        WidgetGroup panel = new WidgetGroup(10, 100, dialogW - 20, 40);
+        WidgetGroup panel = new WidgetGroup(10, 100, W - 20, 40);
         panel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         LabelWidget creativeMsg = new LabelWidget(10, 15,
@@ -212,7 +218,7 @@ public class GroupUpgradeDialog extends DialogWidget {
 
     private WidgetGroup createSurvivalPanel() {
         int listHeight = Math.min(materials.size() * 12 + 25, 110);
-        WidgetGroup panel = new WidgetGroup(10, 100, dialogW - 20, listHeight);
+        WidgetGroup panel = new WidgetGroup(10, 100, W - 20, listHeight);
         panel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         // Header
@@ -241,7 +247,7 @@ public class GroupUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createButtons() {
-        WidgetGroup buttons = new WidgetGroup(10, dialogH - 35, dialogW - 20, 28);
+        WidgetGroup buttons = new WidgetGroup(10, H - 35, W - 20, 28);
 
         // Confirm button
         String confirmText = hasEnough ? "Upgrade All (" + group.getCount() + ")" : "Missing Materials";
@@ -272,7 +278,7 @@ public class GroupUpgradeDialog extends DialogWidget {
 
         // Cancel button
         ButtonWidget cancelBtn = new ButtonWidget(
-                dialogW - 150, 0, 140, 24,
+                (W - 150), 0, 140, 24,
                 new GuiTextureGroup(
                         new ColorRectTexture(COLOR_BG_MEDIUM),
                         new ColorBorderTexture(1, COLOR_BORDER_DARK)
@@ -299,13 +305,10 @@ public class GroupUpgradeDialog extends DialogWidget {
         }
 
         TerminalNetwork.CHANNEL.sendToServer(
-                new CPacketComponentUpgrade(positions, targetTier)
+                new CPacketComponentUpgrade(positions, targetTier, null, this.controllerPos)
         );
 
-        if (onSuccess != null) {
-            onSuccess.run();
-        }
-
+        if (onSuccess != null) onSuccess.run();
         closeDialog();
     }
 
@@ -324,7 +327,7 @@ public class GroupUpgradeDialog extends DialogWidget {
         } else if (type == ComponentType.MAINTENANCE) {
             return type.getDisplayName();
         } else {
-            String tierName = com.gregtechceu.gtceu.api.GTValues.VN[tier].toUpperCase(java.util.Locale.ROOT);
+            String tierName = GTValues.VN[tier].toUpperCase(Locale.ROOT);
             return type.getDisplayName() + " (" + tierName + ")";
         }
     }

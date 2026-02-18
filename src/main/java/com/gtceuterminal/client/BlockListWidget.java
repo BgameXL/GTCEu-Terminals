@@ -1,4 +1,4 @@
-package com.gtceuterminal.client.gui.widget;
+package com.gtceuterminal.client;
 
 import com.gtceuterminal.common.multiblock.DismantleScanner;
 

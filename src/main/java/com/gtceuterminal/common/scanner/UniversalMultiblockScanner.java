@@ -1,22 +1,22 @@
 package com.gtceuterminal.common.scanner;
 
+import com.gtceuterminal.GTCEUTerminalMod;
+import com.gtceuterminal.common.config.ComponentPattern;
+import com.gtceuterminal.common.config.ComponentPatternRegistry;
+import com.gtceuterminal.common.multiblock.ComponentType;
+
 import com.gregtechceu.gtceu.api.machine.IMachineBlockEntity;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
 import com.gregtechceu.gtceu.api.machine.multiblock.MultiblockControllerMachine;
 import com.gregtechceu.gtceu.api.pattern.MultiblockState;
-import com.gtceuterminal.GTCEUTerminalMod;
-import com.gtceuterminal.common.config.ComponentPattern;
-import com.gtceuterminal.common.config.ComponentPatternRegistry;
+import com.gregtechceu.gtceu.api.machine.multiblock.part.MultiblockPartMachine;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import com.gtceuterminal.common.scanner.PartAbilityMapper;
-import com.gtceuterminal.common.multiblock.ComponentType;
-import com.gregtechceu.gtceu.api.machine.multiblock.part.MultiblockPartMachine;
-import com.gregtechceu.gtceu.api.machine.multiblock.PartAbility;
 
 import java.util.*;
 
@@ -140,19 +140,16 @@ public class UniversalMultiblockScanner {
     // Gets the name of the multiblock
     private static String getMultiblockName(MultiblockControllerMachine controller) {
         try {
-            // Método 1: Usar el display name
             var definition = controller.getDefinition();
             if (definition != null) {
                 return definition.getDescriptionId();
             }
 
-            // Método 2: Usar machine name
             String machineName = controller.toString();
             if (machineName != null && !machineName.isEmpty()) {
                 return machineName;
             }
 
-            // Método 3: Fallback genérico
             return "Unknown Multiblock";
 
         } catch (Exception e) {
@@ -221,7 +218,6 @@ public class UniversalMultiblockScanner {
         try {
             var parts = controller.getParts();
             if (parts == null || parts.isEmpty()) {
-                // ⭐ NUEVO: Incluso si no hay parts, escanear wireless components
                 GTCEUTerminalMod.LOGGER.warn("Multiblock has no parts, scanning for wireless components...");
                 detectWirelessAndAddonComponents(controller, level, components, alreadyScanned);
                 return components;
@@ -236,14 +232,13 @@ public class UniversalMultiblockScanner {
                 if (data != null) {
                     components.computeIfAbsent(data.getCategory(), k -> new ArrayList<>())
                             .add(data);
-                    alreadyScanned.add(machine.getPos());  // ⭐ NUEVO: Marcar como escaneado
+                    alreadyScanned.add(machine.getPos());
                 }
             }
 
             // Also extract structural components (coils, casings)
             extractStructureComponents(controller, level, components);
 
-            // ⭐ NUEVO: Detectar wireless y addon components que no estén en getParts()
             detectWirelessAndAddonComponents(controller, level, components, alreadyScanned);
 
         } catch (Exception e) {
@@ -253,7 +248,6 @@ public class UniversalMultiblockScanner {
         return components;
     }
 
-
     private static void detectWirelessAndAddonComponents(
             MultiblockControllerMachine controller,
             Level level,
@@ -262,16 +256,12 @@ public class UniversalMultiblockScanner {
 
         try {
             BlockPos controllerPos = controller.getPos();
-
-            // Escanear un área de 5x5x5 alrededor del controller
-            // (ajustar si es necesario para multiblocks más grandes)
             int scanRadius = 5;
 
             for (BlockPos pos : BlockPos.betweenClosed(
                     controllerPos.offset(-scanRadius, -scanRadius, -scanRadius),
                     controllerPos.offset(scanRadius, scanRadius, scanRadius))) {
 
-                // Skip si ya escaneamos esta posición
                 if (alreadyScanned.contains(pos)) continue;
 
                 BlockEntity be = level.getBlockEntity(pos);
@@ -280,13 +270,45 @@ public class UniversalMultiblockScanner {
 
                     if (machine == null) continue;
 
-                    // Obtener el ID del bloque
                     var definition = machine.getDefinition();
                     if (definition == null) continue;
 
                     String blockId = definition.getId().toString().toLowerCase();
 
-                    // Detectar wireless energy hatches
+                    if (machine instanceof MultiblockPartMachine part) {
+                        BlockPos wanted = controller.getPos();
+                        BlockPos got = null;
+
+                        // A) getControllerPos()
+                        try {
+                            var m = part.getClass().getMethod("getControllerPos");
+                            Object p = m.invoke(part);
+                            if (p instanceof BlockPos bp) got = bp;
+                        } catch (Throwable ignored) {}
+
+                        // B) getController() -> getPos()
+                        if (got == null) {
+                            try {
+                                var m = part.getClass().getMethod("getController");
+                                Object ctrl = m.invoke(part);
+                                if (ctrl != null) {
+                                    try {
+                                        var getPos = ctrl.getClass().getMethod("getPos");
+                                        Object p = getPos.invoke(ctrl);
+                                        if (p instanceof BlockPos bp) got = bp;
+                                    } catch (Throwable ignored) {}
+                                }
+                            } catch (Throwable ignored) {}
+                        }
+
+                        if (got == null || !got.equals(wanted)) {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+
+                    // Detect wireless energy components
                     if (blockId.contains("wireless")) {
                         if (blockId.contains("energy")) {
                             ComponentData data = analyzeComponent(machine, level);
@@ -301,8 +323,6 @@ public class UniversalMultiblockScanner {
                         }
                     }
 
-                    // Detectar otros componentes de addons que puedan no estar en getParts()
-                    // (laser hatches, data hatches, etc. de GTMThings, GT Community Additions, etc.)
                     if (blockId.contains("laser") ||
                             blockId.contains("data") ||
                             blockId.contains("optical") ||
@@ -358,7 +378,6 @@ public class UniversalMultiblockScanner {
 
             String id = definition.getId().toString().toLowerCase();
 
-            // ⭐ MÉTODO 1: Usar PatternRegistry (más flexible y fácil de mantener)
             ComponentPattern pattern = ComponentPatternRegistry.findMatch(id);
             if (pattern != null) {
                 GTCEUTerminalMod.LOGGER.debug("Matched pattern '{}' for block '{}'",
@@ -366,7 +385,6 @@ public class UniversalMultiblockScanner {
 
                 String displayName = pattern.getDisplayName();
 
-                // Detectar amperaje adicional en el ID
                 String amperage = detectAmperage(id);
                 if (amperage != null && !displayName.contains(amperage)) {
                     displayName = amperage + " " + displayName;
@@ -375,7 +393,6 @@ public class UniversalMultiblockScanner {
                 return displayName;
             }
 
-            // ⭐ MÉTODO 2: Usar PartAbility registry (fallback robusto)
             if (machine instanceof MultiblockPartMachine) {
                 var block = machine.getBlockState().getBlock();
                 ComponentType type = PartAbilityMapper.detectFromBlock(block);
@@ -407,7 +424,6 @@ public class UniversalMultiblockScanner {
                 }
             }
 
-            // ⭐ MÉTODO 3: Fallback final por análisis de ID
             String detected = detectByImprovedAnalysis(id);
             if (detected != null) {
                 return detected;
@@ -421,7 +437,6 @@ public class UniversalMultiblockScanner {
         }
     }
 
-    // ⭐ NUEVO: Detectar amperaje
     private static String detectAmperage(String id) {
         if (id.contains("_65536a")) return "65536A";
         if (id.contains("_16384a")) return "16384A";
@@ -434,7 +449,6 @@ public class UniversalMultiblockScanner {
         return null;
     }
 
-    // ⭐ NUEVO: Análisis mejorado por ID (fallback robusto)
     private static String detectByImprovedAnalysis(String id) {
         // Wireless components (no tienen PartAbility estándar)
         if (id.contains("wireless")) {
@@ -456,7 +470,7 @@ public class UniversalMultiblockScanner {
             if (id.contains("output")) return "Substation Output Energy Hatch";
         }
 
-        // Energy hatches (fallback por si el registry no los encuentra)
+        // Energy hatches
         if (id.contains("energy")) {
             String amperage = detectAmperage(id);
             String prefix = amperage != null ? amperage + " " : "";
@@ -474,10 +488,10 @@ public class UniversalMultiblockScanner {
             return (amperage != null ? amperage + " " : "") + "Dynamo Hatch";
         }
 
-        // Coils (no tienen PartAbility)
+        // Coils
         if (id.contains("coil")) return "Heating Coil";
 
-        // Casings (no tienen PartAbility)
+        // Casings
         if (id.contains("casing")) return "Casing";
 
         return null;
@@ -636,7 +650,6 @@ public class UniversalMultiblockScanner {
             GTCEUTerminalMod.LOGGER.error("Could not extract structure components: {}", e.getMessage());
         }
     }
-
 
     // Class that represents an individual component
     private static final class Bounds {

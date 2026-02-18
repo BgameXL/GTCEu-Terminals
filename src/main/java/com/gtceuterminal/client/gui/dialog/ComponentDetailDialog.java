@@ -1,6 +1,5 @@
 package com.gtceuterminal.client.gui.dialog;
 
-import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.multiblock.ComponentGroup;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
 import com.gtceuterminal.common.multiblock.MultiblockInfo;
@@ -46,6 +45,8 @@ public class ComponentDetailDialog extends DialogWidget {
     private final Player player;
     private final MultiblockInfo multiblock;
     private final Runnable onClose;
+    private int W = dialogW;
+    private int H = dialogH;
 
     public ComponentDetailDialog(WidgetGroup parent, Player player, MultiblockInfo multiblock) {
         this(parent, player, multiblock, null);
@@ -84,55 +85,83 @@ public class ComponentDetailDialog extends DialogWidget {
     }
 
     private void initDialog() {
-        // Obtain screen dimensions
         var mc = Minecraft.getInstance();
         int sw = mc.screen != null ? mc.screen.width : mc.getWindow().getGuiScaledWidth();
         int sh = mc.screen != null ? mc.screen.height : mc.getWindow().getGuiScaledHeight();
 
         int margin = 10;
 
-        int w = dialogW;
-        int h = dialogH;
-
-        // Adjust size if screen is too small
         int maxW = sw - margin * 2;
         int maxH = sh - margin * 2;
-        if (w > maxW) w = maxW;
-        if (h > maxH) h = maxH;
 
-        setSize(new Size(w, h));
+        int contentW = dialogW;
+        int contentH = dialogH;
 
-        // Dialog centered on screen
-        int screenX = (sw - w) / 2;
-        int screenY = (sh - h) / 2;
+        int viewportW = Math.min(contentW, maxW);
+        int viewportH = Math.min(contentH, maxH);
 
-        // Clamp
-        screenX = Mth.clamp(screenX, margin, sw - w - margin);
-        screenY = Mth.clamp(screenY, margin, sh - h - margin);
+        int screenX = (sw - viewportW) / 2;
+        int screenY = (sh - viewportH) / 2;
 
-        // Convert screen coordinates to parent-relative coordinates
+        screenX = Mth.clamp(screenX, margin, sw - viewportW - margin);
+        screenY = Mth.clamp(screenY, margin, sh - viewportH - margin);
+
         Position parentAbsPos = parent.getPosition();
         int x = screenX - parentAbsPos.x;
         int y = screenY - parentAbsPos.y;
 
-        setSelfPosition(new Position(x, y));
+        if (contentW <= maxW && contentH <= maxH) {
+            this.W = contentW;
+            this.H = contentH;
+            setSize(new Size(contentW, contentH));
+            setSelfPosition(new Position(x, y));
+            setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
-        setBackground(new ColorRectTexture(COLOR_BG_DARK));
+            addWidget(new ImageWidget(0, 0, contentW, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            addWidget(new ImageWidget(0, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            addWidget(new ImageWidget(contentW - 2, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_DARK)));
+            addWidget(new ImageWidget(0, contentH - 2, contentW, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
 
-        // Borders
-        addWidget(new ImageWidget(0, 0, w, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(0, 0, 2, h, new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(w - 2, 0, 2, h, new ColorRectTexture(COLOR_BORDER_DARK)));
-        addWidget(new ImageWidget(0, h - 2, w, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
+            addWidget(createHeader());
+            addWidget(createInfoPanel());
+            addWidget(createComponentGroupsList());
+            addWidget(createCloseButton());
 
-        addWidget(createHeader());
-        addWidget(createInfoPanel());
-        addWidget(createComponentGroupsList());
-        addWidget(createCloseButton());
+        } else {
+            this.W = viewportW;
+            this.H = viewportH;
+            setSize(new Size(viewportW, viewportH));
+            setSelfPosition(new Position(x, y));
+            setBackground(new ColorRectTexture(COLOR_BG_DARK));
+
+            WidgetGroup content = new WidgetGroup(0, 0, contentW, contentH);
+            content.setBackground(new ColorRectTexture(COLOR_BG_DARK));
+
+            content.addWidget(new ImageWidget(0, 0, contentW, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            content.addWidget(new ImageWidget(0, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            content.addWidget(new ImageWidget(contentW - 2, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_DARK)));
+            content.addWidget(new ImageWidget(0, contentH - 2, contentW, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
+
+            content.addWidget(createHeader());
+            content.addWidget(createInfoPanel());
+            content.addWidget(createComponentGroupsList());
+            content.addWidget(createCloseButton());
+
+            DraggableScrollableWidgetGroup viewport =
+                    new DraggableScrollableWidgetGroup(0, 0, viewportW, viewportH);
+            viewport.setYScrollBarWidth(8);
+            viewport.setYBarStyle(
+                    new ColorRectTexture(COLOR_BORDER_DARK),
+                    new ColorRectTexture(COLOR_BORDER_LIGHT)
+            );
+            viewport.addWidget(content);
+
+            addWidget(viewport);
+        }
     }
 
     private WidgetGroup createHeader() {
-        WidgetGroup header = new WidgetGroup(2, 2, dialogW - 4, 26);
+        WidgetGroup header = new WidgetGroup(2, 2, W - 4, 26);
         header.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         String title = "§l§f" + getDisplayMultiblockName() + " - Components";
@@ -144,7 +173,7 @@ public class ComponentDetailDialog extends DialogWidget {
     }
 
     private WidgetGroup createInfoPanel() {
-        WidgetGroup infoPanel = new WidgetGroup(10, 32, dialogW - 20, 46);
+        WidgetGroup infoPanel = new WidgetGroup(10, 32, W - 20, 46);
         infoPanel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         int yPos = 6;
@@ -179,7 +208,13 @@ public class ComponentDetailDialog extends DialogWidget {
     }
 
     private WidgetGroup createComponentGroupsList() {
-        WidgetGroup listPanel = new WidgetGroup(10, 82, dialogW - 20, 228);
+        int listY = 82;
+        int bottomPad = 10;
+        int listH = H - listY - bottomPad;
+
+        if (listH < 130) listH = 130;
+
+        WidgetGroup listPanel = new WidgetGroup(10, listY, W - 20, listH);
         listPanel.setBackground(new GuiTextureGroup(
                 new ColorRectTexture(COLOR_BG_DARK),
                 new ColorBorderTexture(1, COLOR_BORDER_DARK)
@@ -189,9 +224,14 @@ public class ComponentDetailDialog extends DialogWidget {
         listLabel.setTextColor(COLOR_TEXT_WHITE);
         listPanel.addWidget(listLabel);
 
-        DraggableScrollableWidgetGroup scrollWidget = new DraggableScrollableWidgetGroup(
-                5, 22, dialogW - 35, 198
-        );
+        int scrollX = 5;
+        int scrollY = 22;
+        int scrollW = (W - 20) - 15;
+        int scrollH = listH - 30;
+
+        DraggableScrollableWidgetGroup scrollWidget =
+                new DraggableScrollableWidgetGroup(scrollX, scrollY, scrollW, scrollH);
+
         scrollWidget.setYScrollBarWidth(8);
         scrollWidget.setYBarStyle(
                 new ColorRectTexture(COLOR_BORDER_DARK),
@@ -202,7 +242,7 @@ public class ComponentDetailDialog extends DialogWidget {
         int yPos = 0;
 
         for (ComponentGroup group : groups) {
-            scrollWidget.addWidget(createComponentGroupEntry(group, yPos));
+            scrollWidget.addWidget(createComponentGroupEntry(group, yPos, scrollW));
             yPos += 42;
         }
 
@@ -211,16 +251,15 @@ public class ComponentDetailDialog extends DialogWidget {
     }
 
     // Creates a single entry for a component group
-    private WidgetGroup createComponentGroupEntry(ComponentGroup group, int yPos) {
-        WidgetGroup entry = new WidgetGroup(0, yPos, dialogW - 50, 38);
+    private WidgetGroup createComponentGroupEntry(ComponentGroup group, int yPos, int entryW) {
+        WidgetGroup entry = new WidgetGroup(0, yPos, entryW, 38);
         entry.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         ComponentInfo rep = group.getRepresentative();
         if (rep != null) {
-            // If there are upgrade tiers available, make the whole entry clickable to open the upgrade dialog
             if (!rep.getPossibleUpgradeTiers().isEmpty()) {
                 ButtonWidget clickableArea = new ButtonWidget(
-                        0, 0, dialogW - 50, 38,
+                        0, 0, entryW, 38,
                         new ColorRectTexture(0x00000000),
                         cd -> openUpgradeDialog(group)
                 );
@@ -228,26 +267,21 @@ public class ComponentDetailDialog extends DialogWidget {
                 entry.addWidget(clickableArea);
             }
 
-            // Green
             entry.addWidget(new ImageWidget(6, 14, 7, 7, new ColorRectTexture(COLOR_SUCCESS)));
 
-            // Name
             String typeName = group.getType().name().replace("_", " ");
             LabelWidget typeLabel = new LabelWidget(18, 4, "§f" + typeName);
             typeLabel.setTextColor(COLOR_TEXT_WHITE);
             entry.addWidget(typeLabel);
 
-            // Count
             LabelWidget countLabel = new LabelWidget(18, 16, "§7Count: §f" + group.getCount());
             countLabel.setTextColor(COLOR_TEXT_GRAY);
             entry.addWidget(countLabel);
 
-            // Tier
             String tierText = "§7Tier: §f" + rep.getTierName();
-            if (!rep.getPossibleUpgradeTiers().isEmpty()) {
-                tierText += " §a→"; // Green arrow to indicate upgrade available
-            }
-            LabelWidget tierLabel = new LabelWidget(dialogW - 180, 16, tierText);
+            if (!rep.getPossibleUpgradeTiers().isEmpty()) tierText += " §a→";
+
+            LabelWidget tierLabel = new LabelWidget(Math.max(18, entryW - 130), 16, tierText);
             tierLabel.setTextColor(COLOR_TEXT_GRAY);
             entry.addWidget(tierLabel);
         }
@@ -257,7 +291,7 @@ public class ComponentDetailDialog extends DialogWidget {
 
     private ButtonWidget createCloseButton() {
         ButtonWidget closeBtn = new ButtonWidget(
-                dialogW - 28, 4, 22, 22,
+                W - 28, 4, 22, 22,
                 new GuiTextureGroup(
                         new ColorRectTexture(COLOR_BG_MEDIUM),
                         new ColorBorderTexture(1, COLOR_BORDER_LIGHT)
@@ -278,14 +312,13 @@ public class ComponentDetailDialog extends DialogWidget {
     }
 
     private void openUpgradeDialog(ComponentGroup group) {
-        GTCEUTerminalMod.LOGGER.info("Opening upgrade dialog for group: {}", group.getType());
-
-        for (Widget widget : new ArrayList<>(parent.widgets)) {
-            if (widget instanceof ComponentUpgradeDialog) {
-                ((ComponentUpgradeDialog) widget).close();
-            }
-        }
-
-        new ComponentUpgradeDialog(parent, null, this, group, multiblock, player);
+        ComponentUpgradeDialog dialog = new ComponentUpgradeDialog(
+                this.gui.mainGroup,
+                null,
+                this,
+                group,
+                multiblock,
+                player
+        );
     }
 }

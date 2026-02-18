@@ -2,7 +2,7 @@ package com.gtceuterminal.client.gui.multiblock;
 
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.client.gui.factory.DismantlerUIFactory;
-import com.gtceuterminal.client.gui.widget.BlockListWidget;
+import com.gtceuterminal.client.BlockListWidget;
 import com.gtceuterminal.client.gui.widget.MultiblockPreviewWidget;
 import com.gtceuterminal.common.multiblock.DismantleScanner;
 import com.gtceuterminal.common.network.CPacketDismantle;
@@ -50,29 +50,58 @@ public class DismantlerUI {
         WidgetGroup mainGroup = new WidgetGroup(0, 0, GUI_WIDTH, GUI_HEIGHT);
         mainGroup.setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
-        // Main panel
         mainGroup.addWidget(createMainPanel());
-
-        // Header
         mainGroup.addWidget(createHeader());
-
-        // Preview 3D (left side)
         mainGroup.addWidget(createPreviewPanel());
-
-        // Block list (right side)
         mainGroup.addWidget(createBlockListPanel());
-
-        // Info bar
         mainGroup.addWidget(createInfoBar());
-
-        // Action buttons
         mainGroup.addWidget(createActionButtons());
 
-        ModularUI ui = new ModularUI(new Size(GUI_WIDTH, GUI_HEIGHT), holder, player);
-        ui.widget(mainGroup);
-        ui.background(new ColorRectTexture(0x90000000));
+        return createUIWithViewport(mainGroup);
+    }
 
-        return ui;
+    private ModularUI createUIWithViewport(WidgetGroup content) {
+        try {
+            var mc = net.minecraft.client.Minecraft.getInstance();
+            int sw = mc.getWindow().getGuiScaledWidth();
+            int sh = mc.getWindow().getGuiScaledHeight();
+
+            int margin = 10;
+            int maxW = sw - margin * 2;
+            int maxH = sh - margin * 2;
+
+            if (GUI_WIDTH <= maxW && GUI_HEIGHT <= maxH) {
+                ModularUI ui = new ModularUI(new Size(GUI_WIDTH, GUI_HEIGHT), holder, player);
+                ui.widget(content);
+                ui.background(new ColorRectTexture(0x90000000));
+                return ui;
+            } else {
+                int viewportW = Math.min(GUI_WIDTH, maxW);
+                int viewportH = Math.min(GUI_HEIGHT, maxH);
+
+                DraggableScrollableWidgetGroup viewport =
+                        new DraggableScrollableWidgetGroup(0, 0, viewportW, viewportH);
+                viewport.setYScrollBarWidth(8);
+                viewport.setYBarStyle(
+                        new ColorRectTexture(COLOR_BORDER_DARK),
+                        new ColorRectTexture(COLOR_BORDER_LIGHT)
+                );
+                viewport.addWidget(content);
+
+                WidgetGroup root = new WidgetGroup(0, 0, viewportW, viewportH);
+                root.addWidget(viewport);
+
+                ModularUI ui = new ModularUI(new Size(viewportW, viewportH), holder, player);
+                ui.widget(root);
+                ui.background(new ColorRectTexture(0x90000000));
+                return ui;
+            }
+        } catch (Throwable t) {
+            ModularUI ui = new ModularUI(new Size(GUI_WIDTH, GUI_HEIGHT), holder, player);
+            ui.widget(content);
+            ui.background(new ColorRectTexture(0x90000000));
+            return ui;
+        }
     }
 
     private WidgetGroup createMainPanel() {
@@ -146,19 +175,16 @@ public class DismantlerUI {
                 new ColorBorderTexture(1, COLOR_BORDER_DARK)
         ));
 
-        // Label
         LabelWidget label = new LabelWidget(5, 5, "§7Blocks to Recover");
         label.setTextColor(COLOR_TEXT_GRAY);
         panel.addWidget(label);
 
-        // Total count
         if (scanResult != null) {
             String totalText = String.format("§7Total: §f%d blocks", scanResult.getTotalBlocks());
             LabelWidget totalLabel = new LabelWidget(5, 18, totalText);
             totalLabel.setTextColor(COLOR_TEXT_WHITE);
             panel.addWidget(totalLabel);
 
-            // Block list
             BlockListWidget blockList = new BlockListWidget(
                     5, 35, 220, 200, scanResult
             );
@@ -257,7 +283,6 @@ public class DismantlerUI {
 
         closeUI();
 
-        // Mensaje al jugador
         player.displayClientMessage(
                 Component.literal("§aMultiblock dismantled successfully!"),
                 false

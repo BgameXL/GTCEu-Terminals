@@ -9,9 +9,11 @@ import com.gtceuterminal.common.upgrade.ComponentUpgrader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;
+
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
@@ -23,25 +25,29 @@ public class CPacketComponentUpgrade {
     private List<BlockPos> positions = new ArrayList<>();
     private final int targetTier;
     private final String targetUpgradeId; // optional (e.g. maintenance hatch variant)
+    private final BlockPos controllerPos;
+    private ServerLevel level;
 
     // Main constructor used by decode
-    public CPacketComponentUpgrade(List<BlockPos> positions, int targetTier, String targetUpgradeId) {
+    public CPacketComponentUpgrade(List<BlockPos> positions, int targetTier, String targetUpgradeId, BlockPos controllerPos) {
         this.positions = positions;
         this.targetTier = targetTier;
         this.targetUpgradeId = targetUpgradeId;
+        this.controllerPos = controllerPos;
     }
 
     // Convenient constructor for a single component
     public CPacketComponentUpgrade(BlockPos position, int targetTier, String targetUpgradeId, BlockPos controllerPos) {
         this.positions = new ArrayList<>();
-        this.positions.add(position);  // IMPORTANTE: Agregar la posición
+        this.positions.add(position);
         this.targetTier = targetTier;
         this.targetUpgradeId = targetUpgradeId;
+        this.controllerPos = controllerPos;
     }
 
     // Backward compatible constructors (tier-only)
-    public CPacketComponentUpgrade(List<BlockPos> positions, int targetTier) {
-        this(positions, targetTier, null);
+    public CPacketComponentUpgrade(BlockPos position, int targetTier, BlockPos controllerPos) {
+        this(position, targetTier, null, controllerPos);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -50,6 +56,7 @@ public class CPacketComponentUpgrade {
             buf.writeBlockPos(pos);
         }
         buf.writeInt(targetTier);
+        buf.writeBlockPos(controllerPos);
 
         // optional upgradeId
         boolean hasId = targetUpgradeId != null && !targetUpgradeId.isBlank();
@@ -64,6 +71,7 @@ public class CPacketComponentUpgrade {
             positions.add(buf.readBlockPos());
         }
         int targetTier = buf.readInt();
+        BlockPos controllerPos = buf.readBlockPos();
 
         String upgradeId = null;
         // If older client/server mismatch happens, this may throw, but protocol is controlled by mod.
@@ -72,7 +80,7 @@ public class CPacketComponentUpgrade {
             upgradeId = buf.readUtf(32767);
         }
 
-        return new CPacketComponentUpgrade(positions, targetTier, upgradeId);
+        return new CPacketComponentUpgrade(positions, targetTier, upgradeId, controllerPos);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
@@ -82,6 +90,8 @@ public class CPacketComponentUpgrade {
 
             // Find wireless terminal in player's hands or inventory
             ItemStack wirelessTerminal = findWirelessTerminal(player);
+
+            boolean upgradedCoils = false;
 
             int upgraded = 0;
             int failed = 0;
@@ -99,6 +109,9 @@ public class CPacketComponentUpgrade {
                     continue;
                 }
 
+                if (type == ComponentType.COIL) {
+                }
+
                 ComponentInfo component = new ComponentInfo(type, currentTier, pos, state);
 
                 // Pass wireless terminal to upgrader
@@ -112,8 +125,12 @@ public class CPacketComponentUpgrade {
                         wirelessTerminal
                 );
 
-                if (result.success) upgraded++;
-                else failed++;
+                if (result.success) {
+                    upgraded++;
+                    if (type == ComponentType.COIL) upgradedCoils = true;
+                } else {
+                    failed++;
+                }
             }
 
             // Send feedback
@@ -125,6 +142,17 @@ public class CPacketComponentUpgrade {
                 player.playSound(SoundEvents.ANVIL_USE, 1.0F, 1.0F);
             }
 
+            if (upgradedCoils) {
+                refreshController((ServerLevel) player.level(), controllerPos);
+            }
+
+            if (upgraded > 0) {
+                player.displayClientMessage(
+                        Component.literal("§6⚠ Items may be voided or dropped when upgrading/downgrading components"),
+                        false
+                );
+            }
+
             if (failed > 0) {
                 player.displayClientMessage(
                         Component.literal("§cFailed to upgrade " + failed + " component(s)"),
@@ -133,6 +161,90 @@ public class CPacketComponentUpgrade {
             }
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    //
+    private static void refreshController(ServerLevel level, BlockPos controllerPos) {
+        var be = level.getBlockEntity(controllerPos);
+        if (be != null) {
+            try {
+                // MetaMachineBlockEntity#getMetaMachine()
+                var getMetaMachine = be.getClass().getMethod("getMetaMachine");
+                Object mm = getMetaMachine.invoke(be);
+
+                if (mm != null) {
+
+                    //
+                    Object lock = null;
+                    try {
+                        var getLock = mm.getClass().getMethod("getPatternLock");
+                        lock = getLock.invoke(mm);
+                        if (lock != null) {
+                            var lockM = lock.getClass().getMethod("lock");
+                            lockM.invoke(lock);
+                        }
+                    } catch (NoSuchMethodException ignored) {}
+
+                    try {
+                        // 1) invalidate structure to force re-check
+                        try {
+                            var invalidate = mm.getClass().getMethod("invalidateStructure");
+                            invalidate.invoke(mm);
+                        } catch (NoSuchMethodException ignored) {}
+
+                        // 2) re-check pattern
+                        boolean formed = false;
+                        try {
+                            var check = mm.getClass().getMethod("checkStructurePattern");
+                            Object r = check.invoke(mm);
+                            formed = (r instanceof Boolean b) ? b : true;
+                        } catch (NoSuchMethodException ignored) {
+                            try {
+                                var check2 = mm.getClass().getMethod("checkPattern");
+                                Object r2 = check2.invoke(mm);
+                                formed = (r2 instanceof Boolean b) ? b : true;
+                            } catch (NoSuchMethodException ignored2) {}
+                        }
+
+                        // 3) if formed, call onFormed, otherwise onInvalid
+                        if (formed) {
+                            try {
+                                var onFormed = mm.getClass().getMethod("onStructureFormed");
+                                onFormed.invoke(mm);
+                            } catch (NoSuchMethodException ignored) {}
+                        } else {
+                            // if not formed, we call onStructureInvalidated
+                            try {
+                                var onInv = mm.getClass().getMethod("onStructureInvalid");
+                                onInv.invoke(mm);
+                            } catch (NoSuchMethodException ignored) {
+                                try {
+                                    var onInv2 = mm.getClass().getMethod("onStructureInvalidated");
+                                    onInv2.invoke(mm);
+                                } catch (NoSuchMethodException ignored2) {}
+                            }
+                        }
+
+                        return;
+
+                    } finally {
+                        // unlock if we locked
+                        if (lock != null) {
+                            try {
+                                var unlockM = lock.getClass().getMethod("unlock");
+                                unlockM.invoke(lock);
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // hard fallback
+        var state = level.getBlockState(controllerPos);
+        level.sendBlockUpdated(controllerPos, state, state, 3);
+        level.updateNeighborsAt(controllerPos, state.getBlock());
+        level.blockUpdated(controllerPos, state.getBlock());
     }
 
     private ItemStack findWirelessTerminal(ServerPlayer player) {

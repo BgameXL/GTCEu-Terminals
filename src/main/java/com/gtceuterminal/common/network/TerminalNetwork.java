@@ -81,7 +81,19 @@ public class TerminalNetwork {
                 .decoder(CPacketOpenManagerSettings::decode)
                 .consumerMainThread(CPacketOpenManagerSettings::handle)
                 .add();
+/**
+        CHANNEL.messageBuilder(CPacketOpenPowerLoggerUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketOpenPowerLoggerUI::encode)
+                .decoder(CPacketOpenPowerLoggerUI::decode)
+                .consumerMainThread(CPacketOpenPowerLoggerUI::handle)
+                .add();
 
+        CHANNEL.messageBuilder(CPacketOpenPowerMonitorUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketOpenPowerMonitorUI::encode)
+                .decoder(CPacketOpenPowerMonitorUI::decode)
+                .consumerMainThread(CPacketOpenPowerMonitorUI::handle)
+                .add();
+**/
         GTCEUTerminalMod.LOGGER.info("Registered {} Terminal Network packets", packetId);
         GTCEUTerminalMod.LOGGER.info("Network packets registered successfully!");
     }

@@ -30,14 +30,14 @@ import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Size;
 import com.lowdragmc.lowdraglib.utils.Position;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.util.Mth;
-import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,7 +50,7 @@ import java.util.Objects;
 public class ComponentUpgradeDialog extends DialogWidget {
 
     private static final int dialogW = 400;
-    private static final int dialogH = 350;
+    private static final int dialogH = 380;
     private static final int dialogS = 10;
 
     private static final int COLOR_BG_DARK = 0xFF1A1A1A;
@@ -67,13 +67,17 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private final MultiblockInfo multiblock;
     private final Player player;
     private final DialogWidget parentDialog;
+    private final ComponentDetailUI parentUI;
     private UniversalUpgradeCatalog universalCatalog;
 
     private Integer tierFilter = null; // null = ALL
     private DraggableScrollableWidgetGroup optionsScroll;
     private ComponentInfo currentRep;
+    private boolean centeredOnce = false;
 
     private int selectedTier = -1;
+    private int W = dialogW;
+    private int H = dialogH;
 
     // For component types where tier is not enough (e.g. maintenance variants, coil block variants)
     private String selectedUpgradeId = null;
@@ -85,15 +89,23 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private WidgetGroup materialsPanel;
     private ButtonWidget confirmButton;
 
+    public static final int DIALOG_W = 400;
+    public static final int DIALOG_H = 380;
+
+
+    private boolean isPositioned = false;  // <-- AGREGAR ESTE CAMPO
+
     public ComponentUpgradeDialog(
             WidgetGroup parent,
             ComponentDetailUI parentUI,
-            DialogWidget parentDialog, // <- type base
+            DialogWidget parentDialog,
             ComponentGroup group,
             MultiblockInfo multiblock,
             Player player
     ) {
         super(parent, true);
+
+        this.parentUI = parentUI;
         this.parentDialog = parentDialog;
         this.group = group;
         this.multiblock = multiblock;
@@ -102,75 +114,92 @@ public class ComponentUpgradeDialog extends DialogWidget {
         initDialog();
     }
 
-    private int getGuiW(){
-        try {
-            return Minecraft.getInstance().getWindow().getGuiScaledWidth();
-        } catch (Throwable t) {
-            return parent.getSize().width;
-        }
-    }
-
-    private int getGuiH(){
-        try {
-            return Minecraft.getInstance().getWindow().getGuiScaledHeight();
-        } catch (Throwable t) {
-            return parent.getSize().height;
-        }
-    }
-
     private void initDialog() {
-        // Obtain screen dimensions
         var mc = Minecraft.getInstance();
         int sw = mc.screen != null ? mc.screen.width : mc.getWindow().getGuiScaledWidth();
         int sh = mc.screen != null ? mc.screen.height : mc.getWindow().getGuiScaledHeight();
 
         int margin = 10;
 
-        int w = dialogW;
-        int h = dialogH;
-
-        // Adjust size if screen is too small
         int maxW = sw - margin * 2;
         int maxH = sh - margin * 2;
-        if (w > maxW) w = maxW;
-        if (h > maxH) h = maxH;
 
-        setSize(new Size(w, h));
+        int contentW = dialogW;
+        int contentH = dialogH;
 
-        // Dialog centered on screen
-        int screenX = (sw - w) / 2;
-        int screenY = (sh - h) / 2;
+        int viewportW = Math.min(contentW, maxW);
+        int viewportH = Math.min(contentH, maxH);
 
-        // Clamp
-        screenX = Mth.clamp(screenX, margin, sw - w - margin);
-        screenY = Mth.clamp(screenY, margin, sh - h - margin);
+        int screenX = (sw - viewportW) / 2;
+        int screenY = (sh - viewportH) / 2;
 
-        // Convert screen coordinates to parent-relative coordinates
+        screenX = Mth.clamp(screenX, margin, sw - viewportW - margin);
+        screenY = Mth.clamp(screenY, margin, sh - viewportH - margin);
+
         Position parentAbsPos = parent.getPosition();
         int x = screenX - parentAbsPos.x;
         int y = screenY - parentAbsPos.y;
 
-        setSelfPosition(new Position(x, y));
+        if (contentW <= maxW && contentH <= maxH) {
+            setSize(new Size(contentW, contentH));
+            setSelfPosition(new Position(x, y));
+            setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
-        setBackground(new ColorRectTexture(COLOR_BG_DARK));
+            addWidget(new ImageWidget(0, 0, contentW, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            addWidget(new ImageWidget(0, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            addWidget(new ImageWidget(contentW - 2, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_DARK)));
+            addWidget(new ImageWidget(0, contentH - 2, contentW, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
 
-        // Borders
-        addWidget(new ImageWidget(0, 0, w, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(0, 0, 2, h, new ColorRectTexture(COLOR_BORDER_LIGHT)));
-        addWidget(new ImageWidget(w - 2, 0, 2, h, new ColorRectTexture(COLOR_BORDER_DARK)));
-        addWidget(new ImageWidget(0, h - 2, w, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
+            addWidget(createHeader());
+            addWidget(createInfoPanel());
 
-        addWidget(createHeader());
-        addWidget(createInfoPanel());
+            tierSelectionPanel = createTierSelection();
+            addWidget(tierSelectionPanel);
 
-        tierSelectionPanel = createTierSelection();
-        addWidget(tierSelectionPanel);
+            materialsPanel = createMaterialsPanel();
+            addWidget(materialsPanel);
 
-        materialsPanel = createMaterialsPanel();
-        addWidget(materialsPanel);
+            addWidget(createButtons());
+        } else {
+            setSize(new Size(viewportW, viewportH));
+            setSelfPosition(new Position(x, y));
+            setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
-        addWidget(createButtons());
+            WidgetGroup content = new WidgetGroup(0, 0, contentW, contentH);
+            content.setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
+            content.addWidget(new ImageWidget(0, 0, contentW, 2, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            content.addWidget(new ImageWidget(0, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_LIGHT)));
+            content.addWidget(new ImageWidget(contentW - 2, 0, 2, contentH, new ColorRectTexture(COLOR_BORDER_DARK)));
+            content.addWidget(new ImageWidget(0, contentH - 2, contentW, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
+
+            content.addWidget(createHeader());
+            content.addWidget(createInfoPanel());
+
+            WidgetGroup tierPanel = createTierSelection();
+            content.addWidget(tierPanel);
+            this.tierSelectionPanel = tierPanel;
+
+            WidgetGroup matPanel = createMaterialsPanel();
+            content.addWidget(matPanel);
+            this.materialsPanel = matPanel;
+
+            content.addWidget(createButtons());
+
+            // Viewport
+            DraggableScrollableWidgetGroup viewport =
+                    new DraggableScrollableWidgetGroup(0, 0, viewportW, viewportH);
+            viewport.setYScrollBarWidth(8);
+            viewport.setYBarStyle(
+                    new ColorRectTexture(COLOR_BORDER_DARK),
+                    new ColorRectTexture(COLOR_BORDER_LIGHT)
+            );
+            viewport.addWidget(content);
+
+            addWidget(viewport);
+        }
+
+        // Catalog
         var controller = multiblock.getController();
         if (controller instanceof MultiblockControllerMachine mmc) {
             universalCatalog = UniversalUpgradeCatalogBuilder.build(mmc, player.level());
@@ -178,7 +207,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private WidgetGroup createHeader() {
-        WidgetGroup header = new WidgetGroup(2, 2, dialogW - 4, 24);
+        WidgetGroup header = new WidgetGroup(2, 2, W - 4, 24);
         header.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
         String title = "§l§fUpgrade " + group.getType().name().replace("_", " ");
@@ -211,12 +240,13 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
     // Tier selection / Option selection
     private WidgetGroup createTierSelection() {
+        ComponentInfo rep = group.getRepresentative();
+
         WidgetGroup panel = new WidgetGroup(10, 70, dialogW - 20, 75);
         panel.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
-        ComponentInfo rep = group.getRepresentative();
         if (rep == null) return panel;
-        if (tierFilter == null) tierFilter = rep.getTier(); // default = actual tier
+        if (tierFilter == null) tierFilter = rep.getTier();
 
         // Label
         String labelText;
@@ -230,32 +260,51 @@ public class ComponentUpgradeDialog extends DialogWidget {
         label.setTextColor(COLOR_TEXT_WHITE);
         panel.addWidget(label);
 
-        // Scroll area
+        // Scroll
+        int scrollWidth, scrollHeight;
+
+        if (rep.getType() == ComponentType.MAINTENANCE || rep.getType() == ComponentType.COIL) {
+            int btnWidth = 120;
+            int spacing = 6;
+            scrollWidth = (btnWidth * 3) + (spacing * 2) + 20;  // 386px
+            scrollHeight = 55;
+        } else {
+            scrollWidth = (dialogW - 20) - 20;
+            scrollHeight = 55;
+        }
+
         DraggableScrollableWidgetGroup scroll = new DraggableScrollableWidgetGroup(
-                10, 18, (dialogW - 20) - 20, 55
+                10, 18, scrollWidth, scrollHeight
         );
+
+        scroll.setYScrollBarWidth(6);
+        scroll.setYBarStyle(
+                new ColorRectTexture(COLOR_BORDER_DARK),
+                new ColorRectTexture(0xFF888888)
+        );
+
         panel.addWidget(scroll);
         this.optionsScroll = scroll;
         this.currentRep = rep;
 
-        // --- MAINTENANCE: grid of variant blocks from config ---
+        // --- MAINTENANCE ---
         if (rep.getType() == ComponentType.MAINTENANCE) {
             buildMaintenanceGrid(rep, scroll);
             return panel;
         }
 
-        // --- COIL: grid built from GTCEuAPI.HEATING_COILS ---
+        // --- COIL ---
         if (rep.getType() == ComponentType.COIL) {
             buildCoilGrid(rep, scroll);
             return panel;
         }
 
-        // --- Default: universal candidates grid ---
-        if (!buildUniversalCandidatesGrid(rep, scroll, tierFilter)){
-            // fallback
+        // --- Default ---
+        if (!buildUniversalCandidatesGrid(rep, scroll, tierFilter)) {
             List<Integer> tiers = ComponentUpgradeHelper.getAvailableTiers(rep.getType());
             buildTierGrid(rep, scroll, tiers);
         }
+
         return panel;
     }
 
@@ -272,12 +321,10 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
         String currentId = rep.getState().getBlock().builtInRegistryHolder().key().location().toString();
 
-        // UI layout
-        int btnWidth = 132;
+        int btnWidth = 120;
         int btnHeight = 26;
         int spacing = 6;
-        int perRow = 2;
-
+        int perRow = 3;
         int xPos = 0;
         int yPos = 0;
         int added = 0;
@@ -286,7 +333,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
         for (var c : candidates) {
             if (c == null || c.blockId() == null) continue;
             if (currentId != null && currentId.equalsIgnoreCase(c.blockId())) continue;
-            if (filterTier != null && c.tier() != filterTier) continue; // <-- AQUÍ
+            if (filterTier != null && c.tier() != filterTier) continue;
             list.add(c);
         }
 
@@ -297,8 +344,6 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
         for (var c : list) {
             if (c == null || c.blockId() == null) continue;
-
-            // if (currentId != null && currentId.equalsIgnoreCase(c.blockId())) continue;
 
             if (added > 0 && added % perRow == 0) {
                 xPos = 0;
@@ -316,8 +361,8 @@ public class ComponentUpgradeDialog extends DialogWidget {
             } catch (Exception ignored) {}
 
             display = trimCommonSuffixes(display);
-            if (display.length() > 22) {
-                display = display.substring(0, 21) + "…";
+            if (display.length() > 16) {
+                display = display.substring(0, 15) + "…";
             }
 
             boolean isSelected = c.blockId().equalsIgnoreCase(selectedUpgradeId);
@@ -340,7 +385,6 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
         return added > 0;
     }
-
 
     private void buildTierGrid(ComponentInfo rep, DraggableScrollableWidgetGroup scroll, List<Integer> tiers) {
         // Small buttons
@@ -523,6 +567,25 @@ public class ComponentUpgradeDialog extends DialogWidget {
         return out.trim();
     }
 
+    private static Position getAbsolutePos(WidgetGroup g) {
+        int ax = 0, ay = 0;
+        WidgetGroup cur = g;
+
+        while (cur != null) {
+            Position p = cur.getPosition();
+            ax += p.x;
+            ay += p.y;
+
+            // getParent()
+            WidgetGroup parent = cur.getParent();
+            if (parent == null) break;
+
+            cur = parent;
+        }
+
+        return new Position(ax, ay);
+    }
+
     private WidgetGroup createButtons() {
         WidgetGroup buttons = new WidgetGroup(10, dialogH - 35, dialogW - 20, 25);
 
@@ -586,12 +649,11 @@ public class ComponentUpgradeDialog extends DialogWidget {
         String tierName = safeTierName(tier);
         boolean isSelected = (tier == selectedTier);
 
-        // Texto reutilizado (normal y hover) para que no desaparezca
         TextTexture text = new TextTexture("§f" + tierName)
                 .setWidth(width)
                 .setType(TextTexture.TextType.NORMAL);
 
-        int bg = isSelected ? 0x6600FF00 : COLOR_BG_LIGHT; // seleccionado: verde TRANSPARENTE
+        int bg = isSelected ? 0x6600FF00 : COLOR_BG_LIGHT;
         int border = isSelected ? 0xFF00FF00 : COLOR_BORDER_LIGHT;
 
         ButtonWidget btn = new ButtonWidget(
@@ -623,7 +685,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
                 .setWidth(width)
                 .setType(TextTexture.TextType.NORMAL);
 
-        int bg = isSelected ? 0x6600FF00 : COLOR_BG_LIGHT; // verde transparente al seleccionar
+        int bg = isSelected ? 0x6600FF00 : COLOR_BG_LIGHT;
         int border = isSelected ? 0xFF00FF00 : COLOR_BORDER_LIGHT;
 
         ButtonWidget btn = new ButtonWidget(
@@ -768,8 +830,11 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private void refreshMaterialsPanel() {
-        waitToRemoved.add(materialsPanel);
+        if (materialsPanel != null) {
+            this.removeWidget(materialsPanel);
+        }
 
+        // Calcular posición Y (usar la original 149 para que funcione)
         materialsPanel = new WidgetGroup(10, 149, dialogW - 20, 156);
 
         LabelWidget label = new LabelWidget(5, 4, "§l§7Required Materials:");
@@ -801,8 +866,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
                 materialsPanel.addWidget(info);
             }
         }
-
-        addWidget(materialsPanel);
+        this.addWidget(materialsPanel);
     }
 
     private ItemStack getWirelessTerminal(Player player) {
@@ -829,11 +893,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
         }
 
         TerminalNetwork.CHANNEL.sendToServer(
-                new CPacketComponentUpgrade(
-                        positions,
-                        selectedTier,
-                        selectedUpgradeId // can be null if tier-based only
-                )
+                new CPacketComponentUpgrade(positions, selectedTier, selectedUpgradeId, multiblock.getControllerPos())
         );
 
         player.displayClientMessage(
@@ -847,15 +907,26 @@ public class ComponentUpgradeDialog extends DialogWidget {
     }
 
     private void openUpgradeDialog(ComponentGroup group) {
-        // Close other dialogs
-        for (Widget widget : new ArrayList<>(parent.widgets)) {
-            if (widget instanceof ComponentUpgradeDialog d) d.close();
-        }
+        WidgetGroup root = this.gui.mainGroup;
 
-        // Desactivate input on parent dialog
-        this.setActive(false);
-        var upgrade = new ComponentUpgradeDialog(parent, null, this, group, multiblock, player);
-        bringToFront(parent, upgrade);
+        ComponentUpgradeDialog dialog = new ComponentUpgradeDialog(
+                root,
+                null,
+                this,
+                group,
+                multiblock,
+                player
+        );
+
+        int rw = root.getSize() != null ? root.getSize().width : 400;
+        int rh = root.getSize() != null ? root.getSize().height : 350;
+
+        dialog.setSelfPosition(new Position(
+                Math.max(0, (rw - 400) / 2),
+                Math.max(0, (rh - 380) / 2)
+        ));
+
+        bringToFront(root, dialog);
     }
 
     private static void bringToFront(WidgetGroup parent, Widget w) {
@@ -868,4 +939,5 @@ public class ComponentUpgradeDialog extends DialogWidget {
         super.close();
         if (parentDialog != null) parentDialog.setActive(true);
     }
+
 } // First worst file.

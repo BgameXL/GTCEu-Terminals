@@ -12,7 +12,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
-    // Registers UI Factories on client side
+// Registers UI Factories on client side
 @OnlyIn(Dist.CLIENT)
 public class UIFactoryInitializer {
 
@@ -35,8 +35,18 @@ public class UIFactoryInitializer {
             GTCEUTerminalMod.LOGGER.info("✓ Registered DismantlerUIFactory with ID: {}",
                     DismantlerUIFactory.UI_ID);
 
+            // Register Manager Settings Factory
             UIFactory.register(ManagerSettingsUIFactory.INSTANCE);
             GTCEUTerminalMod.LOGGER.info("✓ Registered ManagerSettingsUIFactory");
+
+            /** Register Power Logger Factory
+            UIFactory.register(PowerLoggerUIFactory.INSTANCE);
+            GTCEUTerminalMod.LOGGER.info("✓ Registered PowerLoggerUIFactory");
+
+            // Register Power Monitor Factory
+            UIFactory.register(PowerMonitorUIFactory.INSTANCE);
+            GTCEUTerminalMod.LOGGER.info("✓ Registered PowerMonitorUIFactory");
+             **/
 
             GTCEUTerminalMod.LOGGER.info("All UI Factories registered successfully!");
         });
