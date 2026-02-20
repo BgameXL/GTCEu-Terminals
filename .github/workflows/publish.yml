@@ -44,7 +44,6 @@ jobs:
       - name: Publish to Modrinth + CurseForge
         uses: Kir-Antipov/mc-publish@v3.3.0
         with:
-          # ─── Archivos ────────────────────────────────────────────────
           files: |
             build/libs/!(*-@(dev|sources|javadoc)).jar
 
