@@ -2,11 +2,18 @@ package com.gtceuterminal.common.multiblock;
 
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
 import net.minecraft.core.BlockPos;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents a detected multiblock structure in the world, containing information about its controller, components, status, and other metadata.
+ * This is the main data structure used by the Multiblock Scanner and related UI components to display multiblock information to the player.
+ */
 public class MultiblockInfo {
     private final IMultiController controller;
     private final String name;
@@ -19,6 +26,10 @@ public class MultiblockInfo {
 
     // Universal Scanner Support
     private String sourceMod = "gtceu";
+    // Custom display name set by the player, stored in the MSM item NBT. If null or blank, falls back to the default machine type name.
+    private String customDisplayName = null;
+    // Cached set of all block positions in this multiblock, used for efficient highlighting and interaction. Populated on demand.
+    private Set<BlockPos> allBlockPositions = null;
 
     public MultiblockInfo(
             IMultiController controller,
@@ -43,7 +54,32 @@ public class MultiblockInfo {
     }
 
     public String getName() {
+        return customDisplayName != null && !customDisplayName.isBlank()
+                ? customDisplayName : name;
+    }
+
+    public String getMachineTypeName() {
         return name;
+    }
+
+    public void setCustomDisplayName(String name) {
+        this.customDisplayName = name;
+    }
+
+    public String getCustomDisplayName() {
+        return customDisplayName != null ? customDisplayName : "";
+    }
+
+    public Set<BlockPos> getAllBlockPositions() {
+        return allBlockPositions != null ? allBlockPositions : Collections.emptySet();
+    }
+
+    public void setAllBlockPositions(Set<BlockPos> positions) {
+        this.allBlockPositions = positions;
+    }
+
+    public String posKey(String dimensionId) {
+        return dimensionId + ":" + controllerPos.getX() + "," + controllerPos.getY() + "," + controllerPos.getZ();
     }
 
     public BlockPos getControllerPos() {
@@ -157,7 +193,6 @@ public class MultiblockInfo {
     // ============================================
     // MOD SOURCE TRACKING
     // ============================================
-
     public void setSourceMod(String modId) {
         this.sourceMod = modId != null ? modId : "unknown";
     }

@@ -13,6 +13,16 @@ import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.*;
 import com.lowdragmc.lowdraglib.utils.Size;
 
+import com.gtceuterminal.client.highlight.MultiblockHighlighter;
+import com.gtceuterminal.common.energy.LinkedMachineData;
+import com.gtceuterminal.common.network.CPacketSetCustomMultiblockName;
+import com.gtceuterminal.common.network.TerminalNetwork;
+import com.lowdragmc.lowdraglib.gui.editor.ColorPattern;
+import com.lowdragmc.lowdraglib.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib.gui.widget.DialogWidget;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
@@ -39,6 +49,7 @@ public class MultiStructureManagerUI {
     private List<MultiblockInfo> multiblocks = new ArrayList<>();
     private int selectedIndex = -1;
     private ModularUI gui;
+    private WidgetGroup rootGroup;
 
     // Keep a reference so we can disable hover/clicks when modal dialogs are open
     private DraggableScrollableWidgetGroup multiblockScroll;
@@ -58,6 +69,7 @@ public class MultiStructureManagerUI {
 
     public ModularUI createUI() {
         WidgetGroup mainGroup = new WidgetGroup(0, 0, dialogW, dialogH);
+        this.rootGroup = mainGroup;
         mainGroup.setBackground(new ColorRectTexture(COLOR_BG_DARK));
 
         mainGroup.addWidget(createMainPanel());
@@ -150,7 +162,25 @@ public class MultiStructureManagerUI {
         nameLabel.setTextColor(COLOR_TEXT_WHITE);
         entry.addWidget(nameLabel);
 
-        LabelWidget distLabel = new LabelWidget(180, 5, mb.getDistanceString());
+        // 🔆 highlight button
+        ButtonWidget highlightBtn = new ButtonWidget(dialogW - 104, 2, 16, 16,
+                new ColorRectTexture(0x00000000),
+                cd -> toggleHighlight(mb));
+        highlightBtn.setButtonTexture(
+                new TextTexture("§e◉").setWidth(16).setType(TextTexture.TextType.NORMAL));
+        highlightBtn.setHoverTexture(new ColorRectTexture(0x33FFFF00));
+        entry.addWidget(highlightBtn);
+
+        // ✎ rename button
+        ButtonWidget renameBtn = new ButtonWidget(dialogW - 84, 2, 16, 16,
+                new ColorRectTexture(0x00000000),
+                cd -> openRenameDialog(mb));
+        renameBtn.setButtonTexture(
+                new TextTexture("§7✎").setWidth(16).setType(TextTexture.TextType.NORMAL));
+        renameBtn.setHoverTexture(new ColorRectTexture(0x33FFFFFF));
+        entry.addWidget(renameBtn);
+
+        LabelWidget distLabel = new LabelWidget(dialogW - 66, 5, mb.getDistanceString());
         distLabel.setTextColor(COLOR_TEXT_GRAY);
         entry.addWidget(distLabel);
 
@@ -187,8 +217,100 @@ public class MultiStructureManagerUI {
         return refreshBtn;
     }
 
+    // Highlight the multiblock in the world.
+    private void toggleHighlight(MultiblockInfo mb) {
+        int durationMs = com.gtceuterminal.common.config.ItemsConfig.getMgrHighlightDurationMs();
+        int color      = com.gtceuterminal.common.config.ItemsConfig.getMgrHighlightColor();
+        MultiblockHighlighter.highlight(mb, color, durationMs);
+        // Close the UI so the player can actually see the highlight in the world
+        if (player instanceof net.minecraft.client.player.LocalPlayer lp) {
+            lp.closeContainer();
+        }
+    }
+
+    // Opens a dialog to rename the multiblock. Pre-filled with existing custom name (if any).
+    private void openRenameDialog(MultiblockInfo mb) {
+        if (rootGroup == null) return;
+
+        final int DW = 240;
+        final int DH = 86;
+        final int DX = (dialogW - DW) / 2;
+        final int DY = (dialogH - DH) / 2;
+
+        DialogWidget dialog = new DialogWidget(rootGroup, true);
+        dialog.setBackground(new ColorRectTexture(0xA0000000));
+        dialog.setClickClose(false);
+
+        WidgetGroup panel = new WidgetGroup(DX, DY, DW, DH);
+        panel.setBackground(new GuiTextureGroup(
+                new ColorRectTexture(0xFF1E1E1E),
+                ColorPattern.GRAY.borderTexture(-1)));
+        dialog.addWidget(panel);
+
+        // Title bar
+        WidgetGroup titleBar = new WidgetGroup(0, 0, DW, 18);
+        titleBar.setBackground(new ColorRectTexture(0xFF2A2A2A));
+        panel.addWidget(titleBar);
+        LabelWidget title = new LabelWidget(8, 4, "§6Rename Multiblock");
+        title.setTextColor(0xFFFFAA00);
+        titleBar.addWidget(title);
+
+        // Sub-label showing current machine type
+        LabelWidget sub = new LabelWidget(8, 22, "§7" + truncate(mb.getMachineTypeName(), 30));
+        sub.setTextColor(0xFFAAAAAA);
+        panel.addWidget(sub);
+
+        // Text field — null supplier, pre-filled with existing custom name
+        TextFieldWidget textField = new TextFieldWidget(8, 36, DW - 16, 16, null, s -> {});
+        textField.setMaxStringLength(32);
+        textField.setBordered(true);
+        textField.setCurrentString(mb.getCustomDisplayName());
+        panel.addWidget(textField);
+
+        // Confirm
+        ButtonWidget confirmBtn = new ButtonWidget(8, 58, (DW - 20) / 2, 18,
+                new ColorRectTexture(0xFF1A4A1A),
+                cd -> {
+                    String dimId = LinkedMachineData.dimId(player.level());
+                    String key   = mb.posKey(dimId);
+                    String name  = textField.getCurrentString().trim();
+                    TerminalNetwork.CHANNEL.sendToServer(
+                            new CPacketSetCustomMultiblockName(null, key, name, false));
+                    // Update local cache immediately so the list reflects the new name
+                    mb.setCustomDisplayName(name);
+                    dialog.close();
+                    refreshUI();
+                });
+        confirmBtn.setButtonTexture(
+                new TextTexture("§aConfirm").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+        confirmBtn.setHoverTexture(new ColorRectTexture(0xFF1E6A1E));
+        panel.addWidget(confirmBtn);
+
+        // Clear name
+        ButtonWidget clearBtn = new ButtonWidget(DW / 2 + 2, 58, (DW - 20) / 2, 18,
+                new ColorRectTexture(0xFF3A2A2A),
+                cd -> {
+                    String dimId = LinkedMachineData.dimId(player.level());
+                    String key   = mb.posKey(dimId);
+                    TerminalNetwork.CHANNEL.sendToServer(
+                            new CPacketSetCustomMultiblockName(null, key, "", true));
+                    mb.setCustomDisplayName(null);
+                    dialog.close();
+                    refreshUI();
+                });
+        clearBtn.setButtonTexture(
+                new TextTexture("§cClear name").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+        clearBtn.setHoverTexture(new ColorRectTexture(0xFF5A3A3A));
+        panel.addWidget(clearBtn);
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return "";
+        return s.length() > max ? s.substring(0, max - 1) + "…" : s;
+    }
+
     private void openComponentDetail(MultiblockInfo multiblock) {
-        GTCEUTerminalMod.LOGGER.info("Opening component detail for: {}", multiblock.getName());
+        // GTCEUTerminalMod.LOGGER.info("Opening component detail for: {}", multiblock.getName());
 
         // Disable the underlying list so it doesn't highlight/hover through the dialog.
         if (multiblockScroll != null) {
@@ -206,6 +328,17 @@ public class MultiStructureManagerUI {
                     }
                 }
         );
+    }
+
+    // Rebuilds the multiblock list UI.
+    private void rebuildList() {
+        if (multiblockScroll == null) return;
+        multiblockScroll.clearAllWidgets();
+        int yPos = 0;
+        for (int i = 0; i < multiblocks.size(); i++) {
+            multiblockScroll.addWidget(createMultiblockEntry(multiblocks.get(i), i, yPos));
+            yPos += 22;
+        }
     }
 
     private void refreshUI() {

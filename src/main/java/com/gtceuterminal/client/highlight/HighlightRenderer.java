@@ -1,14 +1,16 @@
 package com.gtceuterminal.client.highlight;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -17,118 +19,153 @@ import net.minecraftforge.fml.common.Mod;
 
 import org.joml.Matrix4f;
 
+import java.util.Set;
 
-  // Renders multiblock highlights in the world (needs more polish)
-
+// Renders colored highlights on blocks that are part of an active multiblock structure.
 @Mod.EventBusSubscriber(modid = "gtceuterminal", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class HighlightRenderer {
 
+    private static final float INSET = 0.002f; // slight inset to avoid z-fighting
+
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
-            return;
-        }
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) {
-            return;
-        }
+        if (mc.player == null || mc.level == null) return;
 
         var highlights = MultiblockHighlighter.getActiveHighlights();
-        if (highlights.isEmpty()) {
-            return;
-        }
+        if (highlights.isEmpty()) return;
 
-        // Debug
-        if (mc.level.getGameTime() % 20 == 0) {
-            com.gtceuterminal.GTCEUTerminalMod.LOGGER.info("Rendering {} highlights", highlights.size());
-        }
+        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = event.getPoseStack();
 
-        PoseStack poseStack = event.getPoseStack();
-        MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
-        Vec3 cameraPos = event.getCamera().getPosition();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.disableCull();
 
-        for (var highlight : highlights.values()) {
-            renderHighlight(poseStack, bufferSource, highlight, cameraPos);
-        }
-    }
+        Tesselator tess = Tesselator.getInstance();
+        BufferBuilder buf = tess.getBuilder();
+        buf.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
-    private static void renderHighlight(
-            PoseStack poseStack,
-            MultiBufferSource.BufferSource bufferSource,
-            MultiblockHighlighter.HighlightInfo highlight,
-            Vec3 cameraPos
-    ) {
-        poseStack.pushPose();
-        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-
-        float r = 0.0f;   // Red
-        float g = 0.5f;   // Green
-        float b = 1.0f;   // Blue
+        ps.pushPose();
+        ps.translate(-cam.x, -cam.y, -cam.z);
+        Matrix4f mat = ps.last().pose();
 
         float pulse = (System.currentTimeMillis() % 2000) / 2000f;
-        float alpha = 0.3f + (Math.abs((pulse * 2) - 1) * 0.3f); // Pulse between 0.3 and 0.6
+        float alphaMod = 0.25f + Math.abs((pulse * 2) - 1) * 0.20f; // gentle pulse
 
-        com.mojang.blaze3d.systems.RenderSystem.disableDepthTest();
+        for (var hl : highlights.values()) {
+            Set<BlockPos> blockSet = hl.blocks;
+            if (blockSet.isEmpty()) continue;
 
-        // Render bounding box
-        AABB box = highlight.boundingBox.inflate(0.02);
-        renderBox(poseStack, bufferSource, box, r, g, b, alpha);
+            int col = hl.color;
+            float r = ((col >> 16) & 0xFF) / 255f;
+            float g = ((col >>  8) & 0xFF) / 255f;
+            float b = ( col        & 0xFF) / 255f;
+            float a = alphaMod;
 
-        // Render individual block outlines
-        for (BlockPos pos : highlight.blocks) {
-            AABB blockBox = new AABB(pos).inflate(0.01);
-            renderBox(poseStack, bufferSource, blockBox, r, g, b, alpha * 0.6f);
+            for (BlockPos pos : blockSet) {
+                for (Direction dir : Direction.values()) {
+                    BlockPos neighbor = pos.relative(dir);
+                    // Only render face if neighbor is NOT part of this multiblock
+                    if (!blockSet.contains(neighbor)) {
+                        drawFace(buf, mat, pos, dir, r, g, b, a);
+                    }
+                }
+            }
         }
 
-        com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+        ps.popPose();
+        tess.end();
 
-        poseStack.popPose();
+        RenderSystem.enableCull();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
     }
 
-    private static void renderBox(
-            PoseStack poseStack,
-            MultiBufferSource.BufferSource bufferSource,
-            AABB box,
-            float r, float g, float b, float a
-    ) {
-        Matrix4f matrix = poseStack.last().pose();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-        
-        float minX = (float) box.minX;
-        float minY = (float) box.minY;
-        float minZ = (float) box.minZ;
-        float maxX = (float) box.maxX;
-        float maxY = (float) box.maxY;
-        float maxZ = (float) box.maxZ;
+    // Draws a single face of a block with the given color and alpha.
+    private static void drawFace(BufferBuilder buf, Matrix4f mat,
+                                 BlockPos pos, Direction dir,
+                                 float r, float g, float b, float a) {
+        float x = pos.getX();
+        float y = pos.getY();
+        float z = pos.getZ();
 
-        // Bottom square
-        addLine(consumer, matrix, minX, minY, minZ, maxX, minY, minZ, r, g, b, a);
-        addLine(consumer, matrix, maxX, minY, minZ, maxX, minY, maxZ, r, g, b, a);
-        addLine(consumer, matrix, maxX, minY, maxZ, minX, minY, maxZ, r, g, b, a);
-        addLine(consumer, matrix, minX, minY, maxZ, minX, minY, minZ, r, g, b, a);
+        float i = INSET;
 
-        // Top square
-        addLine(consumer, matrix, minX, maxY, minZ, maxX, maxY, minZ, r, g, b, a);
-        addLine(consumer, matrix, maxX, maxY, minZ, maxX, maxY, maxZ, r, g, b, a);
-        addLine(consumer, matrix, maxX, maxY, maxZ, minX, maxY, maxZ, r, g, b, a);
-        addLine(consumer, matrix, minX, maxY, maxZ, minX, maxY, minZ, r, g, b, a);
-
-        // Vertical lines
-        addLine(consumer, matrix, minX, minY, minZ, minX, maxY, minZ, r, g, b, a);
-        addLine(consumer, matrix, maxX, minY, minZ, maxX, maxY, minZ, r, g, b, a);
-        addLine(consumer, matrix, maxX, minY, maxZ, maxX, maxY, maxZ, r, g, b, a);
-        addLine(consumer, matrix, minX, minY, maxZ, minX, maxY, maxZ, r, g, b, a);
+        switch (dir) {
+            case UP -> {
+                float fy = y + 1 - i;
+                quad(buf, mat,
+                        x+i,   fy, z+i,
+                        x+i,   fy, z+1-i,
+                        x+1-i, fy, z+1-i,
+                        x+1-i, fy, z+i,
+                        r, g, b, a);
+            }
+            case DOWN -> {
+                float fy = y + i;
+                quad(buf, mat,
+                        x+i,   fy, z+i,
+                        x+1-i, fy, z+i,
+                        x+1-i, fy, z+1-i,
+                        x+i,   fy, z+1-i,
+                        r, g, b, a);
+            }
+            case NORTH -> { // -Z face
+                float fz = z + i;
+                quad(buf, mat,
+                        x+i,   y+i,   fz,
+                        x+1-i, y+i,   fz,
+                        x+1-i, y+1-i, fz,
+                        x+i,   y+1-i, fz,
+                        r, g, b, a);
+            }
+            case SOUTH -> { // +Z face
+                float fz = z + 1 - i;
+                quad(buf, mat,
+                        x+i,   y+i,   fz,
+                        x+i,   y+1-i, fz,
+                        x+1-i, y+1-i, fz,
+                        x+1-i, y+i,   fz,
+                        r, g, b, a);
+            }
+            case WEST -> { // -X face
+                float fx = x + i;
+                quad(buf, mat,
+                        fx, y+i,   z+i,
+                        fx, y+1-i, z+i,
+                        fx, y+1-i, z+1-i,
+                        fx, y+i,   z+1-i,
+                        r, g, b, a);
+            }
+            case EAST -> { // +X face
+                float fx = x + 1 - i;
+                quad(buf, mat,
+                        fx, y+i,   z+i,
+                        fx, y+i,   z+1-i,
+                        fx, y+1-i, z+1-i,
+                        fx, y+1-i, z+i,
+                        r, g, b, a);
+            }
+        }
     }
 
-    private static void addLine(
-            VertexConsumer consumer,
-            Matrix4f matrix,
-            float x1, float y1, float z1,
-            float x2, float y2, float z2,
-            float r, float g, float b, float a
-    ) {
-        consumer.vertex(matrix, x1, y1, z1).color(r, g, b, a).normal(1, 0, 0).endVertex();
-        consumer.vertex(matrix, x2, y2, z2).color(r, g, b, a).normal(1, 0, 0).endVertex();
+    // Helper
+    private static void quad(BufferBuilder buf, Matrix4f mat,
+                             float x1, float y1, float z1,
+                             float x2, float y2, float z2,
+                             float x3, float y3, float z3,
+                             float x4, float y4, float z4,
+                             float r, float g, float b, float a) {
+        buf.vertex(mat, x1, y1, z1).color(r, g, b, a).endVertex();
+        buf.vertex(mat, x2, y2, z2).color(r, g, b, a).endVertex();
+        buf.vertex(mat, x3, y3, z3).color(r, g, b, a).endVertex();
+        buf.vertex(mat, x4, y4, z4).color(r, g, b, a).endVertex();
     }
 }

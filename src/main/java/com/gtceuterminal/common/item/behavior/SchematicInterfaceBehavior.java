@@ -7,6 +7,11 @@ import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiPart;
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.client.ClientProxy;
 import com.gtceuterminal.common.data.SchematicData;
+import com.gtceuterminal.common.material.MaterialCalculator;
+import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
+import com.gtceuterminal.common.ae2.MENetworkFluidHandlerWrapper;
+import com.gtceuterminal.common.ae2.WirelessTerminalHandler;
+import com.gtceuterminal.common.pattern.FluidPlacementHelper;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,13 +30,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraft.world.level.material.Fluid;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import net.minecraft.world.item.Items;
-import com.gtceuterminal.common.material.MaterialCalculator;
-import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
+
+import appeng.api.networking.IGrid;
+import appeng.api.networking.security.IActionSource;
+import appeng.me.helpers.PlayerSource;
 
 public class SchematicInterfaceBehavior {
 
@@ -91,7 +100,6 @@ public class SchematicInterfaceBehavior {
 
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
-
 
     // Handle right-click in air to paste at EXACT ghost preview position
     public InteractionResultHolder<ItemStack> use(Item item, Level level, Player player, InteractionHand usedHand) {
@@ -160,7 +168,6 @@ public class SchematicInterfaceBehavior {
                 (int) Math.floor(targetVec.z)
         );
     }
-
 
     // Check if item has clipboard data
     private boolean hasClipboard(ItemStack itemStack) {
@@ -233,70 +240,309 @@ public class SchematicInterfaceBehavior {
         GTCEUTerminalMod.LOGGER.info("Multiblock copied: {} blocks", blocks.size());
     }
 
-        private CompoundTag cleanNBTForSchematic(CompoundTag originalTag) {
-            if (originalTag == null || originalTag.isEmpty()) {
-                return new CompoundTag();
-            }
-
-            CompoundTag cleanTag = new CompoundTag();
-
-            // 1. BlockID
-            if (originalTag.contains("id")) {
-                cleanTag.putString("id", originalTag.getString("id"));
-            }
-
-            // 2. Covers
-            if (originalTag.contains("CoverContainer")) {
-                cleanTag.put("CoverContainer", originalTag.get("CoverContainer").copy());
-            }
-            if (originalTag.contains("Covers")) {
-                cleanTag.put("Covers", originalTag.get("Covers").copy());
-            }
-
-            // 3. Upgrades
-            if (originalTag.contains("Upgrades")) {
-                cleanTag.put("Upgrades", originalTag.get("Upgrades").copy());
-            }
-
-            // 4. Tier/Material
-            if (originalTag.contains("Tier")) {
-                cleanTag.putInt("Tier", originalTag.getInt("Tier"));
-            }
-            if (originalTag.contains("Material")) {
-                cleanTag.putString("Material", originalTag.getString("Material"));
-            }
-
-            // 5. Facing/Rotation
-            if (originalTag.contains("Facing")) {
-                cleanTag.putString("Facing", originalTag.getString("Facing"));
-            }
-            if (originalTag.contains("FrontFacing")) {
-                cleanTag.putString("FrontFacing", originalTag.getString("FrontFacing"));
-            }
-
-            // 6. User's Configuration (WorkingEnabled, AllowInputFromOutputSide, etc.)
-            if (originalTag.contains("WorkingEnabled")) {
-                cleanTag.putBoolean("WorkingEnabled", originalTag.getBoolean("WorkingEnabled"));
-            }
-            if (originalTag.contains("AllowInputFromOutputSide")) {
-                cleanTag.putBoolean("AllowInputFromOutputSide", originalTag.getBoolean("AllowInputFromOutputSide"));
-            }
-
-            // 7. Custom name
-            if (originalTag.contains("CustomName")) {
-                cleanTag.putString("CustomName", originalTag.getString("CustomName"));
-            }
-
-            // 8. Multiblock-specific data (part index, etc.)
-            if (originalTag.contains("PartIndex")) {
-                cleanTag.putInt("PartIndex", originalTag.getInt("PartIndex"));
-            }
-
-            GTCEUTerminalMod.LOGGER.debug("Cleaned NBT - Original keys: {}, Clean keys: {}",
-                    originalTag.getAllKeys().size(), cleanTag.getAllKeys().size());
-
-            return cleanTag;
+    // Cleans the NBT data of a block entity for safe storage in a schematic, keeping only necessary configuration and stripping out transient state and real-item data to avoid duplication when pasting.
+    private CompoundTag cleanNBTForSchematic(CompoundTag originalTag) {
+        if (originalTag == null || originalTag.isEmpty()) {
+            return new CompoundTag();
         }
+
+        CompoundTag cleanTag = new CompoundTag();
+
+        // 1. BlockID
+        if (originalTag.contains("id")) {
+            cleanTag.putString("id", originalTag.getString("id"));
+        }
+
+        // 2. Covers
+        if (originalTag.contains("CoverContainer")) {
+            cleanTag.put("CoverContainer", originalTag.get("CoverContainer").copy());
+        }
+        if (originalTag.contains("Covers")) {
+            cleanTag.put("Covers", originalTag.get("Covers").copy());
+        }
+
+        // 3. Upgrades
+        if (originalTag.contains("Upgrades")) {
+            cleanTag.put("Upgrades", originalTag.get("Upgrades").copy());
+        }
+
+        // 4. Tier/Material
+        if (originalTag.contains("Tier")) {
+            cleanTag.putInt("Tier", originalTag.getInt("Tier"));
+        }
+        if (originalTag.contains("Material")) {
+            cleanTag.putString("Material", originalTag.getString("Material"));
+        }
+
+        // 5. Facing/Rotation
+        if (originalTag.contains("Facing")) {
+            cleanTag.putString("Facing", originalTag.getString("Facing"));
+        }
+        if (originalTag.contains("FrontFacing")) {
+            cleanTag.putString("FrontFacing", originalTag.getString("FrontFacing"));
+        }
+
+        // 6. User's Configuration (WorkingEnabled, AllowInputFromOutputSide, etc.)
+        if (originalTag.contains("WorkingEnabled")) {
+            cleanTag.putBoolean("WorkingEnabled", originalTag.getBoolean("WorkingEnabled"));
+        }
+        if (originalTag.contains("AllowInputFromOutputSide")) {
+            cleanTag.putBoolean("AllowInputFromOutputSide", originalTag.getBoolean("AllowInputFromOutputSide"));
+        }
+
+        // 7. Custom name
+        if (originalTag.contains("CustomName")) {
+            cleanTag.putString("CustomName", originalTag.getString("CustomName"));
+        }
+
+        // 8. Multiblock-specific data (part index, etc.)
+        if (originalTag.contains("PartIndex")) {
+            cleanTag.putInt("PartIndex", originalTag.getInt("PartIndex"));
+        }
+
+        // 8b. Machine owner UUID — needed for wireless hatches (GTMThings) and any GTCEu machine
+        if (originalTag.contains("ownerUUID")) {
+            cleanTag.put("ownerUUID", originalTag.get("ownerUUID").copy());
+        }
+
+        // 8c. Painting color (@SaveField "paintingColor" in MetaMachine)
+        if (originalTag.contains("paintingColor")) {
+            cleanTag.putInt("paintingColor", originalTag.getInt("paintingColor"));
+        }
+
+        String blockId = originalTag.getString("id").toLowerCase();
+        // 9-10. AE2 configuration — only if enabled in config
+        if (com.gtceuterminal.common.config.ItemsConfig.isSchAllowAE2ConfigCopy()) {
+            if (isGTCEuAE2Machine(blockId)) {
+                copyGTCEuAE2MachineConfig(originalTag, cleanTag);
+            }
+            if (isAE2CableBus(blockId)) {
+                copyAE2CableBusConfig(originalTag, cleanTag);
+            }
+        }
+
+        GTCEUTerminalMod.LOGGER.debug("Cleaned NBT - Original keys: {}, Clean keys: {}",
+                originalTag.getAllKeys().size(), cleanTag.getAllKeys().size());
+
+        return cleanTag;
+    }
+
+    // Returns true for GTCEu machines that integrate with AE2 (ME-prefixed buses/hatches), based on block ID.
+    private boolean isGTCEuAE2Machine(String blockId) {
+        // Only match GTCEu machines that integrate with AE2 — i.e. the ME-prefixed buses/hatches.
+        // Must start with "gtceu:" and contain "me_" to avoid false matches on plain buses like
+        // "gtceu:lv_output_bus" or maintenance/muffler hatches that also contain "_hatch"/"_bus".
+        if (!blockId.startsWith("gtceu:")) return false;
+        String path = blockId.substring("gtceu:".length()); // e.g. "me_stocking_input_bus"
+        return path.startsWith("me_")
+                || path.contains("_me_");
+    }
+
+    /**
+     * Copies AE2-related configuration from the original NBT tag of a GTCEu machine block entity,
+     * stripping out any real-item state to avoid duplication when pasting.
+     *
+     * This includes:
+     * - "inventory" (ExportOnlyAEItemList): we keep the slot structure and "config" but drop "stock"
+     * - "circuitInventory" and "circuitSlotEnabled" (circuit slot config)
+     * - "isDistinct" and "filterHandler" (bus behavior settings)
+     * - "autoPull", "minStackSize", "ticksPerCycle" (stocking bus extras)
+     *
+     * The copied configuration is put into the cleanTag, which will be used for schematic pasting.
+     */
+    private void copyGTCEuAE2MachineConfig(CompoundTag originalTag, CompoundTag cleanTag) {
+        // ── Slot configuration ("inventory") ─────────────────────────────────────
+        if (originalTag.contains("inventory")) {
+            net.minecraft.nbt.Tag outerRaw = originalTag.get("inventory");
+            if (outerRaw instanceof CompoundTag outerTag) {
+                CompoundTag safeOuter = new CompoundTag();
+
+                // Preserve isDistinct inside the outer inventory tag
+                if (outerTag.contains("isDistinct")) {
+                    safeOuter.putBoolean("isDistinct", outerTag.getBoolean("isDistinct"));
+                }
+
+                // Preserve "storage" structure but clear the Items list to avoid duplication.
+                // The storage holds items currently pulled from ME — real items, DUPE RISK.
+                // We keep the Size so LDLib initializes the handler with the right slot count.
+                if (outerTag.contains("storage")) {
+                    net.minecraft.nbt.Tag stRaw = outerTag.get("storage");
+                    if (stRaw instanceof CompoundTag stTag) {
+                        CompoundTag safeSt = new CompoundTag();
+                        if (stTag.contains("Size")) safeSt.putInt("Size", stTag.getInt("Size"));
+                        safeSt.put("Items", new net.minecraft.nbt.ListTag()); // empty — no real items
+                        safeOuter.put("storage", safeSt);
+                    }
+                }
+
+                if (outerTag.contains("inventory")) {
+                    net.minecraft.nbt.Tag innerRaw = outerTag.get("inventory");
+                    if (innerRaw instanceof net.minecraft.nbt.ListTag slotList) {
+                        net.minecraft.nbt.ListTag safeList = new net.minecraft.nbt.ListTag();
+                        for (net.minecraft.nbt.Tag slotRaw : slotList) {
+                            if (slotRaw instanceof CompoundTag slotTag) {
+                                CompoundTag safeSlot = new CompoundTag();
+
+                                // Preserve the type tag — LDLib requires this
+                                if (slotTag.contains("t")) {
+                                    safeSlot.put("t", slotTag.get("t").copy());
+                                }
+
+                                // Rebuild payload: keep only "config", drop "stock"
+                                if (slotTag.contains("p")) {
+                                    net.minecraft.nbt.Tag pRaw = slotTag.get("p");
+                                    if (pRaw instanceof CompoundTag pTag) {
+                                        CompoundTag safeP = new CompoundTag();
+                                        if (pTag.contains("config")) {
+                                            safeP.put("config", pTag.get("config").copy());
+                                        }
+                                        // "stock" excluded — real items (DUPE RISK)
+                                        safeSlot.put("p", safeP);
+                                    }
+                                } else {
+                                    // No "p" wrapper — older format, try direct config key
+                                    CompoundTag safeP = new CompoundTag();
+                                    if (slotTag.contains("config")) {
+                                        safeP.put("config", slotTag.get("config").copy());
+                                    }
+                                    safeSlot.put("p", safeP);
+                                }
+
+                                safeList.add(safeSlot);
+                            }
+                        }
+                        safeOuter.put("inventory", safeList);
+                    }
+                }
+
+                cleanTag.put("inventory", safeOuter);
+            }
+        }
+
+        // Circuit slot
+        if (originalTag.contains("circuitInventory")) {
+            cleanTag.put("circuitInventory", originalTag.get("circuitInventory").copy());
+        }
+        if (originalTag.contains("circuitSlotEnabled")) {
+            cleanTag.putBoolean("circuitSlotEnabled", originalTag.getBoolean("circuitSlotEnabled"));
+        }
+
+        // Bus behavior settings
+        if (originalTag.contains("isDistinct")) {
+            cleanTag.putBoolean("isDistinct", originalTag.getBoolean("isDistinct"));
+        }
+        if (originalTag.contains("filterHandler")) {
+            cleanTag.put("filterHandler", originalTag.get("filterHandler").copy());
+        }
+
+        // Stocking bus extras
+        if (originalTag.contains("autoPull")) {
+            cleanTag.putBoolean("autoPull", originalTag.getBoolean("autoPull"));
+        }
+        if (originalTag.contains("minStackSize")) {
+            cleanTag.putInt("minStackSize", originalTag.getInt("minStackSize"));
+        }
+        if (originalTag.contains("ticksPerCycle")) {
+            cleanTag.putInt("ticksPerCycle", originalTag.getInt("ticksPerCycle"));
+        }
+
+        GTCEUTerminalMod.LOGGER.debug("Copied GTCEu AE2 machine config — keys: {}", cleanTag.getAllKeys());
+    }
+
+    // Returns true for AE2 cable bus blocks (registry namespaces "ae2" or "appliedenergistics2", path contains "cable_bus").
+    private boolean isAE2CableBus(String blockId) {
+        return blockId.contains("ae2:cable_bus")
+                || blockId.contains("appliedenergistics2:cable_bus");
+    }
+
+    // Copies AE2 cable bus part configuration, stripping real-item state from each part's data.
+    private void copyAE2CableBusConfig(CompoundTag originalTag, CompoundTag cleanTag) {
+        // The cable bus structure is flat at the root: one sub-tag per Direction.
+        String[] sideKeys = { "down", "up", "north", "south", "east", "west", "cable" };
+
+        for (String sideKey : sideKeys) {
+            if (!originalTag.contains(sideKey)) continue;
+
+            net.minecraft.nbt.Tag rawSideTag = originalTag.get(sideKey);
+            if (!(rawSideTag instanceof CompoundTag partData)) continue;
+
+            // Strip transient/dupe-risk data from each part before copying.
+            CompoundTag safePartData = sanitizeAE2PartData(partData);
+            cleanTag.put(sideKey, safePartData);
+
+            GTCEUTerminalMod.LOGGER.debug("AE2 cable bus: copied part on side '{}' (id={})",
+                    sideKey, safePartData.getString("id"));
+        }
+
+        // Also preserve the cable's own data (hasRedstone state, facade info)
+        if (originalTag.contains("hasRedstone")) {
+            cleanTag.putInt("hasRedstone", originalTag.getInt("hasRedstone"));
+        }
+        // Facades (stored as "facade_up", "facade_down", etc. by FacadeContainer)
+        for (String sideKey : sideKeys) {
+            String facadeKey = "facade_" + sideKey;
+            if (originalTag.contains(facadeKey)) {
+                cleanTag.put(facadeKey, originalTag.get(facadeKey).copy());
+            }
+        }
+    }
+
+    // Strips real-item state from AE2 part data, keeping only configuration needed to reconstruct the part.
+    private CompoundTag sanitizeAE2PartData(CompoundTag partData) {
+        CompoundTag safe = new CompoundTag();
+
+        // Always copy the part ID — needed to reconstruct the part on paste
+        if (partData.contains("id")) {
+            safe.putString("id", partData.getString("id"));
+        }
+
+        // Filter configuration (AEKey references only, not real items — safe)
+        if (partData.contains("config")) {
+            safe.put("config", partData.get("config").copy());
+        }
+
+        // Installed upgrade cards
+        if (partData.contains("upgrades")) {
+            safe.put("upgrades", partData.get("upgrades").copy());
+        }
+
+        // Storage channel priority
+        if (partData.contains("priority")) {
+            safe.putInt("priority", partData.getInt("priority"));
+        }
+
+        // IConfigManager settings — all written as String keys by ConfigManager.writeToNBT()
+        for (String settingKey : new String[]{
+                "redstone_controlled",  // RedstoneMode (all buses)
+                "fuzzy_mode",           // FuzzyMode     (storage/import/export bus)
+                "scheduling_mode",      // SchedulingMode (import/export bus)
+                "craft_only",           // YesNo         (export bus with crafting card)
+                "access",               // AccessRestriction (storage bus)
+                "storage_filter",       // StorageFilter (storage bus)
+                "lock_crafting_mode",   // LockCraftingMode (pattern provider)
+                "pattern_access_terminal" // YesNo (pattern provider terminal visibility)
+        }) {
+            if (partData.contains(settingKey)) {
+                safe.putString(settingKey, partData.getString(settingKey));
+            }
+        }
+
+        // Level emitter threshold amount
+        if (partData.contains("reportingValue")) {
+            safe.putLong("reportingValue", partData.getLong("reportingValue"));
+        }
+
+        // Custom name
+        if (partData.contains("customName")) {
+            safe.putString("customName", partData.getString("customName"));
+        }
+
+        // ME Interface / Pattern Provider: patterns are configuration, not items — safe
+        if (partData.contains("cm")) {
+            safe.put("cm", partData.get("cm").copy());
+        }
+        return safe;
+    }
 
     private Set<BlockPos> scanMultiblockArea(IMultiController controller, Level level) {
         Set<BlockPos> positions = new HashSet<>();
@@ -403,7 +649,7 @@ public class SchematicInterfaceBehavior {
         GTCEUTerminalMod.LOGGER.info("Pasting schematic at {} - Original facing: {}, Player facing: {}, Rotation steps: {}",
                 targetPos, originalFacing, playerFacing, rotationSteps);
 
-        // === FIRST PASS: compute placements + required materials ===
+        // FIRST PASS: compute placements + required materials
         Map<Item, Integer> required = new HashMap<>();
         List<Placement> placements = new ArrayList<>();
 
@@ -440,6 +686,13 @@ public class SchematicInterfaceBehavior {
                 continue;
             }
 
+            // Check if this block is a fluid source (water, lava, GT fluids, etc.)
+            if (rotatedState.getFluidState().isSource()) {
+                // Fluid blocks have no item form - handle separately via FluidPlacementHelper
+                placements.add(new Placement(relativePos, worldPos, rotatedState));
+                continue;
+            }
+
             // Determine item cost for this block
             Item item = rotatedState.getBlock().asItem();
             if (item == Items.AIR) {
@@ -461,7 +714,7 @@ public class SchematicInterfaceBehavior {
             return;
         }
 
-        // === MATERIAL CHECK / EXTRACTION (SURVIVAL ONLY) ===
+        // MATERIAL CHECK / EXTRACTION
         if (!player.getAbilities().instabuild) {
             MENetworkItemExtractor.ExtractResult result =
                     MENetworkItemExtractor.tryExtractFromMEOrInventory(itemStack, level, player, required);
@@ -499,21 +752,67 @@ public class SchematicInterfaceBehavior {
             }
         }
 
-        // === SECOND PASS: place blocks (now that we paid) ===
+        // SECOND PASS: place blocks (now that we paid)
         int placedCount = 0;
 
+        // Get ME Network fluid storage once for the whole paste operation
+        IFluidHandler fluidStorage = null;
+        if (!player.getAbilities().instabuild) {
+            try {
+                fluidStorage = getMENetworkFluidStorage(itemStack, player);
+            } catch (Exception e) {
+                GTCEUTerminalMod.LOGGER.debug("No ME Network fluid storage available for schematic paste");
+            }
+        }
+
+        // Get player item handler for bucket detection
+        net.minecraftforge.items.IItemHandler playerInventory = null;
+        if (!player.getAbilities().instabuild) {
+            var cap = player.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER);
+            playerInventory = cap.resolve().orElse(null);
+        }
+
         for (Placement p : placements) {
-            // Place block
+            // Handle fluid blocks separately
+            if (p.state.getFluidState().isSource()) {
+                Fluid fluid = p.state.getFluidState().getType();
+                boolean placed = FluidPlacementHelper.tryPlaceFluid(
+                        level, p.worldPos, player, fluid, playerInventory, fluidStorage
+                );
+                if (placed) placedCount++;
+                else skippedCount++;
+                continue;
+            }
+
+            // Place regular block
             level.setBlock(p.worldPos, p.state, 3);
             placedCount++;
 
             // Copy block entity data if exists (use original relative key)
             if (clipboard.getBlockEntities().containsKey(p.relativeKey)) {
-                CompoundTag beTag = clipboard.getBlockEntities().get(p.relativeKey);
+                CompoundTag beTag = clipboard.getBlockEntities().get(p.relativeKey).copy();
                 BlockEntity be = level.getBlockEntity(p.worldPos);
                 if (be != null) {
                     try {
+                        // BlockEntity.load() reads x/y/z from the tag to set its own position.
+                        beTag.putInt("x", p.worldPos.getX());
+                        beTag.putInt("y", p.worldPos.getY());
+                        beTag.putInt("z", p.worldPos.getZ());
                         be.load(beTag);
+
+                        try {
+                            p.state.getBlock().setPlacedBy(
+                                    (net.minecraft.server.level.ServerLevel) level,
+                                    p.worldPos, p.state,
+                                    player,
+                                    net.minecraft.world.item.ItemStack.EMPTY
+                            );
+                        } catch (Exception ignored) {
+                            // Some blocks throw on setPlacedBy with an empty stack — safe to ignore
+                        }
+
+                        // Force the BE to notify the level (AE2 cable bus needs this to reconnect grid nodes).
+                        be.setChanged();
                     } catch (Exception e) {
                         GTCEUTerminalMod.LOGGER.error("Failed to load block entity at {}", p.worldPos, e);
                     }
@@ -530,8 +829,41 @@ public class SchematicInterfaceBehavior {
         GTCEUTerminalMod.LOGGER.info("Schematic pasted: {} blocks placed, {} skipped", placedCount, skippedCount);
     }
 
-    private record Placement(BlockPos relativeKey, BlockPos worldPos, BlockState state) {}
+    // Attempt to access ME Network fluid storage via the terminal's linked grid.
+    @org.jetbrains.annotations.Nullable
+    private IFluidHandler getMENetworkFluidStorage(ItemStack terminalStack, Player player) {
+        try {
+            // First try the terminal itself if it's linked
+            if (WirelessTerminalHandler.isLinked(terminalStack)) {
+                IGrid grid = WirelessTerminalHandler.getLinkedGrid(terminalStack, player.level(), player);
+                if (grid != null) {
+                    IActionSource actionSource = new PlayerSource(player, null);
+                    MENetworkFluidHandlerWrapper wrapper = MENetworkFluidHandlerWrapper.fromGrid(grid, actionSource);
+                    if (wrapper != null) return wrapper;
+                }
+            }
 
+            // Also check all inventory items in case the terminal is in a different slot
+            java.util.List<ItemStack> toCheck = new java.util.ArrayList<>();
+            toCheck.add(player.getMainHandItem());
+            toCheck.add(player.getOffhandItem());
+            player.getInventory().items.forEach(toCheck::add);
+
+            for (ItemStack stack : toCheck) {
+                if (stack.isEmpty() || !WirelessTerminalHandler.isLinked(stack)) continue;
+                IGrid grid = WirelessTerminalHandler.getLinkedGrid(stack, player.level(), player);
+                if (grid == null) continue;
+                IActionSource actionSource = new PlayerSource(player, null);
+                MENetworkFluidHandlerWrapper wrapper = MENetworkFluidHandlerWrapper.fromGrid(grid, actionSource);
+                if (wrapper != null) return wrapper;
+            }
+        } catch (Exception e) {
+            GTCEUTerminalMod.LOGGER.error("Error accessing ME Network fluid storage for schematic paste", e);
+        }
+        return null;
+    }
+
+    private record Placement(BlockPos relativeKey, BlockPos worldPos, BlockState state) {}
 
     // Get player's horizontal facing direction
     private Direction getPlayerHorizontalFacing(Player player) {
@@ -620,4 +952,4 @@ public class SchematicInterfaceBehavior {
 
         return state;
     }
-}
+}// Yeah, this is a big class — sorry! I tried to break it down into smaller methods but the paste logic is inherently complex with all the rotation, material checking, and special handling for fluids and AE2 blocks. Let me know if you want me to split it further or add more comments!

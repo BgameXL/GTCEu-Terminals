@@ -521,6 +521,7 @@ public class SchematicInterfaceUI {
         refreshRightPanel();
     }
 
+    // Checks if the clipboard content is present in the current item stack.
     private void refreshRightPanel() {
         if (rightPanel == null) return;
 
@@ -554,6 +555,7 @@ public class SchematicInterfaceUI {
         rightPanel.addWidget(previewArea);
     }
 
+    // Action methods
     private void saveSchematic() {
         if (!hasClipboard()) {
             player.displayClientMessage(
@@ -580,7 +582,8 @@ public class SchematicInterfaceUI {
             return;
         }
 
-        boolean isDuplicate = schematics.stream().anyMatch(s -> s.getName().equals(name));
+        // Check against the local client list only — the server also validates independently.
+        boolean isDuplicate = schematics.stream().anyMatch(s -> s.getName().equalsIgnoreCase(name));
         if (isDuplicate) {
             player.displayClientMessage(
                     Component.literal("§c§lError: §cSchematic name already exists!"),
@@ -593,24 +596,36 @@ public class SchematicInterfaceUI {
                 new CPacketSchematicAction(CPacketSchematicAction.ActionType.SAVE, name, -1)
         );
 
+        // Build a local copy of the clipboard data so we can add it to the client list immediately,
+        ItemStack currentItem = holder.getTerminalItem();
+        CompoundTag itemTag = currentItem.getTag();
+        if (itemTag != null && itemTag.contains("Clipboard")) {
+            try {
+                SchematicData clipData = SchematicData.fromNBT(
+                        itemTag.getCompound("Clipboard"),
+                        player.level().registryAccess()
+                );
+                SchematicData saved = new SchematicData(
+                        name,
+                        clipData.getMultiblockType(),
+                        clipData.getBlocks(),
+                        clipData.getBlockEntities(),
+                        clipData.getOriginalFacing()
+                );
+                schematics.add(saved);
+                selectedIndex = schematics.size() - 1;
+            } catch (Exception e) {
+                GTCEUTerminalMod.LOGGER.error("Failed to build local schematic copy after save", e);
+            }
+        }
+
+        nameInput.setCurrentString("");
+        refreshLeftPanel();
+
         player.displayClientMessage(
                 Component.literal("§a§l✓ §aSaved: §f" + name),
                 true
         );
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(100);
-                net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                    reloadSchematicsFromItem();
-                    refreshLeftPanel();
-                    nameInput.setCurrentString("");
-                    GTCEUTerminalMod.LOGGER.info("UI refreshed after save");
-                });
-            } catch (InterruptedException e) {
-                GTCEUTerminalMod.LOGGER.error("Failed to refresh UI after save", e);
-            }
-        }, "SchematicUI-Refresh").start();
     }
 
     private void loadSchematic() {
@@ -647,29 +662,26 @@ public class SchematicInterfaceUI {
         SchematicData schematic = schematics.get(selectedIndex);
         String deletedName = schematic.getName();
 
+        // Tell the server to delete by name — NOT by index. This is important because the client index might be out of sync with the server if there were any changes.
         TerminalNetwork.CHANNEL.sendToServer(
                 new CPacketSchematicAction(CPacketSchematicAction.ActionType.DELETE,
-                        deletedName, selectedIndex)
+                        deletedName, -1)
         );
+
+        // Update the client list immediately instead of waiting for the server to echo back.
+        schematics.remove(selectedIndex);
+        if (selectedIndex >= schematics.size()) {
+            selectedIndex = schematics.size() - 1;
+        }
+
+        refreshLeftPanel();
 
         player.displayClientMessage(
                 Component.literal("§c§l✗ §cDeleted: §f" + deletedName),
                 true
         );
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(100);
-                net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                    reloadSchematicsFromItem();
-                    refreshLeftPanel();
-                    GTCEUTerminalMod.LOGGER.info("UI refreshed after delete");
-                });
-            } catch (InterruptedException e) {
-                GTCEUTerminalMod.LOGGER.error("Failed to refresh UI after delete", e);
-            }
-        }, "SchematicUI-Refresh").start();
     }
+
 
     private boolean hasClipboard() {
         ItemStack currentItem = holder.getTerminalItem();

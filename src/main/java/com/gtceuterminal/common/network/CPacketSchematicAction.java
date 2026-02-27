@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+// Client → Server: perform an action (save, load, delete) on a schematic in the Schematic Interface.
 public class CPacketSchematicAction {
     private final ActionType actionType;
     private final String schematicName;
@@ -117,13 +118,15 @@ public class CPacketSchematicAction {
 
                 case DELETE:
                     List<SchematicData> allSchematics = loadSchematics(stack, player);
-                    if (this.schematicIndex >= 0 && this.schematicIndex < allSchematics.size()) {
-                        SchematicData removed = allSchematics.remove(this.schematicIndex);
+                    boolean removed = allSchematics.removeIf(s -> s.getName().equals(this.schematicName));
+                    if (removed) {
                         saveSchematics(stack, allSchematics);
                         player.displayClientMessage(
-                                Component.literal("§eDeleted schematic: " + removed.getName()),
+                                Component.literal("§eDeleted schematic: " + this.schematicName),
                                 true
                         );
+                    } else {
+                        GTCEUTerminalMod.LOGGER.warn("DELETE: schematic '{}' not found on server", this.schematicName);
                     }
                     break;
             }

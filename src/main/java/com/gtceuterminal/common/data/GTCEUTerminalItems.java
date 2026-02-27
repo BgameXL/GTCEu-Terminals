@@ -2,6 +2,7 @@ package com.gtceuterminal.common.data;
 
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.item.DismantlerItem;
+import com.gtceuterminal.common.item.EnergyAnalyzerItem;
 import com.gtceuterminal.common.item.MultiStructureManagerItem;
 import com.gtceuterminal.common.item.SchematicInterfaceItem;
 
@@ -25,6 +26,6 @@ public class GTCEUTerminalItems {
     public static final RegistryObject<Item> DISMANTLER = ITEMS.register("dismantler",
             () -> new DismantlerItem(new Item.Properties().stacksTo(1)));
 
-    // public static final RegistryObject<Item> POWER_LOGGER = ITEMS.register("power_logger",
-            // () -> new PowerLoggerItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> ENERGY_ANALYZER = ITEMS.register("energy_analyzer",
+            () -> new EnergyAnalyzerItem());
 }

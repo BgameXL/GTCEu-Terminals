@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-// Manages multiblock highlighting on client side (going to be removed)
+// Manages multiblock highlighting on client side
 public class MultiblockHighlighter {
 
     private static final Map<BlockPos, HighlightInfo> activeHighlights = new HashMap<>();
@@ -75,9 +75,50 @@ public class MultiblockHighlighter {
                 blocks.size(), controllerPos, Integer.toHexString(color), durationMs);
     }
 
+    // Overload for MultiblockInfo (uses pre-computed block positions)
+    public static void highlight(MultiblockInfo multiblock, int color, int durationMs) {
+        BlockPos controllerPos = multiblock.getControllerPos();
+
+        Set<BlockPos> blocks = new java.util.HashSet<>(multiblock.getAllBlockPositions());
+        if (blocks.isEmpty()) {
+            blocks.add(controllerPos);
+            for (com.gtceuterminal.common.multiblock.ComponentInfo comp : multiblock.getComponents()) {
+                blocks.add(comp.getPosition());
+            }
+        }
+
+        HighlightInfo info = new HighlightInfo(controllerPos, blocks, color, durationMs);
+        activeHighlights.put(controllerPos, info);
+
+        /**com.gtceuterminal.GTCEUTerminalMod.LOGGER.info(
+                "Highlight: {} blocks at {} color=0x{} duration={}ms",
+                blocks.size(), controllerPos, Integer.toHexString(color), durationMs);**/
+    }
+
+    // Convenience method to highlight based on multiblock status color
     public static void highlightByStatus(MultiblockInfo multiblock, int durationMs) {
         int color = multiblock.getStatus().getColor();
-        highlight(multiblock.getController(), color, durationMs);
+        BlockPos controllerPos = multiblock.getControllerPos();
+
+        // Use pre-computed full block set (flood-filled during scan, includes all casings/coils)
+        Set<BlockPos> blocks = new java.util.HashSet<>(multiblock.getAllBlockPositions());
+
+        // Fallback: at least include controller + component positions
+        if (blocks.isEmpty()) {
+            blocks.add(controllerPos);
+            for (com.gtceuterminal.common.multiblock.ComponentInfo comp : multiblock.getComponents()) {
+                blocks.add(comp.getPosition());
+            }
+            com.gtceuterminal.GTCEUTerminalMod.LOGGER.warn(
+                    "highlightByStatus: allBlockPositions empty for '{}', using {} component positions",
+                    multiblock.getMachineTypeName(), blocks.size());
+        }
+
+        HighlightInfo info = new HighlightInfo(controllerPos, blocks, color, durationMs);
+        activeHighlights.put(controllerPos, info);
+
+        com.gtceuterminal.GTCEUTerminalMod.LOGGER.info(
+                "Highlight added: {} blocks at {} color=0x{}", blocks.size(), controllerPos, Integer.toHexString(color));
     }
 
     public static void highlight(IMultiController controller) {

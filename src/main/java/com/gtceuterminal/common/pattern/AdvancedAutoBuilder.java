@@ -1,6 +1,11 @@
 package com.gtceuterminal.common.pattern;
 
 import appeng.api.networking.IGrid;
+import appeng.api.networking.security.IActionSource;
+import appeng.me.helpers.PlayerSource;
+
+import com.gtceuterminal.common.ae2.MENetworkFluidHandlerWrapper;
+import com.gtceuterminal.common.ae2.WirelessTerminalHandler;
 
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.client.gui.multiblock.ManagerSettingsUI;
@@ -347,7 +352,7 @@ public class AdvancedAutoBuilder {
             });
 
             // GTCEUTerminalMod.LOGGER.info("AdvancedAutoBuilder: placed {} blocks (repeatCount={}, noHatchMode={}, tierMode={}, isUseAE={})",
-                    // placedCount, settings.repeatCount, settings.noHatchMode, settings.tierMode, settings.isUseAE);
+            // placedCount, settings.repeatCount, settings.noHatchMode, settings.tierMode, settings.isUseAE);
 
             return placedCount > 0;
 
@@ -788,31 +793,39 @@ public class AdvancedAutoBuilder {
     // -------------------------------
     @Nullable
     private static IFluidHandler getMENetworkFluidStorage(@NotNull Player player) {
-        // This is a placeholder for ME Network integration
-
-        /* Example implementation:
-
         try {
-            // Check if player has a wireless terminal
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = player.getInventory().getItem(i);
-
-                if (stack.getItem() instanceof WirelessTerminalItem terminal) {
-                    IGridNode node = terminal.getGridNode(stack);
-                    if (node != null && node.isActive()) {
-                        IStorageService storage = node.getGrid().getService(IStorageService.class);
-                        return new MENetworkFluidHandlerWrapper(storage);
-                    }
-                }
+            // Check all items in the player's inventory for a linked terminal
+            // Priority: main hand → off hand → rest of inventory
+            List<ItemStack> toCheck = new ArrayList<>();
+            toCheck.add(player.getMainHandItem());
+            toCheck.add(player.getOffhandItem());
+            for (ItemStack stack : player.getInventory().items) {
+                toCheck.add(stack);
             }
 
-            // Also check for nearby terminals the player might be using
+            for (ItemStack stack : toCheck) {
+                if (stack.isEmpty()) continue;
+
+                // Check if it's one of our terminals linked to an AE2 access point
+                if (!WirelessTerminalHandler.isLinked(stack)) continue;
+
+                IGrid grid = WirelessTerminalHandler.getLinkedGrid(stack, player.level(), player);
+                if (grid == null) continue;
+
+                // Build action source attributed to the player (respects AE2 security)
+                IActionSource actionSource = new PlayerSource(player, null);
+
+                MENetworkFluidHandlerWrapper wrapper = MENetworkFluidHandlerWrapper.fromGrid(grid, actionSource);
+                if (wrapper != null) {
+                    GTCEUTerminalMod.LOGGER.debug("Connected to ME Network fluid storage via terminal in slot");
+                    return wrapper;
+                }
+            }
 
         } catch (Exception e) {
             GTCEUTerminalMod.LOGGER.error("Error accessing ME Network for fluid storage", e);
         }
 
-        */
         return null;
     }
 
@@ -882,7 +895,7 @@ public class AdvancedAutoBuilder {
         }
     }
 
-     // Pre-calculate all materials needed for construction.
+    // Pre-calculate all materials needed for construction.
     private static Map<Item, Integer> preCalculateMaterials(
             Player player,
             IMultiController controller,

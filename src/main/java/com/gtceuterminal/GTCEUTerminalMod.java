@@ -32,11 +32,11 @@ public class GTCEUTerminalMod {
         GTCEUTerminalItems.ITEMS.register(modEventBus);
 
         /** Register blocks
-        GTCEUTerminalBlocks.BLOCKS.register(modEventBus);
-        GTCEUTerminalBlocks.BLOCK_ITEMS.register(modEventBus);
+         GTCEUTerminalBlocks.BLOCKS.register(modEventBus);
+         GTCEUTerminalBlocks.BLOCK_ITEMS.register(modEventBus);
 
-        // Register block entities
-        GTCEUTerminalBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+         // Register block entities
+         GTCEUTerminalBlockEntities.BLOCK_ENTITIES.register(modEventBus);
          **/
 
         // Register creative tabs
@@ -85,6 +85,8 @@ public class GTCEUTerminalMod {
             LaserHatchConfig.initialize();
 
             WirelessHatchConfig.initialize();
+
+            ItemsConfig.load();
 
             SubstationHatchConfig.initialize();
 

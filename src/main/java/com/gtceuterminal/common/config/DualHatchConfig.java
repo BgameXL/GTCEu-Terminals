@@ -88,7 +88,7 @@ public class DualHatchConfig {
             ));
         }
 
-        GTCEUTerminalMod.LOGGER.info("Created {} dual hatch entries", INPUT_DUAL_HATCHES.size());
+        // GTCEUTerminalMod.LOGGER.info("Created {} dual hatch entries", INPUT_DUAL_HATCHES.size());
     }
 
     private static void save() {

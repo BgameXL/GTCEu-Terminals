@@ -519,6 +519,11 @@ public class UniversalMultiblockScanner {
         return com.gtceuterminal.common.config.CoilConfig.getCoilTier(state) >= 0;
     }
 
+    // Gets all blocks from the multiblock using flood fill — public wrapper for MSM highlight
+    public static Set<BlockPos> getMultiblockBlocksPublic(MultiblockControllerMachine controller, Level level) {
+        return getMultiblockBlocks(controller, level);
+    }
+
     // Gets all blocks from the multiblock using flood fill
     private static Set<BlockPos> getMultiblockBlocks(MultiblockControllerMachine controller, Level level) {
         Set<BlockPos> positions = new HashSet<>();

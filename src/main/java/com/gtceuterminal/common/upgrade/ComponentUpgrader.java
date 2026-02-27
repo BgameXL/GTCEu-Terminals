@@ -230,11 +230,11 @@ public class ComponentUpgrader {
                 ? targetUpgradeId
                 : com.gregtechceu.gtceu.api.GTValues.VN[targetTier];
 
-        GTCEUTerminalMod.LOGGER.info("Upgraded {} at {} from {} to {} (Block: {} -> {}){}",
+        /** GTCEUTerminalMod.LOGGER.info("Upgraded {} at {} from {} to {} (Block: {} -> {}){}",
                 component.getType(), pos, component.getTierName(),
                 targetLabel,
                 oldBlock.getDescriptionId(), newBlock.getDescriptionId(),
-                extractionSource.replace("§a", "").replace("§7", ""));
+                extractionSource.replace("§a", "").replace("§7", "")); **/
 
         return new UpgradeResult(true, "Successfully upgraded to " + targetLabel + extractionSource);
     }

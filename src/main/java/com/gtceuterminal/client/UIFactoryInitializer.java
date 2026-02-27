@@ -5,6 +5,7 @@ import com.gtceuterminal.client.gui.factory.SchematicUIFactory;
 import com.gtceuterminal.client.gui.factory.MultiStructureUIFactory;
 import com.gtceuterminal.client.gui.factory.DismantlerUIFactory;
 import com.gtceuterminal.client.gui.factory.ManagerSettingsUIFactory;
+import com.gtceuterminal.client.gui.factory.EnergyAnalyzerUIFactory;
 
 import com.lowdragmc.lowdraglib.gui.factory.UIFactory;
 
@@ -39,13 +40,15 @@ public class UIFactoryInitializer {
             UIFactory.register(ManagerSettingsUIFactory.INSTANCE);
             GTCEUTerminalMod.LOGGER.info("✓ Registered ManagerSettingsUIFactory");
 
-            /** Register Power Logger Factory
-            UIFactory.register(PowerLoggerUIFactory.INSTANCE);
-            GTCEUTerminalMod.LOGGER.info("✓ Registered PowerLoggerUIFactory");
+            // Register Energy Analyzer Factory
+            UIFactory.register(EnergyAnalyzerUIFactory.INSTANCE);
+            GTCEUTerminalMod.LOGGER.info("✓ Registered EnergyAnalyzerUIFactory with ID: {}",
+                    EnergyAnalyzerUIFactory.UI_ID);
 
-            // Register Power Monitor Factory
-            UIFactory.register(PowerMonitorUIFactory.INSTANCE);
-            GTCEUTerminalMod.LOGGER.info("✓ Registered PowerMonitorUIFactory");
+            /**
+             // Register Power Monitor Factory
+             UIFactory.register(PowerMonitorUIFactory.INSTANCE);
+             GTCEUTerminalMod.LOGGER.info("✓ Registered PowerMonitorUIFactory");
              **/
 
             GTCEUTerminalMod.LOGGER.info("All UI Factories registered successfully!");

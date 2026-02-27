@@ -15,6 +15,6 @@
   "item.gtceuterminal.schematic_interface.tooltip": "Copy and Paste Multiblock Schematics",
   "item.gtceuterminal.dismantler.tooltip": "Disassemble Multiblocks and Return Components",
 
-  "item.gtceuterminal.power_logger": "Power Logger",
+  "item.gtceuterminal.energy_analyzer": "Energy Analyzer",
   "item.gtceuterminal.power_logger.desc": "Monitors machine power consumption"
 }

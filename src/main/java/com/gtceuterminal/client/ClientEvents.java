@@ -1,5 +1,6 @@
 package com.gtceuterminal.client;
 
+import com.gtceuterminal.client.highlight.MultiblockHighlighter;
 import com.gtceuterminal.client.renderer.SchematicPreviewRenderer;
 import com.gtceuterminal.common.data.SchematicData;
 
@@ -76,7 +77,6 @@ public class ClientEvents {
             poseStack.popPose();
 
         } catch (Exception e) {
-            
         }
     }
 }

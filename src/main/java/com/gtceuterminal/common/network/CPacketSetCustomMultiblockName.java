@@ -11,7 +11,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-// Saves/clears a custom multiblock name on the Multi-Structure Manager item.
+// Client → Server: set or reset a custom name for a multiblock structure in the Multi-Structure Manager item.
 public class CPacketSetCustomMultiblockName {
 
     private final int handOrdinal;
@@ -51,18 +51,19 @@ public class CPacketSetCustomMultiblockName {
                 hand = values[handOrdinal];
             }
 
-            ItemStack stack = player.getItemInHand(hand);
-
-            // Fallback: if the player moved the item, try the other hand
-            if (stack.isEmpty() || !(stack.getItem() instanceof MultiStructureManagerItem)) {
-                InteractionHand other = (hand == InteractionHand.MAIN_HAND) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
-                ItemStack otherStack = player.getItemInHand(other);
-                if (!otherStack.isEmpty() && otherStack.getItem() instanceof MultiStructureManagerItem) {
-                    stack = otherStack;
+            // Search both hands first, then full inventory (rename can be triggered from MSM UI without holding it)
+            ItemStack stack = null;
+            for (InteractionHand h : InteractionHand.values()) {
+                ItemStack s = player.getItemInHand(h);
+                if (!s.isEmpty() && s.getItem() instanceof MultiStructureManagerItem) { stack = s; break; }
+            }
+            if (stack == null) {
+                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                    ItemStack s = player.getInventory().getItem(i);
+                    if (!s.isEmpty() && s.getItem() instanceof MultiStructureManagerItem) { stack = s; break; }
                 }
             }
-
-            if (stack.isEmpty() || !(stack.getItem() instanceof MultiStructureManagerItem)) {
+            if (stack == null || stack.isEmpty()) {
                 return;
             }
 

@@ -9,6 +9,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
+// Central class for managing Terminal Network packets and channel.
 public class TerminalNetwork {
 
     private static final String PROTOCOL_VERSION = "1";
@@ -81,23 +82,22 @@ public class TerminalNetwork {
                 .decoder(CPacketOpenManagerSettings::decode)
                 .consumerMainThread(CPacketOpenManagerSettings::handle)
                 .add();
-/**
-        CHANNEL.messageBuilder(CPacketOpenPowerLoggerUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(CPacketOpenPowerLoggerUI::encode)
-                .decoder(CPacketOpenPowerLoggerUI::decode)
-                .consumerMainThread(CPacketOpenPowerLoggerUI::handle)
+
+        CHANNEL.messageBuilder(CPacketOpenEnergyAnalyzerUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketOpenEnergyAnalyzerUI::encode)
+                .decoder(CPacketOpenEnergyAnalyzerUI::decode)
+                .consumerMainThread(CPacketOpenEnergyAnalyzerUI::handle)
                 .add();
 
-        CHANNEL.messageBuilder(CPacketOpenPowerMonitorUI.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(CPacketOpenPowerMonitorUI::encode)
-                .decoder(CPacketOpenPowerMonitorUI::decode)
-                .consumerMainThread(CPacketOpenPowerMonitorUI::handle)
+        CHANNEL.messageBuilder(CPacketEnergyAnalyzerAction.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CPacketEnergyAnalyzerAction::encode)
+                .decoder(CPacketEnergyAnalyzerAction::decode)
+                .consumerMainThread(CPacketEnergyAnalyzerAction::handle)
                 .add();
-**/
+
         GTCEUTerminalMod.LOGGER.info("Registered {} Terminal Network packets", packetId);
         GTCEUTerminalMod.LOGGER.info("Network packets registered successfully!");
     }
-
 
     // Send packet from server to specific player
     public static void sendToPlayer(Object packet, ServerPlayer player) {
