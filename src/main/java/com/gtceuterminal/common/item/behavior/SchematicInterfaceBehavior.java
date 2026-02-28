@@ -7,11 +7,6 @@ import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiPart;
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.client.ClientProxy;
 import com.gtceuterminal.common.data.SchematicData;
-import com.gtceuterminal.common.material.MaterialCalculator;
-import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
-import com.gtceuterminal.common.ae2.MENetworkFluidHandlerWrapper;
-import com.gtceuterminal.common.ae2.WirelessTerminalHandler;
-import com.gtceuterminal.common.pattern.FluidPlacementHelper;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -30,18 +25,21 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.material.Fluid;
 
 import org.jetbrains.annotations.NotNull;
 
-import net.minecraftforge.fluids.capability.IFluidHandler;
-
 import java.util.*;
-
+import net.minecraft.world.item.Items;
+import com.gtceuterminal.common.material.MaterialCalculator;
+import com.gtceuterminal.common.ae2.MENetworkItemExtractor;
+import com.gtceuterminal.common.ae2.MENetworkFluidHandlerWrapper;
+import com.gtceuterminal.common.ae2.WirelessTerminalHandler;
+import com.gtceuterminal.common.pattern.FluidPlacementHelper;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
 import appeng.me.helpers.PlayerSource;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraft.world.level.material.Fluid;
 
 public class SchematicInterfaceBehavior {
 
@@ -303,6 +301,10 @@ public class SchematicInterfaceBehavior {
         }
 
         // 8b. Machine owner UUID — needed for wireless hatches (GTMThings) and any GTCEu machine
+        // that restricts GUI/break access to the owner. This is the @SaveField "ownerUUID" from
+        // MetaMachine, serialized by SyncDataHolder with the field name as the NBT key.
+        // Note: during paste we REPLACE this with the pasting player's UUID so each player
+        // owns their own wireless hatches (see the paste loop below).
         if (originalTag.contains("ownerUUID")) {
             cleanTag.put("ownerUUID", originalTag.get("ownerUUID").copy());
         }
@@ -313,6 +315,20 @@ public class SchematicInterfaceBehavior {
         }
 
         // 9. GTCEu-AE2 integrated machine configuration (ME Input Bus, ME Output Bus, ME Stocking Bus, etc.)
+        // These are GTCEu MetaMachine block entities (NOT ae2:cable_bus) that integrate with AE2.
+        // Their fields are serialized by SyncDataHolder using the Java field name as the NBT key.
+        //
+        // Key fields (from ItemBusPartMachine + MEInputBusPartMachine source):
+        //   "inventory"        → ExportOnlyAEItemList (array of slots, each with "config" and "stock")
+        //   "circuitInventory" → NotifiableItemStackHandler (ghost circuit slot)
+        //   "circuitSlotEnabled" → boolean
+        //   "isDistinct"       → boolean
+        //   "filterHandler"    → item filter config
+        //   "autoPull"         → boolean (ME Stocking Bus only)
+        //
+        // DUPE RISK: each slot in "inventory" has both "config" (what item to request — safe)
+        // and "stock" (items currently pulled from ME network — REAL items, must be stripped).
+        // We copy "inventory" but sanitize each slot to keep only "config", dropping "stock".
         String blockId = originalTag.getString("id").toLowerCase();
         // 9-10. AE2 configuration — only if enabled in config
         if (com.gtceuterminal.common.config.ItemsConfig.isSchAllowAE2ConfigCopy()) {
@@ -330,6 +346,14 @@ public class SchematicInterfaceBehavior {
         return cleanTag;
     }
 
+    /**
+     * Returns true for GTCEu machines that integrate with AE2 internally:
+     * ME Input Bus, ME Output Bus, ME Stocking Bus, ME Input Hatch, ME Output Hatch,
+     * ME Stocking Hatch, ME Pattern Buffer.
+     *
+     * These are GTCEu MetaMachine block entities (registry namespace "gtceu"),
+     * NOT ae2:cable_bus. Their block IDs look like "gtceu:luv_me_item_input_bus".
+     */
     private boolean isGTCEuAE2Machine(String blockId) {
         // Only match GTCEu machines that integrate with AE2 — i.e. the ME-prefixed buses/hatches.
         // Must start with "gtceu:" and contain "me_" to avoid false matches on plain buses like
@@ -340,6 +364,50 @@ public class SchematicInterfaceBehavior {
                 || path.contains("_me_");
     }
 
+    /**
+     * Copies GTCEu AE2-integrated machine configuration, sanitizing real-item state.
+     *
+     * Source analysis (GTCEu 1.20.1):
+     *
+     * ItemBusPartMachine @SaveField fields (serialized by field name via SyncDataHolder):
+     *   "inventory"           → ExportOnlyAEItemList — each slot is a CompoundTag with:
+     *                             "config" → GenericStack (what item to request — SAFE)
+     *                             "stock"  → GenericStack (items currently in the bus — DUPE RISK, excluded)
+     *   "circuitInventory"    → NotifiableItemStackHandler (ghost circuit config — SAFE)
+     *   "circuitSlotEnabled"  → boolean
+     *   "isDistinct"          → boolean
+     *   "filterHandler"       → item filter configuration — SAFE
+     *
+     * MEStockingBusPartMachine additionally:
+     *   "autoPull"            → boolean (auto-pull from ME)
+     *
+     * The "inventory" field serialization chain:
+     *   SyncDataHolder → field name "inventory" → ExportOnlyAEItemList (ISyncManaged)
+     *   → each ExportOnlyAEItemSlot.serializeNBT() → {config: ..., stock: ...}
+     *   The slot array is stored as a CompoundTag with integer string keys: "0", "1", ...
+     *   (this is how GTCEu's array transformers work — see ArrayTransformer in the sync system)
+     */
+    /**
+     * Copies GTCEu AE2-integrated machine configuration, sanitizing real-item state.
+     *
+     * ACTUAL NBT structure (confirmed via live log dump):
+     *
+     *   machineBETag {
+     *     "inventory": {                    ← ExportOnlyAEItemList (ISyncManaged)
+     *       "isDistinct": 0b,
+     *       "storage":    { Size, Items },  ← the actual item buffer (DUPE RISK if non-empty)
+     *       "inventory":  [                 ← ExportOnlyAEItemSlot[] — only present on ME buses
+     *         { "p": { "config": { "#": 1L, "#c": "ae2:i", "id": "..." } }, "t": 11b },
+     *         { "p": {}, "t": 11b },        ← empty slot — MUST keep "t" or LDLib crashes
+     *       ]
+     *     }
+     *   }
+     *
+     * The "p" key is LDLib's payload wrapper (NbtTagPayload). The "t" key is the type byte (11 = CompoundTag).
+     * Empty slots MUST have { "p": {}, "t": 11b } — omitting "t" causes NullPayload crash on paste.
+     * "stock" is inside "p" alongside "config" — we strip it to avoid item duplication.
+     * "storage" inside the outer inventory holds actual pulled items — we strip it too.
+     */
     private void copyGTCEuAE2MachineConfig(CompoundTag originalTag, CompoundTag cleanTag) {
         // ── Slot configuration ("inventory") ─────────────────────────────────────
         if (originalTag.contains("inventory")) {
@@ -444,11 +512,62 @@ public class SchematicInterfaceBehavior {
         GTCEUTerminalMod.LOGGER.debug("Copied GTCEu AE2 machine config — keys: {}", cleanTag.getAllKeys());
     }
 
+
+    /**
+     * AE2's CableBusBlockEntity stores parts under the serialized direction name as the key.
+     * Each face key ("down","up","north","south","east","west") or "cable" (center) maps to
+     * a CompoundTag containing:
+     *   - "id"                → the part's registry ID (e.g. "ae2:import_bus")
+     *   - everything the part's writeToNBT() writes (flat in the same tag, not nested)
+     *
+     * This method checks if the block entity belongs to AE2's cable bus system.
+     * The block entity itself has id "ae2:cable_bus" in its saveWithFullMetadata() output.
+     */
     private boolean isAE2CableBus(String blockId) {
         return blockId.contains("ae2:cable_bus")
                 || blockId.contains("appliedenergistics2:cable_bus");
     }
 
+    /**
+     * Copies the full AE2 CableBusBlockEntity configuration into the schematic tag.
+     *
+     * Structure (from CableBusContainer.writeToNBT + appeng source):
+     *
+     *   Root tag (the block entity tag):
+     *     "down" / "up" / "north" / "south" / "east" / "west" / "cable"  → CompoundTag per face
+     *
+     *   Each face CompoundTag (written by CableBusContainer, then part.writeToNBT):
+     *     "id"                  → String  — part registry ID (e.g. "ae2:import_bus")
+     *     "customName"          → String  — optional custom name (AEBasePart)
+     *
+     *     From UpgradeablePart (all buses that support upgrades):
+     *       "upgrades"          → CompoundTag — installed speed/capacity/etc. cards
+     *       IConfigManager settings written FLAT (from ConfigManager.writeToNBT):
+     *         "redstone_controlled" → String  — RedstoneMode enum name
+     *         "fuzzy_mode"          → String  — FuzzyMode enum name
+     *         "access"              → String  — AccessRestriction (StorageBus only)
+     *         "storage_filter"      → String  — StorageFilter (StorageBus only)
+     *         "scheduling_mode"     → String  — SchedulingMode (Export/Import bus)
+     *         "craft_only"          → String  — YesNo (Export bus with crafting card)
+     *
+     *     From IOBusPart (Import Bus + Export Bus):
+     *       "config"            → CompoundTag — filter slots (written by ConfigInventory.writeToChildTag)
+     *
+     *     From StorageBusPart:
+     *       "config"            → CompoundTag — filter slots
+     *       "priority"          → int
+     *
+     *     From AbstractLevelEmitterPart:
+     *       "config"            → CompoundTag — single item being watched
+     *       "reportingValue"    → long  — threshold amount
+     *
+     *     From InterfaceLogic (ME Interface / Pattern Provider):
+     *       "config"            → CompoundTag — what to keep stocked
+     *       "storage"           → CompoundTag — current stored items
+     *       "upgrades"          → CompoundTag
+     *       "cm"                — IConfigManager flat keys (priority_mode etc.)
+     *       "priority"          → int
+     */
     private void copyAE2CableBusConfig(CompoundTag originalTag, CompoundTag cleanTag) {
         // The cable bus structure is flat at the root: one sub-tag per Direction.
         // Direction.getSerializedName() returns the lower-case name; "cable" is used for null (center).
@@ -481,6 +600,35 @@ public class SchematicInterfaceBehavior {
         }
     }
 
+    /**
+     * Sanitizes a single AE2 part's NBT data for safe use in schematics.
+     *
+     * AE2 parts serialize two conceptually different things into the same tag:
+     *
+     *   CONFIGURATION (safe to copy — describes how the part should behave):
+     *     "id"                  → part registry ID
+     *     "config"              → ConfigInventory with filter keys (AEKey references, no real items)
+     *     "upgrades"            → installed upgrade cards
+     *     "priority"            → storage priority
+     *     "redstone_controlled" → RedstoneMode setting
+     *     "fuzzy_mode"          → FuzzyMode setting
+     *     "scheduling_mode"     → SchedulingMode (export/import bus)
+     *     "craft_only"          → YesNo (export bus)
+     *     "access"              → AccessRestriction (storage bus)
+     *     "storage_filter"      → StorageFilter (storage bus)
+     *     "reportingValue"      → level emitter threshold
+     *     "customName"          → optional custom name
+     *
+     *   STATE (NOT safe to copy — contains actual items that would be duplicated):
+     *     "storage"             → ME Interface physical item buffer (real items with counts)
+     *
+     *   TRANSIENT (not written by writeToNBT, but strip defensively):
+     *     grid node data written by mainNode.saveToNBT() — safe, but position-specific
+     *
+     * Note: "config" uses ConfigInventory.Mode.CONFIG_STACKS (for Interface) or
+     * CONFIG_TYPES (for buses) — neither contains real extractable items, only AEKey
+     * references used as filters. Only "storage" (Mode.STORAGE) contains real items.
+     */
     private CompoundTag sanitizeAE2PartData(CompoundTag partData) {
         CompoundTag safe = new CompoundTag();
 
@@ -505,6 +653,7 @@ public class SchematicInterfaceBehavior {
         }
 
         // IConfigManager settings — all written as String keys by ConfigManager.writeToNBT()
+        // These are the exact Setting.getName() values from appeng.api.config.Settings
         for (String settingKey : new String[]{
                 "redstone_controlled",  // RedstoneMode  (all buses)
                 "fuzzy_mode",           // FuzzyMode     (storage/import/export bus)
@@ -531,9 +680,15 @@ public class SchematicInterfaceBehavior {
         }
 
         // ME Interface / Pattern Provider: patterns are configuration, not items — safe
+        // "cm" is the IConfigManager for the interface (priority_mode etc.)
         if (partData.contains("cm")) {
             safe.put("cm", partData.get("cm").copy());
         }
+
+        // INTENTIONALLY EXCLUDED: "storage" — this is the ME Interface's physical item buffer.
+        // Copying it would duplicate the items that were inside the original interface.
+        // The pasted interface will start empty, which is the correct behavior.
+
         return safe;
     }
 
@@ -782,11 +937,24 @@ public class SchematicInterfaceBehavior {
                 if (be != null) {
                     try {
                         // BlockEntity.load() reads x/y/z from the tag to set its own position.
+                        // Overwrite them with the actual paste position so the BE is not mislocated.
+                        // This is especially important for AE2 CableBusBlockEntity.
                         beTag.putInt("x", p.worldPos.getX());
                         beTag.putInt("y", p.worldPos.getY());
                         beTag.putInt("z", p.worldPos.getZ());
                         be.load(beTag);
 
+                        // Re-assign ownership to the player doing the paste.
+                        //
+                        // Why: the schematic was copied from someone's multiblock, so beTag contains
+                        // their ownerUUID. If we left it as-is, the pasted wireless hatch (and any other
+                        // owner-restricted machine) would be bound to the original owner, not the
+                        // player who is pasting. By calling setPlacedBy() we let each mod's block
+                        // run its own on-place binding logic (GTMThings uses this to bind to the player's
+                        // wireless network UUID, GTCEu uses it to set ownerUUID via MetaMachine.onBlockEntityRegister).
+                        //
+                        // setPlacedBy is the canonical way mods bind ownership — same approach used
+                        // by ComponentUpgrader.postPlaceInitialize() in this project.
                         try {
                             p.state.getBlock().setPlacedBy(
                                     (net.minecraft.server.level.ServerLevel) level,

@@ -11,6 +11,11 @@ import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.loading.FMLPaths;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -28,18 +33,7 @@ public class GTCEUTerminalMod {
     public GTCEUTerminalMod() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // Register items
         GTCEUTerminalItems.ITEMS.register(modEventBus);
-
-        /** Register blocks
-         GTCEUTerminalBlocks.BLOCKS.register(modEventBus);
-         GTCEUTerminalBlocks.BLOCK_ITEMS.register(modEventBus);
-
-         // Register block entities
-         GTCEUTerminalBlockEntities.BLOCK_ENTITIES.register(modEventBus);
-         **/
-
-        // Register creative tabs
         GTCEUTerminalTabs.CREATIVE_TABS.register(modEventBus);
 
         // Register network IMMEDIATELY
@@ -53,6 +47,16 @@ public class GTCEUTerminalMod {
         MinecraftForge.EVENT_BUS.register(this);
 
         // Register server configuration
+        // Guard: if the file exists but is empty/truncated, delete it so Forge regenerates it cleanly
+        try {
+            Path configPath = FMLPaths.CONFIGDIR.get().resolve(ServerConfig.FILE_NAME);
+            if (Files.exists(configPath) && Files.size(configPath) == 0) {
+                LOGGER.warn("[GTCEuTerminal] Config file {} is empty/corrupted, deleting for regeneration", ServerConfig.FILE_NAME);
+                Files.delete(configPath);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("[GTCEuTerminal] Could not check config file integrity: {}", e.getMessage());
+        }
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,
                 ServerConfig.SPEC,
                 ServerConfig.FILE_NAME);
@@ -85,8 +89,6 @@ public class GTCEUTerminalMod {
             LaserHatchConfig.initialize();
 
             WirelessHatchConfig.initialize();
-
-            ItemsConfig.load();
 
             SubstationHatchConfig.initialize();
 
