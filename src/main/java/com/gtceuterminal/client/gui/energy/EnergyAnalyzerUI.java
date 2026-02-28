@@ -805,9 +805,17 @@ public class EnergyAnalyzerUI {
     }
 
     private ModularUI wrapUI(WidgetGroup content) {
-        var mc = Minecraft.getInstance();
-        int w = Math.min(W, mc.getWindow().getGuiScaledWidth()  - 16);
-        int h = Math.min(H, mc.getWindow().getGuiScaledHeight() - 16);
+        int w = W;
+        int h = H;
+        try {
+            if (net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()) {
+                var mc = Minecraft.getInstance();
+                if (mc != null && mc.getWindow() != null) {
+                    w = Math.min(W, mc.getWindow().getGuiScaledWidth()  - 16);
+                    h = Math.min(H, mc.getWindow().getGuiScaledHeight() - 16);
+                }
+            }
+        } catch (Exception ignored) {}
         ModularUI ui = new ModularUI(new Size(w, h), holder, player);
         ui.widget(content);
         ui.background(new ColorRectTexture(0x90000000));

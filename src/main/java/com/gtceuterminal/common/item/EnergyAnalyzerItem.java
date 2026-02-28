@@ -1,7 +1,7 @@
 package com.gtceuterminal.common.item;
 
 import com.gtceuterminal.GTCEUTerminalMod;
-import com.gtceuterminal.client.ClientProxy;
+import com.gtceuterminal.client.gui.factory.EnergyAnalyzerUIFactory;
 import com.gtceuterminal.common.config.ItemsConfig;
 import com.gtceuterminal.common.energy.EnergyDataCollector;
 import com.gtceuterminal.common.energy.LinkedMachineData;
@@ -120,7 +120,7 @@ public class EnergyAnalyzerItem extends Item {
             }
             // Request UI open — send index to open on that machine
             if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
-                ClientProxy.openEnergyAnalyzerGUI(sp, idx);
+                EnergyAnalyzerUIFactory.INSTANCE.openUI(sp, idx);
             }
             return InteractionResult.SUCCESS;
         }
@@ -142,7 +142,7 @@ public class EnergyAnalyzerItem extends Item {
 
         // Open list UI at first machine
         if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
-            ClientProxy.openEnergyAnalyzerGUI(sp, 0);
+            EnergyAnalyzerUIFactory.INSTANCE.openUI(sp, 0);
         }
         return InteractionResultHolder.success(stack);
     }
