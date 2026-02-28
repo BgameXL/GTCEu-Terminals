@@ -28,7 +28,7 @@ logoFile="assets/gtceuterminal/logo/advanced_terminal_logo.png"
 [[dependencies.${mod_id}]]
     modId="gtceu"
     mandatory=true
-    versionRange="[7.0.0,)"
+    versionRange="[1.6.4,)"
     ordering="AFTER"
     side="BOTH"
 

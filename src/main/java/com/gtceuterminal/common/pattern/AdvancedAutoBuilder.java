@@ -23,13 +23,15 @@ import com.gregtechceu.gtceu.api.pattern.MultiblockState;
 import com.gregtechceu.gtceu.api.pattern.TraceabilityPredicate;
 import com.gregtechceu.gtceu.api.pattern.predicates.SimplePredicate;
 import com.gregtechceu.gtceu.api.pattern.util.RelativeDirection;
+import com.gtceuterminal.common.compat.GTCEuCompat;
+import com.gtceuterminal.common.compat.GTCEuCompat.PredicateCountMap;
 import com.gregtechceu.gtceu.common.block.CoilBlock;
 
 import com.lowdragmc.lowdraglib.utils.BlockInfo;
 
 import it.unimi.dsi.fastutil.ints.IntObjectPair;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -134,7 +136,10 @@ public class AdvancedAutoBuilder {
 
             // Mirrors GTCEu autoBuild start
             int minZ = -centerOffset[4];
-            worldState.clean();
+            // Save position cache before clean() so schematic copy/preview still works after auto-build
+            it.unimi.dsi.fastutil.longs.LongOpenHashSet savedCache =
+                    new it.unimi.dsi.fastutil.longs.LongOpenHashSet(worldState.cache);
+            GTCEuCompat.clean(worldState);
 
             BlockPos centerPos = controller.self().getPos();
             Direction facing = controller.self().getFrontFacing();
@@ -142,8 +147,9 @@ public class AdvancedAutoBuilder {
             boolean isFlipped = controller.self().isFlipped();
 
             // These caches are part of MultiblockState and are used by SimplePredicate#testLimited
-            Object2IntOpenHashMap<SimplePredicate> cacheGlobal = worldState.getGlobalCount();
-            Object2IntOpenHashMap<SimplePredicate> cacheLayer = worldState.getLayerCount();
+            // GTCEuCompat wrapper: Map type changed between GTCEu 1.6.4 and 7.0.0+
+            PredicateCountMap cacheGlobal = GTCEuCompat.getGlobalCount(worldState);
+            PredicateCountMap cacheLayer  = GTCEuCompat.getLayerCount(worldState);
 
             Map<BlockPos, Object> blocks = new HashMap<>();
             Set<BlockPos> placedByUs = new HashSet<>();
@@ -180,7 +186,7 @@ public class AdvancedAutoBuilder {
                             BlockPos pos = setActualRelativeOffset(structureDir, x, y, z, facing, upwardsFacing, isFlipped)
                                     .offset(centerPos.getX(), centerPos.getY(), centerPos.getZ());
 
-                            worldState.update(pos, predicate);
+                            GTCEuCompat.update(worldState, pos, predicate);
 
                             if (!world.isEmptyBlock(pos)) {
                                 blocks.put(pos, world.getBlockState(pos));
@@ -354,6 +360,8 @@ public class AdvancedAutoBuilder {
             // GTCEUTerminalMod.LOGGER.info("AdvancedAutoBuilder: placed {} blocks (repeatCount={}, noHatchMode={}, tierMode={}, isUseAE={})",
             // placedCount, settings.repeatCount, settings.noHatchMode, settings.tierMode, settings.isUseAE);
 
+            // Restore position cache so subsequent schematic copy/preview still works
+            worldState.cache.addAll(savedCache);
             return placedCount > 0;
 
         } catch (Throwable t) {
@@ -542,8 +550,8 @@ public class AdvancedAutoBuilder {
     }
 
     private static BlockInfo[] pickInfosForPredicate(TraceabilityPredicate predicate,
-                                                     Object2IntOpenHashMap<SimplePredicate> cacheGlobal,
-                                                     Object2IntOpenHashMap<SimplePredicate> cacheLayer) {
+                                                     PredicateCountMap cacheGlobal,
+                                                     PredicateCountMap cacheLayer) {
         boolean find = false;
         BlockInfo[] infos = new BlockInfo[0];
 
@@ -614,7 +622,7 @@ public class AdvancedAutoBuilder {
         if (facing == Direction.UP || facing == Direction.DOWN) {
             Direction of = facing == Direction.DOWN ? upwardsFacing : upwardsFacing.getOpposite();
             for (int i = 0; i < 3; i++) {
-                switch (structureDir[i].getActualDirection(of)) {
+                switch (GTCEuCompat.getActualDirection(structureDir[i], of)) {
                     case UP -> c1[1] = c0[i];
                     case DOWN -> c1[1] = -c0[i];
                     case WEST -> c1[0] = -c0[i];
@@ -644,7 +652,7 @@ public class AdvancedAutoBuilder {
             }
         } else {
             for (int i = 0; i < 3; i++) {
-                switch (structureDir[i].getActualDirection(facing)) {
+                switch (GTCEuCompat.getActualDirection(structureDir[i], facing)) {
                     case UP -> c1[1] = c0[i];
                     case DOWN -> c1[1] = -c0[i];
                     case WEST -> c1[0] = -c0[i];
@@ -904,8 +912,8 @@ public class AdvancedAutoBuilder {
             int[][] aisleRepetitions,
             RelativeDirection[] structureDir,
             int[] centerOffset,
-            Object2IntOpenHashMap<SimplePredicate> cacheGlobal,
-            Object2IntOpenHashMap<SimplePredicate> cacheLayer,
+            PredicateCountMap cacheGlobal,
+            PredicateCountMap cacheLayer,
             Map<BlockPos, Object> blocks,
             BlockPos centerPos,
             Direction facing,
