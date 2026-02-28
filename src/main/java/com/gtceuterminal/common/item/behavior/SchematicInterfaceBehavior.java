@@ -31,10 +31,11 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraft.world.level.material.Fluid;
 
 import org.jetbrains.annotations.NotNull;
+
+import net.minecraftforge.fluids.capability.IFluidHandler;
 
 import java.util.*;
 
@@ -71,7 +72,7 @@ public class SchematicInterfaceBehavior {
 
             // Open GUI if not clicking on a multiblock
             if (level.isClientSide) {
-                GTCEUTerminalMod.LOGGER.info("Client: Requesting server to open Schematic UI");
+                // GTCEUTerminalMod.LOGGER.info("Client: Requesting server to open Schematic UI");
                 ClientProxy.openSchematicGUI(itemStack, player, Collections.emptyList());
                 return InteractionResult.SUCCESS;
             }
@@ -101,6 +102,7 @@ public class SchematicInterfaceBehavior {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+
     // Handle right-click in air to paste at EXACT ghost preview position
     public InteractionResultHolder<ItemStack> use(Item item, Level level, Player player, InteractionHand usedHand) {
         ItemStack itemStack = player.getItemInHand(usedHand);
@@ -108,7 +110,7 @@ public class SchematicInterfaceBehavior {
         if (player.isShiftKeyDown()) {
             // Shift + Right-click in air: Open GUI
             if (level.isClientSide) {
-                GTCEUTerminalMod.LOGGER.info("Client: Requesting server to open Schematic UI");
+                // GTCEUTerminalMod.LOGGER.info("Client: Requesting server to open Schematic UI");
                 ClientProxy.openSchematicGUI(itemStack, player, Collections.emptyList());
                 return InteractionResultHolder.success(itemStack);
             }
@@ -169,6 +171,7 @@ public class SchematicInterfaceBehavior {
         );
     }
 
+
     // Check if item has clipboard data
     private boolean hasClipboard(ItemStack itemStack) {
         CompoundTag tag = itemStack.getTag();
@@ -180,7 +183,7 @@ public class SchematicInterfaceBehavior {
     }
 
     private void copyMultiblock(IMultiController controller, ItemStack itemStack, Player player, Level level, BlockPos blockPos) {
-        GTCEUTerminalMod.LOGGER.info("=== COPYING MULTIBLOCK ===");
+        // GTCEUTerminalMod.LOGGER.info("=== COPYING MULTIBLOCK ===");
 
         Set<BlockPos> positions = scanMultiblockArea(controller, level);
 
@@ -237,10 +240,9 @@ public class SchematicInterfaceBehavior {
                 true
         );
 
-        GTCEUTerminalMod.LOGGER.info("Multiblock copied: {} blocks", blocks.size());
+        // GTCEUTerminalMod.LOGGER.info("Multiblock copied: {} blocks", blocks.size());
     }
 
-    // Cleans the NBT data of a block entity for safe storage in a schematic, keeping only necessary configuration and stripping out transient state and real-item data to avoid duplication when pasting.
     private CompoundTag cleanNBTForSchematic(CompoundTag originalTag) {
         if (originalTag == null || originalTag.isEmpty()) {
             return new CompoundTag();
@@ -310,6 +312,7 @@ public class SchematicInterfaceBehavior {
             cleanTag.putInt("paintingColor", originalTag.getInt("paintingColor"));
         }
 
+        // 9. GTCEu-AE2 integrated machine configuration (ME Input Bus, ME Output Bus, ME Stocking Bus, etc.)
         String blockId = originalTag.getString("id").toLowerCase();
         // 9-10. AE2 configuration — only if enabled in config
         if (com.gtceuterminal.common.config.ItemsConfig.isSchAllowAE2ConfigCopy()) {
@@ -327,7 +330,6 @@ public class SchematicInterfaceBehavior {
         return cleanTag;
     }
 
-    // Returns true for GTCEu machines that integrate with AE2 (ME-prefixed buses/hatches), based on block ID.
     private boolean isGTCEuAE2Machine(String blockId) {
         // Only match GTCEu machines that integrate with AE2 — i.e. the ME-prefixed buses/hatches.
         // Must start with "gtceu:" and contain "me_" to avoid false matches on plain buses like
@@ -338,18 +340,6 @@ public class SchematicInterfaceBehavior {
                 || path.contains("_me_");
     }
 
-    /**
-     * Copies AE2-related configuration from the original NBT tag of a GTCEu machine block entity,
-     * stripping out any real-item state to avoid duplication when pasting.
-     *
-     * This includes:
-     * - "inventory" (ExportOnlyAEItemList): we keep the slot structure and "config" but drop "stock"
-     * - "circuitInventory" and "circuitSlotEnabled" (circuit slot config)
-     * - "isDistinct" and "filterHandler" (bus behavior settings)
-     * - "autoPull", "minStackSize", "ticksPerCycle" (stocking bus extras)
-     *
-     * The copied configuration is put into the cleanTag, which will be used for schematic pasting.
-     */
     private void copyGTCEuAE2MachineConfig(CompoundTag originalTag, CompoundTag cleanTag) {
         // ── Slot configuration ("inventory") ─────────────────────────────────────
         if (originalTag.contains("inventory")) {
@@ -375,6 +365,11 @@ public class SchematicInterfaceBehavior {
                     }
                 }
 
+                // The AE slot config array — only present on ME buses, not plain item buses.
+                // Each element is { "p": { "config": <GenericStack>, ["stock": <GenericStack>] }, "t": 11b }
+                // "config" = what item to request from ME (safe to copy)
+                // "stock"  = items currently stocked (DUPE RISK — excluded)
+                // CRITICAL: must keep "t": 11b on every element or LDLib throws NullPayload on paste.
                 if (outerTag.contains("inventory")) {
                     net.minecraft.nbt.Tag innerRaw = outerTag.get("inventory");
                     if (innerRaw instanceof net.minecraft.nbt.ListTag slotList) {
@@ -419,7 +414,7 @@ public class SchematicInterfaceBehavior {
             }
         }
 
-        // Circuit slot
+        // ── Circuit slot ──────────────────────────────────────────────────────────
         if (originalTag.contains("circuitInventory")) {
             cleanTag.put("circuitInventory", originalTag.get("circuitInventory").copy());
         }
@@ -427,7 +422,7 @@ public class SchematicInterfaceBehavior {
             cleanTag.putBoolean("circuitSlotEnabled", originalTag.getBoolean("circuitSlotEnabled"));
         }
 
-        // Bus behavior settings
+        // ── Bus behavior settings ─────────────────────────────────────────────────
         if (originalTag.contains("isDistinct")) {
             cleanTag.putBoolean("isDistinct", originalTag.getBoolean("isDistinct"));
         }
@@ -435,7 +430,7 @@ public class SchematicInterfaceBehavior {
             cleanTag.put("filterHandler", originalTag.get("filterHandler").copy());
         }
 
-        // Stocking bus extras
+        // ── Stocking bus extras ───────────────────────────────────────────────────
         if (originalTag.contains("autoPull")) {
             cleanTag.putBoolean("autoPull", originalTag.getBoolean("autoPull"));
         }
@@ -449,15 +444,14 @@ public class SchematicInterfaceBehavior {
         GTCEUTerminalMod.LOGGER.debug("Copied GTCEu AE2 machine config — keys: {}", cleanTag.getAllKeys());
     }
 
-    // Returns true for AE2 cable bus blocks (registry namespaces "ae2" or "appliedenergistics2", path contains "cable_bus").
     private boolean isAE2CableBus(String blockId) {
         return blockId.contains("ae2:cable_bus")
                 || blockId.contains("appliedenergistics2:cable_bus");
     }
 
-    // Copies AE2 cable bus part configuration, stripping real-item state from each part's data.
     private void copyAE2CableBusConfig(CompoundTag originalTag, CompoundTag cleanTag) {
         // The cable bus structure is flat at the root: one sub-tag per Direction.
+        // Direction.getSerializedName() returns the lower-case name; "cable" is used for null (center).
         String[] sideKeys = { "down", "up", "north", "south", "east", "west", "cable" };
 
         for (String sideKey : sideKeys) {
@@ -487,7 +481,6 @@ public class SchematicInterfaceBehavior {
         }
     }
 
-    // Strips real-item state from AE2 part data, keeping only configuration needed to reconstruct the part.
     private CompoundTag sanitizeAE2PartData(CompoundTag partData) {
         CompoundTag safe = new CompoundTag();
 
@@ -513,7 +506,7 @@ public class SchematicInterfaceBehavior {
 
         // IConfigManager settings — all written as String keys by ConfigManager.writeToNBT()
         for (String settingKey : new String[]{
-                "redstone_controlled",  // RedstoneMode (all buses)
+                "redstone_controlled",  // RedstoneMode  (all buses)
                 "fuzzy_mode",           // FuzzyMode     (storage/import/export bus)
                 "scheduling_mode",      // SchedulingMode (import/export bus)
                 "craft_only",           // YesNo         (export bus with crafting card)
@@ -551,7 +544,7 @@ public class SchematicInterfaceBehavior {
             Collection<BlockPos> cachePos = controller.getMultiblockState().getCache();
             if (cachePos != null && !cachePos.isEmpty()) {
                 positions.addAll(cachePos);
-                GTCEUTerminalMod.LOGGER.info("Got {} positions from multiblock cache", positions.size());
+                // GTCEUTerminalMod.LOGGER.info("Got {} positions from multiblock cache", positions.size());
                 return positions;
             }
         } catch (Exception e) {
@@ -561,16 +554,11 @@ public class SchematicInterfaceBehavior {
         BlockPos controllerPos = controller.self().getPos();
         List<IMultiPart> parts = controller.getParts();
 
-        if (parts.isEmpty()) {
-            GTCEUTerminalMod.LOGGER.warn("No parts found in multiblock");
-            return positions;
-        }
+        // Always seed bounding box with the controller itself so it's never excluded
+        int minX = controllerPos.getX(), minY = controllerPos.getY(), minZ = controllerPos.getZ();
+        int maxX = controllerPos.getX(), maxY = controllerPos.getY(), maxZ = controllerPos.getZ();
 
-        GTCEUTerminalMod.LOGGER.info("Scanning area around {} parts", parts.size());
-
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-
+        // Expand to include all parts (hatches, buses, etc.)
         for (IMultiPart part : parts) {
             BlockPos pos = part.self().getPos();
             minX = Math.min(minX, pos.getX());
@@ -597,7 +585,7 @@ public class SchematicInterfaceBehavior {
             }
         }
 
-        GTCEUTerminalMod.LOGGER.info("Scanned area and found {} blocks", positions.size());
+        // GTCEUTerminalMod.LOGGER.info("Scanned area and found {} blocks", positions.size());
         return positions;
     }
 
@@ -646,10 +634,9 @@ public class SchematicInterfaceBehavior {
         rotationSteps = (rotationSteps + userRot) & 3;
 
 
-        GTCEUTerminalMod.LOGGER.info("Pasting schematic at {} - Original facing: {}, Player facing: {}, Rotation steps: {}",
-                targetPos, originalFacing, playerFacing, rotationSteps);
+        // GTCEUTerminalMod.LOGGER.info("Pasting schematic at {} - Original facing: {}, Player facing: {}, Rotation steps: {}", targetPos, originalFacing, playerFacing, rotationSteps);
 
-        // FIRST PASS: compute placements + required materials
+        // === FIRST PASS: compute placements + required materials ===
         Map<Item, Integer> required = new HashMap<>();
         List<Placement> placements = new ArrayList<>();
 
@@ -714,7 +701,7 @@ public class SchematicInterfaceBehavior {
             return;
         }
 
-        // MATERIAL CHECK / EXTRACTION
+        // === MATERIAL CHECK / EXTRACTION (SURVIVAL ONLY) ===
         if (!player.getAbilities().instabuild) {
             MENetworkItemExtractor.ExtractResult result =
                     MENetworkItemExtractor.tryExtractFromMEOrInventory(itemStack, level, player, required);
@@ -752,7 +739,7 @@ public class SchematicInterfaceBehavior {
             }
         }
 
-        // SECOND PASS: place blocks (now that we paid)
+        // === SECOND PASS: place blocks (now that we paid) ===
         int placedCount = 0;
 
         // Get ME Network fluid storage once for the whole paste operation
@@ -826,10 +813,9 @@ public class SchematicInterfaceBehavior {
                 true
         );
 
-        GTCEUTerminalMod.LOGGER.info("Schematic pasted: {} blocks placed, {} skipped", placedCount, skippedCount);
+        // GTCEUTerminalMod.LOGGER.info("Schematic pasted: {} blocks placed, {} skipped", placedCount, skippedCount);
     }
 
-    // Attempt to access ME Network fluid storage via the terminal's linked grid.
     @org.jetbrains.annotations.Nullable
     private IFluidHandler getMENetworkFluidStorage(ItemStack terminalStack, Player player) {
         try {
@@ -864,6 +850,7 @@ public class SchematicInterfaceBehavior {
     }
 
     private record Placement(BlockPos relativeKey, BlockPos worldPos, BlockState state) {}
+
 
     // Get player's horizontal facing direction
     private Direction getPlayerHorizontalFacing(Player player) {
@@ -952,4 +939,4 @@ public class SchematicInterfaceBehavior {
 
         return state;
     }
-}// Yeah, this is a big class — sorry! I tried to break it down into smaller methods but the paste logic is inherently complex with all the rotation, material checking, and special handling for fluids and AE2 blocks. Let me know if you want me to split it further or add more comments!
+}
