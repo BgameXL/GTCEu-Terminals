@@ -13,6 +13,8 @@ import com.gregtechceu.gtceu.api.pattern.MultiblockState;
 import com.gregtechceu.gtceu.api.pattern.TraceabilityPredicate;
 import com.gregtechceu.gtceu.api.pattern.predicates.SimplePredicate;
 import com.gregtechceu.gtceu.api.pattern.util.RelativeDirection;
+import com.gtceuterminal.common.compat.GTCEuCompat;
+import com.gtceuterminal.common.compat.GTCEuCompat.PredicateCountMap;
 import com.lowdragmc.lowdraglib.utils.BlockInfo;
 
 import appeng.api.networking.IGrid;
@@ -33,8 +35,8 @@ import java.util.*;
 /**
  * Server-side analysis of what a multiblock needs to be built or upgraded.
  *
- * Does NOT place any blocks — it only reads the pattern and compares
- * against the ME network to produce an {@link AnalysisResult}.
+ * <p>Does NOT place any blocks — it only reads the pattern and compares
+ * against the ME network to produce an {@link AnalysisResult}.</p>
  */
 public final class MultiblockAnalyzer {
 
@@ -65,6 +67,13 @@ public final class MultiblockAnalyzer {
     }
 
     // ── BUILD analysis ────────────────────────────────────────────────────────
+
+    /**
+     * Analyses what blocks are needed to build {@code controller} and how many
+     * the player's linked ME network has in stock.
+     *
+     * @return analysis result, or null on failure
+     */
     public static AnalysisResult analyzeForBuild(Player player,
                                                  IMultiController controller,
                                                  ManagerSettings.AutoBuildSettings settings) {
@@ -88,9 +97,9 @@ public final class MultiblockAnalyzer {
             boolean   isFlipped     = controller.self().isFlipped();
             int       minZ          = -centerOff[4];
 
-            Object2IntOpenHashMap<SimplePredicate> cacheGlobal = worldState.getGlobalCount();
-            Object2IntOpenHashMap<SimplePredicate> cacheLayer  = worldState.getLayerCount();
-            worldState.clean();
+            PredicateCountMap cacheGlobal = GTCEuCompat.getGlobalCount(worldState);
+            PredicateCountMap cacheLayer = GTCEuCompat.getLayerCount(worldState);
+            GTCEuCompat.clean(worldState);
 
             // item → total needed
             Map<Item, Integer> needed = new LinkedHashMap<>();
@@ -107,7 +116,7 @@ public final class MultiblockAnalyzer {
 
                             if (!player.level().isEmptyBlock(pos)) {
                                 // Already placed — count limits like AdvancedAutoBuilder does
-                                worldState.update(pos, pred);
+                                GTCEuCompat.update(worldState, pos, pred);
                                 for (SimplePredicate lim : pred.limited) lim.testLimited(worldState);
                                 continue;
                             }
@@ -131,6 +140,11 @@ public final class MultiblockAnalyzer {
     }
 
     // ── UPGRADE analysis ──────────────────────────────────────────────────────
+
+    /**
+     * Analyses what items are needed to upgrade {@code components} and how many
+     * the ME network has.
+     */
     public static AnalysisResult analyzeForUpgrade(Player player,
                                                    List<ComponentInfo> components,
                                                    int targetTier,
@@ -158,6 +172,7 @@ public final class MultiblockAnalyzer {
     }
 
     // ── Shared: build entry list from needed map + ME query ───────────────────
+
     private static AnalysisResult buildEntries(Map<Item, Integer> needed,
                                                Player player,
                                                BlockPos controllerPos) {
@@ -193,6 +208,7 @@ public final class MultiblockAnalyzer {
     }
 
     // ── ME grid helper ────────────────────────────────────────────────────────
+
     private static IGrid getGrid(Player player) {
         try {
             // Find a linked wireless terminal in hands or inventory
@@ -216,6 +232,7 @@ public final class MultiblockAnalyzer {
     }
 
     // ── Pattern helpers (mirrors AdvancedAutoBuilder) ─────────────────────────
+
     private static int getRepetitions(int slice, int[][] aisleReps, int repeatCount) {
         if (aisleReps == null || slice >= aisleReps.length) return 1;
         int min = aisleReps[slice][0];
@@ -227,8 +244,8 @@ public final class MultiblockAnalyzer {
     }
 
     private static BlockInfo[] pickInfos(TraceabilityPredicate pred,
-                                         Object2IntOpenHashMap<SimplePredicate> global,
-                                         Object2IntOpenHashMap<SimplePredicate> layer) {
+                                         PredicateCountMap global,
+                                         PredicateCountMap layer) {
         // Mirrors AdvancedAutoBuilder.pickInfosForPredicate exactly
         for (SimplePredicate lim : pred.limited) {
             if (lim.minLayerCount > 0) {
@@ -293,7 +310,7 @@ public final class MultiblockAnalyzer {
             net.minecraft.core.Direction of = facing == down
                     ? upFacing : upFacing.getOpposite();
             for (int i = 0; i < 3; i++) {
-                switch (dir[i].getActualDirection(of)) {
+                switch (GTCEuCompat.getActualDirection(dir[i], of)) {
                     case UP    -> c1[1] =  c0[i];
                     case DOWN  -> c1[1] = -c0[i];
                     case WEST  -> c1[0] = -c0[i];
@@ -308,7 +325,7 @@ public final class MultiblockAnalyzer {
             if (flipped) { if (upFacing==net.minecraft.core.Direction.NORTH||upFacing==net.minecraft.core.Direction.SOUTH) c1[0]=-c1[0]; else c1[2]=-c1[2]; }
         } else {
             for (int i = 0; i < 3; i++) {
-                switch (dir[i].getActualDirection(facing)) {
+                switch (GTCEuCompat.getActualDirection(dir[i], facing)) {
                     case UP    -> c1[1] =  c0[i];
                     case DOWN  -> c1[1] = -c0[i];
                     case WEST  -> c1[0] = -c0[i];
