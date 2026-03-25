@@ -141,8 +141,15 @@ public class ComponentDetailUI {
         WidgetGroup header = new WidgetGroup(2, headerY, uiW - 4, headerH);
         header.setBackground(theme.headerTexture());
 
-        String title = "§l§f" + multiblock.getName() + " - Components";
-        if (compact) title = "§l§f" + multiblock.getName();
+        String title = compact
+                ? Component.translatable(
+                        "gui.gtceuterminal.component_detail.header.title_compact",
+                        multiblock.getName()
+                ).getString()
+                : Component.translatable(
+                        "gui.gtceuterminal.component_detail.header.title_full",
+                        multiblock.getName()
+                ).getString();
 
         addText(header, 10, compact ? 7 : 10, uiW - 24, title, textScale);
         return header;
@@ -155,14 +162,16 @@ public class ComponentDetailUI {
         int y = compact ? 6 : 8;
 
         addText(infoPanel, 10, y, uiW - pad * 2 - 20,
-                "§7Multiblock: §f" + multiblock.getName(), textScale);
+                Component.translatable("gui.gtceuterminal.component_detail.info.multiblock", multiblock.getName()).getString(),
+                textScale);
 
         y += compact ? 12 : 14;
 
         addText(infoPanel, 10, y, 150,
-                "§7Tier: §f" + multiblock.getTierName(), textScale);
+                Component.translatable("gui.gtceuterminal.component_detail.info.tier", multiblock.getTierName()).getString(),
+                textScale);
 
-        String distText = "§7Distance: §f" + multiblock.getDistanceString();
+        String distText = Component.translatable("gui.gtceuterminal.component_detail.info.distance", multiblock.getDistanceString()).getString();
         if (!compact && (uiW >= 430)) {
             addText(infoPanel, 200, y, (uiW - pad * 2) - 210, distText, textScale);
         } else {
@@ -175,7 +184,11 @@ public class ComponentDetailUI {
         List<ComponentGroup> groups = multiblock.getGroupedComponents();
         int totalComponents = multiblock.getComponents().size();
         addText(infoPanel, 10, y, uiW - pad * 2 - 20,
-                "§7Components: §f" + totalComponents + " §7(§f" + groups.size() + " §7groups)",
+                Component.translatable(
+                        "gui.gtceuterminal.component_detail.info.components",
+                        totalComponents,
+                        groups.size()
+                ).getString(),
                 textScale);
 
         return infoPanel;
@@ -185,7 +198,9 @@ public class ComponentDetailUI {
         WidgetGroup listPanel = new WidgetGroup(pad, listY, uiW - pad * 2, listH);
         listPanel.setBackground(theme.panelWithBorderTexture());
 
-        addText(listPanel, 10, 5, uiW - pad * 2 - 20, "§l§7Component Groups:", textScale);
+        addText(listPanel, 10, 5, uiW - pad * 2 - 20,
+                Component.translatable("gui.gtceuterminal.component_detail.list.header").getString(),
+                textScale);
 
         int scrollX = 5;
         int scrollY = compact ? 22 : 25;
@@ -228,10 +243,12 @@ public class ComponentDetailUI {
             addText(entry, 22, compact ? 4 : 5, entryW - 120, "§f" + typeName, textScale);
 
             addText(entry, 22, compact ? 16 : 17, 120,
-                    "§7Count: §f" + group.getCount(), textScale);
+                    Component.translatable("gui.gtceuterminal.component_detail.entry.count", group.getCount()).getString(),
+                    textScale);
 
             addText(entry, compact ? 130 : 150, compact ? 16 : 17, entryW - 220,
-                    "§7Tier: §f" + rep.getTierName(), textScale);
+                    Component.translatable("gui.gtceuterminal.component_detail.entry.tier", rep.getTierName()).getString(),
+                    textScale);
 
             int btnW = compact ? 64 : 80;
             int btnH = compact ? 20 : 24;
@@ -248,14 +265,22 @@ public class ComponentDetailUI {
                         cd -> openUpgradeDialog(group)
                 );
 
-                upgradeBtn.setButtonTexture(scaledTextTexture("§aUpgrade", btnW, textScale));
+                upgradeBtn.setButtonTexture(
+                        scaledTextTexture(
+                                Component.translatable("gui.gtceuterminal.component_detail.entry.upgrade").getString(),
+                                btnW,
+                                textScale
+                        )
+                );
                 upgradeBtn.setHoverTexture(new GuiTextureGroup(
                         new ColorRectTexture(COLOR_BG_LIGHT),
                         new ColorBorderTexture(1, COLOR_TEXT_WHITE)
                 ));
                 entry.addWidget(upgradeBtn);
             } else {
-                addText(entry, btnX, compact ? 8 : 15, btnW, "§7Max", textScale);
+                addText(entry, btnX, compact ? 8 : 15, btnW,
+                        Component.translatable("gui.gtceuterminal.component_detail.entry.max").getString(),
+                        textScale);
             }
         }
 
@@ -280,7 +305,13 @@ public class ComponentDetailUI {
                 ),
                 cd -> openBulkUpgrade()
         );
-        bulkBtn.setButtonTexture(scaledTextTexture("§aBulk Upgrade", bulkW, textScale));
+        bulkBtn.setButtonTexture(
+                scaledTextTexture(
+                        Component.translatable("gui.gtceuterminal.component_detail.actions.bulk_upgrade").getString(),
+                        bulkW,
+                        textScale
+                )
+        );
         bulkBtn.setHoverTexture(new GuiTextureGroup(
                 new ColorRectTexture(COLOR_BG_MEDIUM),
                 new ColorBorderTexture(1, COLOR_TEXT_WHITE)
@@ -295,7 +326,13 @@ public class ComponentDetailUI {
                 ),
                 cd -> scanComponents()
         );
-        scanBtn.setButtonTexture(scaledTextTexture("§7Scan", scanW, textScale));
+        scanBtn.setButtonTexture(
+                scaledTextTexture(
+                        Component.translatable("gui.gtceuterminal.component_detail.actions.scan").getString(),
+                        scanW,
+                        textScale
+                )
+        );
         scanBtn.setHoverTexture(new GuiTextureGroup(
                 new ColorRectTexture(COLOR_BG_MEDIUM),
                 new ColorBorderTexture(1, COLOR_TEXT_WHITE)
@@ -318,7 +355,13 @@ public class ComponentDetailUI {
                 cd -> goBack()
         );
 
-        backBtn.setButtonTexture(scaledTextTexture("§7← Back", btnW, textScale));
+        backBtn.setButtonTexture(
+                scaledTextTexture(
+                        Component.translatable("gui.gtceuterminal.component_detail.actions.back").getString(),
+                        btnW,
+                        textScale
+                )
+        );
         backBtn.setHoverTexture(new GuiTextureGroup(
                 new ColorRectTexture(COLOR_BG_MEDIUM),
                 new ColorBorderTexture(1, COLOR_TEXT_WHITE)
@@ -344,16 +387,25 @@ public class ComponentDetailUI {
 
     private void openBulkUpgrade() {
         GTCEUTerminalMod.LOGGER.info("Opening bulk upgrade for multiblock: {}", multiblock.getName());
-        player.displayClientMessage(Component.literal("§7Bulk upgrade not yet implemented"), true);
+        player.displayClientMessage(
+                Component.translatable("gui.gtceuterminal.component_detail.notifications.bulk_not_implemented"),
+                true
+        );
     }
 
     private void scanComponents() {
         GTCEUTerminalMod.LOGGER.info("Scanning components for multiblock: {}", multiblock.getName());
-        player.displayClientMessage(Component.literal("§aRescanned components"), true);
+        player.displayClientMessage(
+                Component.translatable("gui.gtceuterminal.component_detail.notifications.rescanned"),
+                true
+        );
     }
 
     private void goBack() {
-        player.displayClientMessage(Component.literal("§7Use ESC to close"), true);
+        player.displayClientMessage(
+                Component.translatable("gui.gtceuterminal.component_detail.notifications.use_esc_to_close"),
+                true
+        );
     }
 
     // --- text helpers (safe scaling) ---

@@ -241,7 +241,10 @@ public class ComponentUpgradeDialog extends DialogWidget {
         WidgetGroup header = new WidgetGroup(2, 2, W - 4, 24);
         header.setBackground(theme.panelTexture());
 
-        String title = "§l§fUpgrade " + group.getType().name().replace("_", " ");
+        String title = Component.translatable(
+                "gui.gtceuterminal.component_upgrade_dialog.title",
+                group.getType().name().replace("_", " ")
+        ).getString();
         LabelWidget titleLabel = new LabelWidget(10, 7, title);
         titleLabel.setTextColor(COLOR_TEXT_WHITE);
         header.addWidget(titleLabel);
@@ -256,12 +259,18 @@ public class ComponentUpgradeDialog extends DialogWidget {
         ComponentInfo rep = group.getRepresentative();
         if (rep != null) {
             LabelWidget countLabel = new LabelWidget(10, 5,
-                    "§7Count: §f" + group.getCount() + " components");
+                    Component.translatable(
+                            "gui.gtceuterminal.component_upgrade_dialog.info.count_components",
+                            group.getCount()
+                    ).getString());
             countLabel.setTextColor(COLOR_TEXT_WHITE);
             panel.addWidget(countLabel);
 
             LabelWidget currentLabel = new LabelWidget(10, 18,
-                    "§7Current Tier: §f" + rep.getTierName());
+                    Component.translatable(
+                            "gui.gtceuterminal.component_upgrade_dialog.info.current_tier",
+                            rep.getTierName()
+                    ).getString());
             currentLabel.setTextColor(COLOR_TEXT_WHITE);
             panel.addWidget(currentLabel);
         }
@@ -282,9 +291,13 @@ public class ComponentUpgradeDialog extends DialogWidget {
         // Label
         String labelText;
         if (rep.getType() == ComponentType.MAINTENANCE || rep.getType() == ComponentType.COIL) {
-            labelText = "§l§7Select Upgrade Option:";
+            labelText = Component.translatable(
+                    "gui.gtceuterminal.component_upgrade_dialog.tier_selection.label_upgrade_option"
+            ).getString();
         } else {
-            labelText = "§l§7Select Target Tier:";
+            labelText = Component.translatable(
+                    "gui.gtceuterminal.component_upgrade_dialog.tier_selection.label_target_tier"
+            ).getString();
         }
 
         LabelWidget label = new LabelWidget(10, 4, labelText);
@@ -428,7 +441,9 @@ public class ComponentUpgradeDialog extends DialogWidget {
         int yPos = 0;
         int added = 0;
 
-        ButtonWidget allBtn = createOptionButton("§fALL\n§7(any)", tierFilter == null,
+        ButtonWidget allBtn = createOptionButton(
+                Component.translatable("gui.gtceuterminal.component_upgrade_dialog.option_all_any").getString(),
+                tierFilter == null,
                 xPos, yPos, btnWidth, btnHeight,
                 () -> onShowAllClicked());
         scroll.addWidget(allBtn);
@@ -628,7 +643,9 @@ public class ComponentUpgradeDialog extends DialogWidget {
                 ),
                 cd -> performUpgrade()
         );
-        confirmButton.setButtonTexture(new TextTexture("§eConfirm Change")
+        confirmButton.setButtonTexture(new TextTexture(
+                Component.translatable("gui.gtceuterminal.component_upgrade_dialog.actions.confirm_change").getString()
+        )
                 .setWidth(140)
                 .setType(TextTexture.TextType.NORMAL));
         confirmButton.setHoverTexture(new GuiTextureGroup(
@@ -647,7 +664,9 @@ public class ComponentUpgradeDialog extends DialogWidget {
                     ),
                     cd -> performAutoCraft()
             );
-            autoCraftBtn.setButtonTexture(new TextTexture("§9⚙ Auto-craft")
+            autoCraftBtn.setButtonTexture(new TextTexture(
+                    Component.translatable("gui.gtceuterminal.component_upgrade_dialog.actions.auto_craft").getString()
+            )
                     .setWidth(100)
                     .setType(TextTexture.TextType.NORMAL));
             autoCraftBtn.setHoverTexture(new GuiTextureGroup(
@@ -668,7 +687,9 @@ public class ComponentUpgradeDialog extends DialogWidget {
                 ),
                 cd -> close()
         );
-        cancel.setButtonTexture(new TextTexture("§fCancel")
+        cancel.setButtonTexture(new TextTexture(
+                Component.translatable("gui.gtceuterminal.component_upgrade_dialog.actions.cancel").getString()
+        )
                 .setWidth(cancelW)
                 .setType(TextTexture.TextType.NORMAL));
         cancel.setHoverTexture(new GuiTextureGroup(
@@ -686,7 +707,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private void performAutoCraft() {
         if (selectedTier == -1 && (selectedUpgradeId == null || selectedUpgradeId.isBlank())) {
             player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("§eSelect an upgrade option first."), true);
+                    Component.translatable("gui.gtceuterminal.component_upgrade_dialog.chat.select_upgrade_option_first"), true);
             return;
         }
 
@@ -703,7 +724,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
         );
 
         player.displayClientMessage(
-                net.minecraft.network.chat.Component.literal("§7Analyzing ME Network..."), true);
+                Component.translatable("gui.gtceuterminal.component_upgrade_dialog.chat.analyzing_me_network"), true);
         close();
         if (parentDialog != null) parentDialog.close();
     }
@@ -882,26 +903,31 @@ public class ComponentUpgradeDialog extends DialogWidget {
     private WidgetGroup createMaterialsPanel() {
         WidgetGroup panel = new WidgetGroup(10, 149, dialogW - 20, 156);
 
-        LabelWidget label = new LabelWidget(5, 4, "§l§7Required Materials:");
+        LabelWidget label = new LabelWidget(5, 4,
+                Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.required_label").getString());
         label.setTextColor(COLOR_TEXT_WHITE);
         panel.addWidget(label);
 
         if (!player.level().isClientSide && WirelessTerminalHandler.isLinked(getWirelessTerminal(player))) {
-            LabelWidget warning = new LabelWidget(5, 16, "§e⚠ ME materials will be verified on confirmation");
+            LabelWidget warning = new LabelWidget(5, 16,
+                    Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.me_materials_verified").getString());
             warning.setTextColor(0xFFFFAA00);
             panel.addWidget(warning);
         }
 
         if (player.isCreative()) {
-            LabelWidget creativeLabel = new LabelWidget(5, 60, "§a§lCREATIVE MODE");
+            LabelWidget creativeLabel = new LabelWidget(5, 60,
+                    Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.creative_mode").getString());
             creativeLabel.setTextColor(COLOR_SUCCESS);
             panel.addWidget(creativeLabel);
 
-            LabelWidget infoLabel = new LabelWidget(5, 75, "§7Select an option to see materials");
+            LabelWidget infoLabel = new LabelWidget(5, 75,
+                    Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.select_option_to_see").getString());
             infoLabel.setTextColor(COLOR_TEXT_GRAY);
             panel.addWidget(infoLabel);
         } else if (selectedTier == -1) {
-            LabelWidget placeholder = new LabelWidget(5, 70, "§7Select an option to see materials");
+            LabelWidget placeholder = new LabelWidget(5, 70,
+                    Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.select_option_to_see").getString());
             placeholder.setTextColor(COLOR_TEXT_GRAY);
             panel.addWidget(placeholder);
         }
@@ -917,13 +943,15 @@ public class ComponentUpgradeDialog extends DialogWidget {
         // Calcular posición Y (usar la original 149 para que funcione)
         materialsPanel = new WidgetGroup(10, 149, dialogW - 20, 156);
 
-        LabelWidget label = new LabelWidget(5, 4, "§l§7Required Materials:");
+        LabelWidget label = new LabelWidget(5, 4,
+                Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.required_label").getString());
         label.setTextColor(COLOR_TEXT_WHITE);
         materialsPanel.addWidget(label);
 
         if (selectedTier != -1 && materials != null && !materials.isEmpty()) {
             if (player.isCreative()) {
-                LabelWidget creativeNote = new LabelWidget(5, 16, "§a[Creative Mode - Not Required]");
+                LabelWidget creativeNote = new LabelWidget(5, 16,
+                        Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.creative_mode_not_required").getString());
                 creativeNote.setTextColor(COLOR_SUCCESS);
                 materialsPanel.addWidget(creativeNote);
             }
@@ -937,11 +965,13 @@ public class ComponentUpgradeDialog extends DialogWidget {
             materialsPanel.addWidget(list);
         } else {
             if (player.isCreative()) {
-                LabelWidget info = new LabelWidget(5, 75, "§7Select an option to see materials");
+                LabelWidget info = new LabelWidget(5, 75,
+                        Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.select_option_to_see").getString());
                 info.setTextColor(COLOR_TEXT_GRAY);
                 materialsPanel.addWidget(info);
             } else if (selectedTier == -1) {
-                LabelWidget info = new LabelWidget(5, 70, "§7Select an option to see materials");
+                LabelWidget info = new LabelWidget(5, 70,
+                        Component.translatable("gui.gtceuterminal.component_upgrade_dialog.materials.select_option_to_see").getString());
                 info.setTextColor(COLOR_TEXT_GRAY);
                 materialsPanel.addWidget(info);
             }
@@ -977,7 +1007,10 @@ public class ComponentUpgradeDialog extends DialogWidget {
         );
 
         player.displayClientMessage(
-                Component.literal("§aChanging " + group.getCount() + " components..."),
+                Component.translatable(
+                        "gui.gtceuterminal.component_upgrade_dialog.chat.changing_components",
+                        group.getCount()
+                ),
                 true
         );
 

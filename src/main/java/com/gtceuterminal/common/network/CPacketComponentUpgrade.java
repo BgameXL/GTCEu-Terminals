@@ -136,7 +136,10 @@ public class CPacketComponentUpgrade {
             // Send feedback
             if (upgraded > 0) {
                 player.displayClientMessage(
-                        Component.literal("§aUpgraded " + upgraded + " component(s)"),
+                        Component.translatable(
+                                "item.gtceuterminal.component_upgrade.message.upgraded",
+                                upgraded
+                        ),
                         true
                 );
                 player.playSound(SoundEvents.ANVIL_USE, 1.0F, 1.0F);
@@ -148,14 +151,19 @@ public class CPacketComponentUpgrade {
 
             if (upgraded > 0) {
                 player.displayClientMessage(
-                        Component.literal("§6⚠ Items may be voided or dropped when upgrading/downgrading components"),
+                        Component.translatable(
+                                "item.gtceuterminal.component_upgrade.message.warning_void_or_dropped"
+                        ),
                         false
                 );
             }
 
             if (failed > 0) {
                 player.displayClientMessage(
-                        Component.literal("§cFailed to upgrade " + failed + " component(s)"),
+                        Component.translatable(
+                                "item.gtceuterminal.component_upgrade.message.failed",
+                                failed
+                        ),
                         true
                 );
             }

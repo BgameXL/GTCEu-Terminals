@@ -9,7 +9,6 @@ import com.gtceuterminal.common.energy.LinkedMachineData;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -78,7 +77,12 @@ public class EnergyAnalyzerItem extends Item {
                     EnergyDataCollector.clearHistory(level, pos);
                     saveMachines(stack, machines);
                     player.displayClientMessage(
-                            Component.literal("§cUnlinked: §f" + machineType), true);
+                            Component.translatable(
+                                    "item.gtceuterminal.energy_analyzer.message.unlinked",
+                                    machineType
+                            ),
+                            true
+                    );
                     return InteractionResult.SUCCESS;
                 }
             }
@@ -87,14 +91,24 @@ public class EnergyAnalyzerItem extends Item {
             int max = ItemsConfig.getEAMaxLinkedMachines();
             if (machines.size() >= max) {
                 player.displayClientMessage(
-                        Component.literal("§cCannot link more than §f" + max + "§c machines. Unlink one first."), true);
+                        Component.translatable(
+                                "item.gtceuterminal.energy_analyzer.message.cannot_link_more",
+                                max
+                        ),
+                        true
+                );
                 return InteractionResult.FAIL;
             }
 
             // Check dimension allowed
             if (!ItemsConfig.isEADimensionAllowed(dimId)) {
                 player.displayClientMessage(
-                        Component.literal("§cDimension §f" + dimId + "§c is not allowed in config."), true);
+                        Component.translatable(
+                                "item.gtceuterminal.energy_analyzer.message.dimension_not_allowed",
+                                dimId
+                        ),
+                        true
+                );
                 return InteractionResult.FAIL;
             }
 
@@ -102,8 +116,12 @@ public class EnergyAnalyzerItem extends Item {
             machines.add(new LinkedMachineData(pos, dimId, "", machineType));
             saveMachines(stack, machines);
             player.displayClientMessage(
-                    Component.literal("§aLinked: §f" + machineType +
-                            " §7(" + machines.size() + "/" + max + ")"), true);
+                    Component.translatable(
+                            "item.gtceuterminal.energy_analyzer.message.linked",
+                            machineType, machines.size(), max
+                    ),
+                    true
+            );
             return InteractionResult.SUCCESS;
 
         } else {
@@ -115,7 +133,11 @@ public class EnergyAnalyzerItem extends Item {
             }
             if (idx < 0) {
                 player.displayClientMessage(
-                        Component.literal("§eThis machine is not linked. §7Shift+click to link it first."), true);
+                        Component.translatable(
+                                "item.gtceuterminal.energy_analyzer.message.machine_not_linked_prompt"
+                        ),
+                        true
+                );
                 return InteractionResult.SUCCESS;
             }
             // Request UI open — send index to open on that machine
@@ -136,7 +158,11 @@ public class EnergyAnalyzerItem extends Item {
         List<LinkedMachineData> machines = loadMachines(stack);
         if (machines.isEmpty()) {
             player.displayClientMessage(
-                    Component.literal("§eNo machines linked. §7Shift+click a GTCEu machine to link it."), true);
+                    Component.translatable(
+                            "item.gtceuterminal.energy_analyzer.message.no_machines_linked_air"
+                    ),
+                    true
+            );
             return InteractionResultHolder.success(stack);
         }
 
@@ -172,33 +198,39 @@ public class EnergyAnalyzerItem extends Item {
                                 @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
 
-        tooltip.add(Component.literal("Energy Monitoring Tool").withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.tool"));
         tooltip.add(Component.literal(""));
 
         List<LinkedMachineData> machines = loadMachines(stack);
         int max = ItemsConfig.getEAMaxLinkedMachines();
 
         if (machines.isEmpty()) {
-            tooltip.add(Component.literal("No machines linked").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.no_machines_linked"));
         } else {
-            tooltip.add(Component.literal("Linked machines: §f" + machines.size() + "§7/" + max)
-                    .withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable(
+                    "item.gtceuterminal.energy_analyzer.tooltip.linked_machines",
+                    machines.size(),
+                    max
+            ));
             // Show first 3
             int shown = Math.min(3, machines.size());
             for (int i = 0; i < shown; i++) {
-                tooltip.add(Component.literal("  §7● §f" + machines.get(i).getDisplayName()));
+                tooltip.add(Component.translatable(
+                        "item.gtceuterminal.energy_analyzer.tooltip.machine_entry",
+                        machines.get(i).getDisplayName()
+                ));
             }
             if (machines.size() > 3) {
-                tooltip.add(Component.literal("  §7... and " + (machines.size() - 3) + " more"));
+                tooltip.add(Component.translatable(
+                        "item.gtceuterminal.energy_analyzer.tooltip.more_machines",
+                        (machines.size() - 3)
+                ));
             }
         }
 
         tooltip.add(Component.literal(""));
-        tooltip.add(Component.literal("Right-click: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Open on that machine").withStyle(ChatFormatting.AQUA)));
-        tooltip.add(Component.literal("Right-click (air): ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Open list").withStyle(ChatFormatting.AQUA)));
-        tooltip.add(Component.literal("Shift + Right-click: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Link / Unlink machine").withStyle(ChatFormatting.YELLOW)));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.right_click_open"));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.right_click_air_open"));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.shift_right_click_manage"));
     }
 }

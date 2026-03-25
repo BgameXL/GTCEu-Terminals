@@ -36,3 +36,6 @@ Thumbs.db
 *.jar
 !gradle/wrapper/*.jar
 !gradle-wrapper.jar
+
+# jenv
+.java-version

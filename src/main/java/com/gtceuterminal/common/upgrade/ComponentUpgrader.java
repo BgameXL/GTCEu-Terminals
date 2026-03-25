@@ -308,9 +308,13 @@ public class ComponentUpgrader {
 
             if (meResult.success) {
                 if (meResult.source == MENetworkItemExtractor.ExtractionSource.ME_NETWORK) {
-                    extractionSource = " §a(ME Network)";
+                    extractionSource = net.minecraft.network.chat.Component
+                            .translatable("item.gtceuterminal.component_upgrade.extraction_source.me_network")
+                            .getString();
                 } else if (meResult.source == MENetworkItemExtractor.ExtractionSource.PLAYER_INVENTORY) {
-                    extractionSource = " §7(Inventory)";
+                    extractionSource = net.minecraft.network.chat.Component
+                            .translatable("item.gtceuterminal.component_upgrade.extraction_source.inventory")
+                            .getString();
                 }
             } else {
                 // Fallback to traditional method
@@ -334,7 +338,9 @@ public class ComponentUpgrader {
                     result.message = "Failed to extract materials";
                     return result;
                 }
-                extractionSource = " §7(Inventory)";
+                extractionSource = net.minecraft.network.chat.Component
+                        .translatable("item.gtceuterminal.component_upgrade.extraction_source.inventory")
+                        .getString();
             }
         } else {
             // No wireless terminal, use traditional method
@@ -358,7 +364,9 @@ public class ComponentUpgrader {
                 result.message = "Failed to extract materials";
                 return result;
             }
-            extractionSource = " §7(Inventory)";
+            extractionSource = net.minecraft.network.chat.Component
+                    .translatable("item.gtceuterminal.component_upgrade.extraction_source.inventory")
+                    .getString();
         }
 
         for (ComponentInfo component : components) {
@@ -384,7 +392,9 @@ public class ComponentUpgrader {
                 result.successful, components.size(), extractionSource);
 
         if (upgradingCoils && result.successful > 0) {
-            String coilName = "Unknown Coil";
+            String coilName = net.minecraft.network.chat.Component
+                    .translatable("item.gtceuterminal.component_upgrade.unknown_coil")
+                    .getString();
             try {
                 ComponentInfo firstCoil = components.stream()
                         .filter(c -> c.getType() == ComponentType.COIL)
@@ -401,16 +411,17 @@ public class ComponentUpgrader {
             }
 
             player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal(
-                            String.format("§e⚠ Upgraded %d coils to §6%s%s", result.successful, coilName, extractionSource)
-                    ).withStyle(net.minecraft.ChatFormatting.YELLOW),
+                    net.minecraft.network.chat.Component.translatable(
+                            "item.gtceuterminal.component_upgrade.message.upgraded_coils",
+                            result.successful, coilName, extractionSource
+                    ),
                     false
             );
 
             player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal(
-                            "§6⚠ Reset multiblock to apply new temperature"
-                    ).withStyle(net.minecraft.ChatFormatting.GOLD),
+                    net.minecraft.network.chat.Component.translatable(
+                            "item.gtceuterminal.component_upgrade.message.reset_multiblock"
+                    ),
                     true
             );
 

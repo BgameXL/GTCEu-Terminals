@@ -53,7 +53,7 @@ public class AutocraftConfirmScreen extends Screen {
     private int confirmX, cancelX, btnY, btnW, btnH;
 
     public AutocraftConfirmScreen(AnalysisResult result, Screen parent) {
-        super(Component.literal("Autocraft Confirm"));
+        super(Component.translatable("gui.gtceuterminal.autocraft.title"));
         this.result  = result;
         this.parent  = parent;
         this.entries = result.entries;
@@ -87,8 +87,8 @@ public class AutocraftConfirmScreen extends Screen {
         // Header
         g.fill(wx, wy, wx + W, wy + HDR_H, C_PANEL);
         String title = result.kind == AnalysisResult.Kind.BUILD
-                ? "§f§lAutocraft: Build Multiblock"
-                : "§f§lAutocraft: Upgrade Components";
+                ? Component.translatable("gui.gtceuterminal.autocraft.header.build").getString()
+                : Component.translatable("gui.gtceuterminal.autocraft.header.upgrade").getString();
         g.drawString(font, title, wx + LIST_PAD, wy + 9, C_TEXT, false);
         g.fill(wx, wy + HDR_H - 1, wx + W, wy + HDR_H, C_BORDER);
 
@@ -121,8 +121,11 @@ public class AutocraftConfirmScreen extends Screen {
         // Summary text
         int missing = result.missingCount();
         String summary = missing == 0
-                ? "§aAll items available in ME"
-                : "§c" + missing + " item type(s) missing from ME";
+                ? Component.translatable("gui.gtceuterminal.autocraft.summary.all_available").getString()
+                : Component.translatable(
+                        "gui.gtceuterminal.autocraft.summary.missing",
+                        missing
+                ).getString();
         g.drawString(font, summary, wx + LIST_PAD, footY + 9, C_TEXT, false);
 
         // Buttons
@@ -132,12 +135,16 @@ public class AutocraftConfirmScreen extends Screen {
                 mx, my);
         g.drawString(font,
                 result.allAvailable()
-                        ? (result.kind == AnalysisResult.Kind.BUILD ? "§aBuild!" : "§aUpgrade!")
-                        : "§8Unavailable",
+                        ? (result.kind == AnalysisResult.Kind.BUILD
+                                ? Component.translatable("gui.gtceuterminal.autocraft.confirm.build").getString()
+                                : Component.translatable("gui.gtceuterminal.autocraft.confirm.upgrade").getString())
+                        : Component.translatable("gui.gtceuterminal.autocraft.confirm.unavailable").getString(),
                 confirmX + 6, btnY + 4, 0xFFFFFFFF, false);
 
         renderBtn(g, cancelX, btnY, btnW, btnH, C_CANCEL, C_CANCEL_B, mx, my);
-        g.drawString(font, "§cCancel", cancelX + 6, btnY + 4, 0xFFFFFFFF, false);
+        g.drawString(font,
+                Component.translatable("gui.gtceuterminal.autocraft.cancel").getString(),
+                cancelX + 6, btnY + 4, 0xFFFFFFFF, false);
 
         super.render(g, mx, my, pt);
     }
@@ -167,9 +174,14 @@ public class AutocraftConfirmScreen extends Screen {
         g.drawString(font, "§f" + name, x + 10, y + 2, C_TEXT, false);
 
         // Right side: need × / ME count
-        String right = "§7need §f" + needed + "  §7ME: "
-                + (inME > 0 ? (ok ? "§a" : "§e") : "§c") + inME
-                + (craft ? " §e✦" : "");
+        String inMeColored = (inME > 0 ? (ok ? "§a" : "§e") : "§c") + inME;
+        String craftSuffix = craft ? " §e✦" : "";
+        String right = Component.translatable(
+                "gui.gtceuterminal.autocraft.entry.right",
+                needed,
+                inMeColored,
+                craftSuffix
+        ).getString();
         int rw = font.width(right.replaceAll("§.", ""));
         g.drawString(font, right, x + w - rw, y + 2, C_TEXT, false);
 

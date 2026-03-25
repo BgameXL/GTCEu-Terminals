@@ -8,7 +8,6 @@ import com.gtceuterminal.common.material.MaterialCalculator;
 import com.gtceuterminal.common.pattern.FluidPlacementHelper;
 import com.gtceuterminal.common.util.SchematicUtils;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -50,8 +49,8 @@ public final class SchematicPaster {
         CompoundTag itemTag = itemStack.getTag();
         if (itemTag == null || !itemTag.contains("Clipboard")) {
             player.displayClientMessage(
-                    Component.literal("No schematic in clipboard!")
-                            .withStyle(ChatFormatting.RED), true);
+                    Component.translatable("item.gtceuterminal.schematic_paster.no_schematic_in_clipboard"),
+                    true);
             return;
         }
 
@@ -130,8 +129,8 @@ public final class SchematicPaster {
 
         if (placements.isEmpty()) {
             player.displayClientMessage(
-                    Component.literal("Nothing to paste here. Area may be occupied (or identical).")
-                            .withStyle(ChatFormatting.YELLOW), true);
+                    Component.translatable("item.gtceuterminal.schematic_paster.nothing_to_paste"),
+                    true);
             return;
         }
 
@@ -197,13 +196,17 @@ public final class SchematicPaster {
             }
         }
 
-        Component msg = Component.literal("Schematic pasted! ")
-                .withStyle(ChatFormatting.GREEN)
-                .append(Component.literal(placedCount + " blocks placed")
-                        .withStyle(ChatFormatting.WHITE));
-        if (skippedCount > 0)
-            msg = msg.copy().append(Component.literal(" (" + skippedCount + " skipped)")
-                    .withStyle(ChatFormatting.GRAY));
+        Component msg = Component.translatable(
+                "item.gtceuterminal.schematic_paster.paste_success.no_skipped",
+                placedCount
+        );
+        if (skippedCount > 0) {
+            msg = Component.translatable(
+                    "item.gtceuterminal.schematic_paster.paste_success.with_skipped",
+                    placedCount,
+                    skippedCount
+            );
+        }
         player.displayClientMessage(msg, true);
 
         GTCEUTerminalMod.LOGGER.info("Schematic pasted: {} placed, {} skipped", placedCount, skippedCount);
@@ -232,9 +235,10 @@ public final class SchematicPaster {
             }
         }
 
-        return Component.literal("Missing materials: ")
-                .withStyle(ChatFormatting.RED)
-                .append(Component.literal(sb.toString()).withStyle(ChatFormatting.WHITE));
+        return Component.translatable(
+                "item.gtceuterminal.schematic_paster.missing_materials",
+                sb.toString()
+        );
     }
 
     // ── Internal record ───────────────────────────────────────────────────────

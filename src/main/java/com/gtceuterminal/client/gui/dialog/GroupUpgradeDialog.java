@@ -169,7 +169,8 @@ public class GroupUpgradeDialog extends DialogWidget {
         WidgetGroup header = new WidgetGroup(2, 2, W - 4, 28);
         header.setBackground(theme.panelTexture());
 
-        LabelWidget title = new LabelWidget(W / 2 - 90, 10, "§l§fUpgrade Group Confirmation");
+        LabelWidget title = new LabelWidget(W / 2 - 90, 10,
+                net.minecraft.network.chat.Component.translatable("gui.gtceuterminal.group_upgrade_dialog.title").getString());
         title.setTextColor(COLOR_TEXT_WHITE);
         header.addWidget(title);
 
@@ -185,7 +186,11 @@ public class GroupUpgradeDialog extends DialogWidget {
         // Component count and name
         String componentName = group.getType().getDisplayName();
         LabelWidget countLabel = new LabelWidget(10, yPos,
-                "§eUpgrade " + group.getCount() + "x " + componentName);
+                net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.upgrade_x",
+                        group.getCount(),
+                        componentName
+                ).getString());
         countLabel.setTextColor(COLOR_TEXT_WHITE);
         info.addWidget(countLabel);
 
@@ -193,7 +198,11 @@ public class GroupUpgradeDialog extends DialogWidget {
 
         // From tier
         String fromName = getDisplayName(group.getType(), group.getTier());
-        LabelWidget fromLabel = new LabelWidget(10, yPos, "§7From: §f" + fromName);
+        LabelWidget fromLabel = new LabelWidget(10, yPos,
+                net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.from",
+                        fromName
+                ).getString());
         fromLabel.setTextColor(COLOR_TEXT_WHITE);
         info.addWidget(fromLabel);
 
@@ -201,7 +210,11 @@ public class GroupUpgradeDialog extends DialogWidget {
 
         // To tier
         String toName = getDisplayName(group.getType(), targetTier);
-        LabelWidget toLabel = new LabelWidget(10, yPos, "§7To: §f" + toName);
+        LabelWidget toLabel = new LabelWidget(10, yPos,
+                net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.to",
+                        toName
+                ).getString());
         toLabel.setTextColor(COLOR_TEXT_WHITE);
         info.addWidget(toLabel);
 
@@ -221,7 +234,9 @@ public class GroupUpgradeDialog extends DialogWidget {
         panel.setBackground(theme.panelTexture());
 
         LabelWidget creativeMsg = new LabelWidget(10, 15,
-                "§aCreative Mode - No materials required");
+                net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.creative_no_materials"
+                ).getString());
         creativeMsg.setTextColor(COLOR_CREATIVE);
         panel.addWidget(creativeMsg);
 
@@ -234,7 +249,10 @@ public class GroupUpgradeDialog extends DialogWidget {
         panel.setBackground(theme.panelTexture());
 
         // Header
-        LabelWidget headerLabel = new LabelWidget(10, 5, "§7Required materials:");
+        LabelWidget headerLabel = new LabelWidget(10, 5,
+                net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.required_materials"
+                ).getString());
         headerLabel.setTextColor(COLOR_TEXT_GRAY);
         panel.addWidget(headerLabel);
 
@@ -262,7 +280,14 @@ public class GroupUpgradeDialog extends DialogWidget {
         WidgetGroup buttons = new WidgetGroup(10, H - 35, W - 20, 28);
 
         // Confirm button
-        String confirmText = hasEnough ? "Upgrade All (" + group.getCount() + ")" : "Missing Materials";
+        String confirmText = hasEnough
+                ? net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.confirm_upgrade_all",
+                        group.getCount()
+                ).getString()
+                : net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.confirm_missing_materials"
+                ).getString();
         ButtonWidget confirmBtn = new ButtonWidget(
                 0, 0, 150, 24,
                 new GuiTextureGroup(
@@ -297,7 +322,11 @@ public class GroupUpgradeDialog extends DialogWidget {
                 ),
                 cd -> closeDialog()
         );
-        cancelBtn.setButtonTexture(new TextTexture("Cancel")
+        cancelBtn.setButtonTexture(new TextTexture(
+                net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.group_upgrade_dialog.cancel"
+                ).getString()
+        )
                 .setWidth(140)
                 .setType(TextTexture.TextType.NORMAL));
         cancelBtn.setHoverTexture(new GuiTextureGroup(
@@ -354,7 +383,7 @@ public class GroupUpgradeDialog extends DialogWidget {
             case 5 -> "Naquadah";
             case 6 -> "Trinium";
             case 7 -> "Tritanium";
-            default -> "Unknown Coil";
+            default -> net.minecraft.network.chat.Component.translatable("gui.gtceuterminal.group_upgrade_dialog.unknown_coil").getString();
         };
     }
 }

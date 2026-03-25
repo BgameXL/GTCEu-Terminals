@@ -11,7 +11,6 @@ import com.gtceuterminal.common.multiblock.ComponentInfo;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -82,8 +81,12 @@ public class CPacketConfirmAutobuild {
             } catch (Exception e) {
                 GTCEUTerminalMod.LOGGER.error("CPacketConfirmAutobuild: error", e);
                 player.displayClientMessage(
-                        Component.literal("[GTCEu Terminals] Autocraft failed: " + e.getMessage())
-                                .withStyle(ChatFormatting.RED), false);
+                        Component.translatable(
+                                "item.gtceuterminal.autocraft_confirm.message.autocraft_failed",
+                                e.getMessage()
+                        ),
+                        false
+                );
             }
         });
         ctx.get().setPacketHandled(true);
@@ -92,16 +95,22 @@ public class CPacketConfirmAutobuild {
     private void handleBuild(ServerPlayer player) {
         BlockEntity be = player.serverLevel().getBlockEntity(controllerPos);
         if (!(be instanceof com.gregtechceu.gtceu.api.machine.IMachineBlockEntity mbe)) {
-            msg(player, "§cController not found at target position.", false);
+            msg(player,
+                    Component.translatable("item.gtceuterminal.autocraft_confirm.message.controller_not_found"),
+                    false);
             return;
         }
         MetaMachine machine = mbe.getMetaMachine();
         if (!(machine instanceof IMultiController controller)) {
-            msg(player, "§cTarget is not a multiblock controller.", false);
+            msg(player,
+                    Component.translatable("item.gtceuterminal.autocraft_confirm.message.target_not_multiblock_controller"),
+                    false);
             return;
         }
         if (controller.isFormed()) {
-            msg(player, "§aMultiblock is already formed!", true);
+            msg(player,
+                    Component.translatable("item.gtceuterminal.autocraft_confirm.message.multiblock_already_formed"),
+                    true);
             return;
         }
 
@@ -110,15 +119,21 @@ public class CPacketConfirmAutobuild {
 
         boolean ok = AdvancedAutoBuilder.autoBuild(player, controller, settings);
         if (ok) {
-            msg(player, "§aMultiblock built!", true);
+            msg(player,
+                    Component.translatable("item.gtceuterminal.autocraft_confirm.message.multiblock_built"),
+                    true);
         } else {
-            msg(player, "§cBuild failed — check materials.", false);
+            msg(player,
+                    Component.translatable("item.gtceuterminal.autocraft_confirm.message.build_failed_check_materials"),
+                    false);
         }
     }
 
     private void handleUpgrade(ServerPlayer player) {
         if (componentPositions.isEmpty()) {
-            msg(player, "§cNo components to upgrade.", false);
+            msg(player,
+                    Component.translatable("item.gtceuterminal.autocraft_confirm.message.no_components_to_upgrade"),
+                    false);
             return;
         }
 
@@ -153,10 +168,23 @@ public class CPacketConfirmAutobuild {
         }
 
         if (succeeded > 0) {
-            msg(player, "§aUpgraded " + succeeded + " component(s)."
-                    + (failed > 0 ? " §e(" + failed + " failed)" : ""), false);
+            if (failed > 0) {
+                msg(player,
+                        Component.translatable(
+                                "item.gtceuterminal.autocraft_confirm.message.upgrade_success_with_failed",
+                                succeeded, failed),
+                        false);
+            } else {
+                msg(player,
+                        Component.translatable(
+                                "item.gtceuterminal.autocraft_confirm.message.upgrade_success_no_failed",
+                                succeeded),
+                        false);
+            }
         } else {
-            msg(player, "§cUpgrade failed — check materials.", false);
+            msg(player,
+                    Component.translatable("item.gtceuterminal.autocraft_confirm.message.upgrade_failed_check_materials"),
+                    false);
         }
     }
 
@@ -180,7 +208,7 @@ public class CPacketConfirmAutobuild {
         return ItemStack.EMPTY;
     }
 
-    private static void msg(ServerPlayer p, String text, boolean actionBar) {
-        p.displayClientMessage(Component.literal(text), actionBar);
+    private static void msg(ServerPlayer p, Component component, boolean actionBar) {
+        p.displayClientMessage(component, actionBar);
     }
 }

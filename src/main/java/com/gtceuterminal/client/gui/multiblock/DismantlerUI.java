@@ -164,12 +164,17 @@ public class DismantlerUI {
         WidgetGroup header = new WidgetGroup(2, 2, GUI_WIDTH - 4, 28);
         header.setBackground(theme.panelTexture());
 
-        LabelWidget title = new LabelWidget(GUI_WIDTH / 2 - 80, 9, "§l§fMultiblock Dismantler");
+        LabelWidget title = new LabelWidget(GUI_WIDTH / 2 - 80, 9,
+                Component.translatable("gui.gtceuterminal.dismantler.title").getString());
         title.setTextColor(COLOR_TEXT_WHITE);
         header.addWidget(title);
 
-        String coords = String.format("§7[%d, %d, %d]",
-                controllerPos.getX(), controllerPos.getY(), controllerPos.getZ());
+        String coords = Component.translatable(
+                        "gui.gtceuterminal.dismantler.coords_format",
+                        controllerPos.getX(),
+                        controllerPos.getY(),
+                        controllerPos.getZ()
+                ).getString();
         LabelWidget coordsLabel = new LabelWidget(GUI_WIDTH - 120, 9, coords);
         coordsLabel.setTextColor(COLOR_TEXT_GRAY);
         header.addWidget(coordsLabel);
@@ -179,7 +184,7 @@ public class DismantlerUI {
                 cd -> ThemeEditorDialog.open(mainGroup, ItemTheme.load(player.getMainHandItem())));
         gearBtn.setButtonTexture(new TextTexture("§7⚙").setWidth(14).setType(TextTexture.TextType.NORMAL));
         gearBtn.setHoverTexture(new ColorRectTexture(0x40FFFFFF));
-        gearBtn.setHoverTooltips("Theme Settings");
+        gearBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.theme_settings").getString());
         header.addWidget(gearBtn);
 
         return header;
@@ -191,12 +196,16 @@ public class DismantlerUI {
                 new ColorRectTexture(COLOR_BG_LIGHT),
                 new ColorBorderTexture(1, COLOR_BORDER_DARK)));
 
-        panel.addWidget(new LabelWidget(5, 5, "§7Preview").setTextColor(COLOR_TEXT_GRAY));
+        panel.addWidget(new LabelWidget(5, 5,
+                Component.translatable("gui.gtceuterminal.dismantler.preview_label").getString())
+                .setTextColor(COLOR_TEXT_GRAY));
 
         if (scanResult != null) {
             panel.addWidget(new MultiblockPreviewWidget(10, 25, 220, 200, scanResult));
         } else {
-            panel.addWidget(new LabelWidget(80, 110, "§cNo data").setTextColor(COLOR_ERROR));
+            panel.addWidget(new LabelWidget(80, 110,
+                    Component.translatable("gui.gtceuterminal.dismantler.no_data").getString())
+                    .setTextColor(COLOR_ERROR));
         }
         return panel;
     }
@@ -207,11 +216,16 @@ public class DismantlerUI {
                 new ColorRectTexture(COLOR_BG_LIGHT),
                 new ColorBorderTexture(1, COLOR_BORDER_DARK)));
 
-        panel.addWidget(new LabelWidget(5, 5, "§7Blocks to Recover").setTextColor(COLOR_TEXT_GRAY));
+        panel.addWidget(new LabelWidget(5, 5,
+                Component.translatable("gui.gtceuterminal.dismantler.blocks_to_recover").getString())
+                .setTextColor(COLOR_TEXT_GRAY));
 
         if (scanResult != null) {
             panel.addWidget(new LabelWidget(5, 18,
-                    String.format("§7Total: §f%d blocks", scanResult.getTotalBlocks()))
+                    Component.translatable(
+                                    "gui.gtceuterminal.dismantler.total_blocks",
+                                    scanResult.getTotalBlocks()
+                            ).getString())
                     .setTextColor(COLOR_TEXT_WHITE));
             panel.addWidget(new BlockListWidget(5, 35, 220, 200, scanResult));
         }
@@ -230,15 +244,19 @@ public class DismantlerUI {
         }
 
         bar.addWidget(new LabelWidget(10, 8,
-                String.format("§7Inventory: §f%d §7empty slots", emptySlots))
+                Component.translatable(
+                                "gui.gtceuterminal.dismantler.inventory_empty_slots",
+                                emptySlots
+                        ).getString())
                 .setTextColor(COLOR_TEXT_WHITE));
 
         if (scanResult != null && emptySlots < scanResult.getBlockCounts().size()) {
             bar.addWidget(new LabelWidget(10, 20,
-                    "§6⚠ Warning: Not enough inventory space! Items will drop on ground.")
+                    Component.translatable("gui.gtceuterminal.dismantler.warning_not_enough_space").getString())
                     .setTextColor(COLOR_WARNING));
         } else {
-            bar.addWidget(new LabelWidget(10, 20, "§a✓ Enough space to recover all blocks")
+            bar.addWidget(new LabelWidget(10, 20,
+                    Component.translatable("gui.gtceuterminal.dismantler.enough_space").getString())
                     .setTextColor(COLOR_SUCCESS));
         }
         return bar;
@@ -246,8 +264,14 @@ public class DismantlerUI {
 
     private WidgetGroup createActionButtons() {
         WidgetGroup buttons = new WidgetGroup(10, GUI_HEIGHT - 35, GUI_WIDTH - 20, 28);
-        buttons.addWidget(createButton(0, 0, 200, 28, "§cDismantle Multiblock", cd -> performDismantle()));
-        buttons.addWidget(createButton(GUI_WIDTH - 220, 0, 200, 28, "Cancel", cd -> closeUI()));
+        buttons.addWidget(createButton(
+                0, 0, 200, 28,
+                Component.translatable("gui.gtceuterminal.dismantler.action.dismantle").getString(),
+                cd -> performDismantle()));
+        buttons.addWidget(createButton(
+                GUI_WIDTH - 220, 0, 200, 28,
+                Component.translatable("gui.gtceuterminal.dismantler.action.cancel").getString(),
+                cd -> closeUI()));
         return buttons;
     }
 
@@ -266,7 +290,10 @@ public class DismantlerUI {
         GTCEUTerminalMod.LOGGER.info("Dismantling multiblock at {}", controllerPos);
         TerminalNetwork.CHANNEL.sendToServer(new CPacketDismantle(controllerPos));
         closeUI();
-        player.displayClientMessage(Component.literal("§aMultiblock dismantled successfully!"), false);
+        player.displayClientMessage(
+                Component.translatable("gui.gtceuterminal.dismantler.chat.success"),
+                false
+        );
     }
 
     private void closeUI() {

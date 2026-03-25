@@ -85,7 +85,7 @@ public class BlueprintViewScreen extends Screen {
     public BlueprintViewScreen(SchematicData schematic,
                                List<SchematicData> allSchematics,
                                int selectedIdx) {
-        super(Component.literal("Blueprint Viewer"));
+        super(Component.translatable("gui.gtceuterminal.blueprint.view.title"));
         this.schematic         = schematic;
         this.allSchematics     = allSchematics;
         this.originSelectedIdx = selectedIdx;
@@ -118,37 +118,52 @@ public class BlueprintViewScreen extends Screen {
         g.fill(0, y, width, y + 1, 0xFF333333);
 
         if (subMode == SubMode.ORBIT) {
-            String hints = "§7[Drag] Orbit  [Scroll] Zoom  [Tab] Place Mode  [Esc] Back to Planner";
+            String hints = Component.translatable("gui.gtceuterminal.blueprint.view.orbit.hints").getString();
             g.drawString(font, hints, 8, y + 7, C_DIM, false);
 
             // Place Mode button
             int bx = width - 8 - BTN_W;
             drawBtn(g, bx, y + 3, BTN_W, BTN_H, C_BTN, C_BTN_B);
-            g.drawString(font, "§9Place Mode", bx + 6, y + 7, 0xFFFFFFFF, false);
+            g.drawString(font,
+                    Component.translatable("gui.gtceuterminal.blueprint.view.orbit.place_mode").getString(),
+                    bx + 6, y + 7, 0xFFFFFFFF, false);
 
             // Blueprints button
             int bx2 = bx - 6 - BTN_W;
             drawBtn(g, bx2, y + 3, BTN_W, BTN_H, C_BTN, C_BTN_B);
-            g.drawString(font, "§bBlueprints", bx2 + 6, y + 7, 0xFFFFFFFF, false);
+            g.drawString(font,
+                    Component.translatable("gui.gtceuterminal.blueprint.view.orbit.blueprints").getString(),
+                    bx2 + 6, y + 7, 0xFFFFFFFF, false);
 
         } else {
-            String hints = "§7[WASD] Move  [R] Rotate  [Enter] Confirm  [Tab/Esc] Cancel";
+            String hints = Component.translatable("gui.gtceuterminal.blueprint.view.place.hints").getString();
             g.drawString(font, hints, 8, y + 7, C_DIM, false);
 
             BlockPos sz = schematic.getSize();
             int sx = rotSteps % 2 == 0 ? sz.getX() : sz.getZ();
             int sz2= rotSteps % 2 == 0 ? sz.getZ() : sz.getX();
-            String info = String.format("§7Pos: §f%d, %d, %d  §7Size: §f%dx%dx%d  §7Rot: §f%d°",
-                    placementOrigin.getX(), placementOrigin.getY(), placementOrigin.getZ(),
-                    sx, sz.getY(), sz2, rotSteps * 90);
+            String info = Component.translatable(
+                    "gui.gtceuterminal.blueprint.view.place.info",
+                    placementOrigin.getX(),
+                    placementOrigin.getY(),
+                    placementOrigin.getZ(),
+                    sx,
+                    sz.getY(),
+                    sz2,
+                    rotSteps * 90
+            ).getString();
             g.drawString(font, info, 8, y - 12, C_DIM, false);
 
             int confirmBx = width - 8 - BTN_W;
             int cancelBx  = confirmBx - 6 - BTN_W;
             drawBtn(g, confirmBx, y + 3, BTN_W, BTN_H, C_OK, C_OK_B);
-            g.drawString(font, "§a✔ Confirm", confirmBx + 6, y + 7, 0xFFFFFFFF, false);
+            g.drawString(font,
+                    Component.translatable("gui.gtceuterminal.blueprint.view.place.confirm").getString(),
+                    confirmBx + 6, y + 7, 0xFFFFFFFF, false);
             drawBtn(g, cancelBx, y + 3, BTN_W, BTN_H, C_CANCEL, C_CANCEL_B);
-            g.drawString(font, "§c✕ Cancel", cancelBx + 6, y + 7, 0xFFFFFFFF, false);
+            g.drawString(font,
+                    Component.translatable("gui.gtceuterminal.blueprint.view.place.cancel").getString(),
+                    cancelBx + 6, y + 7, 0xFFFFFFFF, false);
         }
     }
 

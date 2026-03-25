@@ -68,7 +68,8 @@ public class ManagerSettingsUI {
         mainGroup.addWidget(new ImageWidget(GUI_WIDTH - 2, 0, 2, GUI_HEIGHT, new ColorRectTexture(COLOR_BORDER_DARK)));
         mainGroup.addWidget(new ImageWidget(0, GUI_HEIGHT - 2, GUI_WIDTH, 2, new ColorRectTexture(COLOR_BORDER_DARK)));
 
-        LabelWidget title = new LabelWidget(GUI_WIDTH / 2 - 60, 8, "§lManager Settings");
+        LabelWidget title = new LabelWidget(GUI_WIDTH / 2 - 60, 8,
+                Component.translatable("gui.gtceuterminal.manager_settings.title").getString());
         title.setTextColor(COLOR_TEXT_WHITE);
         mainGroup.addWidget(title);
 
@@ -85,66 +86,80 @@ public class ManagerSettingsUI {
         panel.setBackground(theme.panelTexture());
 
         int yPos = 8;
+        final String yesStr = Component.translatable("gui.gtceuterminal.manager_settings.common.yes").getString();
+        final String noStr  = Component.translatable("gui.gtceuterminal.manager_settings.common.no").getString();
 
         // 1. No Hatch Mode
-        LabelWidget hatchLabel = new LabelWidget(8, yPos, "§7No Hatch Mode");
+        LabelWidget hatchLabel = new LabelWidget(8, yPos,
+                Component.translatable("gui.gtceuterminal.manager_settings.hatch_mode.label").getString());
         panel.addWidget(hatchLabel);
         ButtonWidget hatchToggle = new ButtonWidget(GUI_WIDTH - 70, yPos - 2, 50, 16,
                 new ColorRectTexture(COLOR_BG_DARK), cd -> toggleNoHatchMode());
         hatchToggle.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
-        hatchLabel.setHoverTooltips(Component.literal("§7Build without hatches"));
+        hatchLabel.setHoverTooltips(Component.translatable("gui.gtceuterminal.manager_settings.hatch_mode.tooltip"));
         panel.addWidget(hatchToggle);
         panel.addWidget(new LabelWidget(GUI_WIDTH - 54, yPos + 2,
-                () -> getNoHatchMode() == 1 ? "§aYes" : "§cNo"));
-        panel.addWidget(new LabelWidget(8, yPos + 14, "§8← Click to toggle").setTextColor(0xFF666666));
+                () -> getNoHatchMode() == 1 ? yesStr : noStr));
+        panel.addWidget(new LabelWidget(8, yPos + 14,
+                Component.translatable("gui.gtceuterminal.manager_settings.hatch_mode.hint_toggle").getString())
+                .setTextColor(0xFF666666));
         yPos += 30;
 
         // 2. Tier Mode
-        LabelWidget tierLabel = new LabelWidget(8, yPos, "§7Tier Mode");
+        LabelWidget tierLabel = new LabelWidget(8, yPos,
+                Component.translatable("gui.gtceuterminal.manager_settings.tier_mode.label").getString());
         tierLabel.setTextColor(COLOR_TEXT_GRAY);
         panel.addWidget(tierLabel);
         TextFieldWidget tierInput = new TextFieldWidget(GUI_WIDTH - 70, yPos - 2, 50, 16,
                 () -> String.valueOf(getTierMode()),
                 value -> setTierMode(parseIntSafe(value, 1)));
         tierInput.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
-        tierLabel.setHoverTooltips(Component.literal("§7Component tier (1=LV, 2=MV, ...)"));
+        tierLabel.setHoverTooltips(Component.translatable("gui.gtceuterminal.manager_settings.tier_mode.tooltip"));
         tierInput.setNumbersOnly(1, 16);
         tierInput.setTextColor(COLOR_TEXT_WHITE);
         tierInput.setBackground(theme.backgroundTexture());
         tierInput.setWheelDur(1);
         panel.addWidget(tierInput);
-        panel.addWidget(new LabelWidget(8, yPos + 14, "§8↑↓ Scroll or type").setTextColor(0xFF666666));
+        panel.addWidget(new LabelWidget(8, yPos + 14,
+                Component.translatable("gui.gtceuterminal.manager_settings.tier_mode.hint_scroll_type").getString())
+                .setTextColor(0xFF666666));
         yPos += 30;
 
         // 3. Repeat Count
-        LabelWidget repeatLabel = new LabelWidget(8, yPos, "§7Repeat Count");
+        LabelWidget repeatLabel = new LabelWidget(8, yPos,
+                Component.translatable("gui.gtceuterminal.manager_settings.repeat_count.label").getString());
         repeatLabel.setTextColor(COLOR_TEXT_GRAY);
         panel.addWidget(repeatLabel);
         TextFieldWidget repeatInput = new TextFieldWidget(GUI_WIDTH - 70, yPos - 2, 50, 16,
                 () -> String.valueOf(getRepeatCount()),
                 value -> setRepeatCount(parseIntSafe(value, 0)));
         repeatInput.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
-        repeatLabel.setHoverTooltips(Component.literal("§7Number of times to repeat the structure"));
+        repeatLabel.setHoverTooltips(Component.translatable("gui.gtceuterminal.manager_settings.repeat_count.tooltip"));
         repeatInput.setNumbersOnly(0, 32);
         repeatInput.setTextColor(COLOR_TEXT_WHITE);
         repeatInput.setBackground(theme.backgroundTexture());
         repeatInput.setWheelDur(1);
         panel.addWidget(repeatInput);
-        panel.addWidget(new LabelWidget(8, yPos + 14, "§8Repeatable layers (0-99)").setTextColor(0xFF666666));
+        panel.addWidget(new LabelWidget(8, yPos + 14,
+                Component.translatable("gui.gtceuterminal.manager_settings.repeat_count.hint_layers").getString())
+                .setTextColor(0xFF666666));
         yPos += 30;
 
         // 4. Use AE2
         if (MENetworkScanner.isAE2Available()) {
-            LabelWidget aeLabel = new LabelWidget(8, yPos, "§7Use AE2");
+            LabelWidget aeLabel = new LabelWidget(8, yPos,
+                    Component.translatable("gui.gtceuterminal.manager_settings.use_ae2.label").getString());
             panel.addWidget(aeLabel);
             ButtonWidget aeToggle = new ButtonWidget(GUI_WIDTH - 70, yPos - 2, 50, 16,
                     new ColorRectTexture(COLOR_BG_DARK), cd -> toggleIsUseAE());
             aeToggle.setHoverTexture(new ColorRectTexture(COLOR_BG_LIGHT));
-            aeLabel.setHoverTooltips(Component.literal("§7Wireless Terminal is required"));
+            aeLabel.setHoverTooltips(Component.translatable("gui.gtceuterminal.manager_settings.use_ae2.tooltip"));
             panel.addWidget(aeToggle);
             panel.addWidget(new LabelWidget(GUI_WIDTH - 54, yPos + 2,
-                    () -> getIsUseAE() == 1 ? "§aYes" : "§cNo"));
-            panel.addWidget(new LabelWidget(8, yPos + 14, "§8← Use AE2 for materials").setTextColor(0xFF666666));
+                    () -> getIsUseAE() == 1 ? yesStr : noStr));
+            panel.addWidget(new LabelWidget(8, yPos + 14,
+                    Component.translatable("gui.gtceuterminal.manager_settings.use_ae2.hint_use_materials").getString())
+                    .setTextColor(0xFF666666));
         }
 
         return panel;

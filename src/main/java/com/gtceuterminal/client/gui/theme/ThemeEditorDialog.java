@@ -123,7 +123,8 @@ public class ThemeEditorDialog {
     private WidgetGroup buildHeader(DialogWidget dialog) {
         WidgetGroup g = new WidgetGroup(0, 0, DW, HDR_H);
         g.setBackground(new ColorRectTexture(C_PANEL));
-        g.addWidget(new LabelWidget(PAD, (HDR_H - 8) / 2, "§f⚙ Theme Settings"));
+        g.addWidget(new LabelWidget(PAD, (HDR_H - 8) / 2,
+                Component.translatable("gui.gtceuterminal.theme_editor.title").getString()));
         ButtonWidget close = new ButtonWidget(DW - 20, (HDR_H - 14) / 2, 14, 14,
                 new ColorRectTexture(0x00000000), cd -> dialog.setVisible(false));
         close.setButtonTexture(new TextTexture("§c✖").setWidth(14).setType(TextTexture.TextType.NORMAL));
@@ -140,7 +141,8 @@ public class ThemeEditorDialog {
         int colH = DH - HDR_H - FTR_H - PAD * 2;
         WidgetGroup col = new WidgetGroup(x, y, COL_L, colH);
 
-        col.addWidget(new LabelWidget(0, 0, "§7Presets"));
+        col.addWidget(new LabelWidget(0, 0,
+                Component.translatable("gui.gtceuterminal.theme_editor.presets").getString()));
 
         ThemePreset[] presets = ThemePreset.values();
         int swSz = 18, swGap = 4;
@@ -165,17 +167,36 @@ public class ThemeEditorDialog {
             ButtonWidget btn = new ButtonWidget(sx, sy, swSz, swSz,
                     new ColorRectTexture(0x00000000), cd -> applyPreset(p));
             btn.setHoverTexture(new ColorRectTexture(0x55FFFFFF));
-            btn.setHoverTooltips(Component.literal(p.label
-                    + (p.style == ItemTheme.UiStyle.GTCEU_NATIVE ? " §7(GTCEu style)" : "")));
+            String localized = switch (p) {
+                case DEFAULT -> Component.translatable("gui.gtceuterminal.theme_editor.preset.default").getString();
+                case GTCEU_RED -> Component.translatable("gui.gtceuterminal.theme_editor.preset.gtceu_red").getString();
+                case MATRIX -> Component.translatable("gui.gtceuterminal.theme_editor.preset.matrix").getString();
+                case GOLD -> Component.translatable("gui.gtceuterminal.theme_editor.preset.gold").getString();
+                case PURPLE -> Component.translatable("gui.gtceuterminal.theme_editor.preset.purple").getString();
+                case CYAN -> Component.translatable("gui.gtceuterminal.theme_editor.preset.cyan").getString();
+                case ORANGE -> Component.translatable("gui.gtceuterminal.theme_editor.preset.orange").getString();
+                case MONO -> Component.translatable("gui.gtceuterminal.theme_editor.preset.mono").getString();
+                case GTCEU_NATIVE -> Component.translatable("gui.gtceuterminal.theme_editor.preset.gtceu_native").getString();
+            };
+            String suffix = p.style == ItemTheme.UiStyle.GTCEU_NATIVE
+                    ? Component.translatable("gui.gtceuterminal.theme_editor.preset.gtceu_native_suffix").getString()
+                    : "";
+            btn.setHoverTooltips(Component.literal(localized + suffix));
             col.addWidget(btn);
         }
 
         // Style indicator — shows which UiStyle is currently active
         int swRows = (presets.length + 3) / 4;
         int indicatorY = 12 + swRows * (swSz + swGap) + 2;
-        LabelWidget styleLabel = new LabelWidget(0, indicatorY,
-                () -> "§7Style: §f" + (working.uiStyle == ItemTheme.UiStyle.GTCEU_NATIVE
-                        ? "GTCEu Native" : "Dark"));
+        LabelWidget styleLabel = new LabelWidget(0, indicatorY, () -> {
+            String styleName = working.uiStyle == ItemTheme.UiStyle.GTCEU_NATIVE
+                    ? Component.translatable("gui.gtceuterminal.theme_editor.style.gtceu_native").getString()
+                    : Component.translatable("gui.gtceuterminal.theme_editor.style.dark").getString();
+            return Component.translatable(
+                    "gui.gtceuterminal.theme_editor.style_label",
+                    styleName
+            ).getString();
+        });
         styleLabel.setClientSideWidget();
         col.addWidget(styleLabel);
 
@@ -183,24 +204,30 @@ public class ThemeEditorDialog {
         col.addWidget(new ImageWidget(0, sepY, COL_L, 1, new ColorRectTexture(C_BORDER)));
 
         int wy = sepY + 6;
-        col.addWidget(new LabelWidget(0, wy, "§7Wallpaper"));
+        col.addWidget(new LabelWidget(0, wy,
+                Component.translatable("gui.gtceuterminal.theme_editor.wallpaper").getString()));
         wy += 12;
 
         wallpaperLabel = new LabelWidget(0, wy,
-                () -> working.hasWallpaper() ? "§f" + truncate(working.wallpaper, 16) : "§8None");
+                () -> working.hasWallpaper()
+                        ? "§f" + truncate(working.wallpaper, 16)
+                        : Component.translatable("gui.gtceuterminal.theme_editor.none").getString());
         wallpaperLabel.setClientSideWidget();
         col.addWidget(wallpaperLabel);
         wy += 12;
 
         col.addWidget(makeTextBtn(0,  wy, 20, 14, "§7◀", cd -> navigateWallpaper(-1)));
         col.addWidget(makeTextBtn(24, wy, 20, 14, "§7▶", cd -> navigateWallpaper(+1)));
-        col.addWidget(makeTextBtn(48, wy, 34, 14, "§8None", cd -> clearWallpaper()));
+        col.addWidget(makeTextBtn(48, wy, 34, 14,
+                Component.translatable("gui.gtceuterminal.theme_editor.none").getString(),
+                cd -> clearWallpaper()));
         wy += 18;
 
         // Live UI preview
         int previewH = 52;
         int previewY = wy;
-        col.addWidget(new LabelWidget(0, previewY, "§7Preview"));
+        col.addWidget(new LabelWidget(0, previewY,
+                Component.translatable("gui.gtceuterminal.theme_editor.preview").getString()));
         previewY += 10;
 
         // BG layer
@@ -242,10 +269,15 @@ public class ThemeEditorDialog {
         int colH = DH - HDR_H - FTR_H - PAD * 2;
         WidgetGroup col = new WidgetGroup(x, y, COL_R, colH);
 
-        col.addWidget(new LabelWidget(0, 0, "§7Color"));
+        col.addWidget(new LabelWidget(0, 0,
+                Component.translatable("gui.gtceuterminal.theme_editor.color").getString()));
 
         // --- Color target tabs ---
-        String[] tNames = { "Accent", "BG", "Panel" };
+        String[] tNames = {
+                Component.translatable("gui.gtceuterminal.theme_editor.tab.accent").getString(),
+                Component.translatable("gui.gtceuterminal.theme_editor.tab.bg").getString(),
+                Component.translatable("gui.gtceuterminal.theme_editor.tab.panel").getString()
+        };
         int tBtnW = (COL_R - 4) / 3;
 
         accentSwatch = new ImageWidget(0, 0, tBtnW - 4, 6, new ColorRectTexture(working.accentColor));
@@ -325,12 +357,19 @@ public class ThemeEditorDialog {
 
         int optY = sliderY + 4 * 22 + 6;
         col.addWidget(new ImageWidget(0, optY - 3, COL_R, 1, new ColorRectTexture(C_BORDER)));
-        col.addWidget(new LabelWidget(0, optY, "§7Options"));
+        col.addWidget(new LabelWidget(0, optY,
+                Component.translatable("gui.gtceuterminal.theme_editor.options").getString()));
         optY += 12;
 
-        col.addWidget(makeToggle(0, optY, "Compact mode",  working.compactMode,  v -> working.compactMode  = v)); optY += 18;
-        col.addWidget(makeToggle(0, optY, "Show tooltips", working.showTooltips, v -> working.showTooltips = v)); optY += 18;
-        col.addWidget(makeToggle(0, optY, "Show borders",  working.showBorders,  v -> working.showBorders  = v));
+        col.addWidget(makeToggle(0, optY,
+                Component.translatable("gui.gtceuterminal.theme_editor.toggle.compact_mode").getString(),
+                working.compactMode,  v -> working.compactMode  = v)); optY += 18;
+        col.addWidget(makeToggle(0, optY,
+                Component.translatable("gui.gtceuterminal.theme_editor.toggle.show_tooltips").getString(),
+                working.showTooltips, v -> working.showTooltips = v)); optY += 18;
+        col.addWidget(makeToggle(0, optY,
+                Component.translatable("gui.gtceuterminal.theme_editor.toggle.show_borders").getString(),
+                working.showBorders,  v -> working.showBorders  = v));
 
         return col;
     }
@@ -349,14 +388,18 @@ public class ThemeEditorDialog {
         ButtonWidget save = new ButtonWidget(DW / 2 - btnW - 4, btnY, btnW, btnH,
                 new GuiTextureGroup(new ColorRectTexture(C_SAVE), new ColorBorderTexture(1, 0xFF2E8B2E)),
                 cd -> saveAndClose(dialog));
-        save.setButtonTexture(new TextTexture("§aSave").setWidth(btnW).setType(TextTexture.TextType.NORMAL));
+        save.setButtonTexture(new TextTexture(
+                Component.translatable("gui.gtceuterminal.theme_editor.button.save").getString()
+        ).setWidth(btnW).setType(TextTexture.TextType.NORMAL));
         save.setHoverTexture(new ColorRectTexture(0x2200FF00));
         ftr.addWidget(save);
 
         ButtonWidget reset = new ButtonWidget(DW / 2 + 4, btnY, btnW, btnH,
                 new GuiTextureGroup(new ColorRectTexture(C_RESET), new ColorBorderTexture(1, 0xFF8B2E2E)),
                 cd -> resetDefaults());
-        reset.setButtonTexture(new TextTexture("§cReset").setWidth(btnW).setType(TextTexture.TextType.NORMAL));
+        reset.setButtonTexture(new TextTexture(
+                Component.translatable("gui.gtceuterminal.theme_editor.button.reset").getString()
+        ).setWidth(btnW).setType(TextTexture.TextType.NORMAL));
         reset.setHoverTexture(new ColorRectTexture(0x22FF0000));
         ftr.addWidget(reset);
 

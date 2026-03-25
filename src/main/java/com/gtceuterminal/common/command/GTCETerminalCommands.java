@@ -51,15 +51,15 @@ public class GTCETerminalCommands {
         try {
             player = src.getPlayerOrException();
         } catch (Exception e) {
-            src.sendFailure(Component.literal("§cMust be run by a player."));
+            src.sendFailure(Component.translatable("command.gtceuterminal.theme.must_be_player"));
             return 0;
         }
 
         // Find terminal item in hands
         ItemStack found = findTerminal(player);
         if (found.isEmpty()) {
-            src.sendFailure(Component.literal(
-                "§cHold a GTCEu Terminal item in your main or offhand."));
+            src.sendFailure(Component.translatable(
+                    "command.gtceuterminal.theme.hold_terminal_item"));
             return 0;
         }
 
@@ -67,11 +67,13 @@ public class GTCETerminalCommands {
         DefaultThemeConfig.save(theme);
         DefaultThemeConfig.reload();
 
-        src.sendSuccess(() -> Component.literal(
-            "§aDefault theme saved! New players will use: " +
-            "Accent §r" + colorTag(theme.accentColor) +
-            " BG §r" + colorTag(theme.bgColor) +
-            " Panel §r" + colorTag(theme.panelColor)), true);
+        src.sendSuccess(() -> Component.translatable(
+                        "command.gtceuterminal.theme.set_default.success",
+                        colorTag(theme.accentColor),
+                        colorTag(theme.bgColor),
+                        colorTag(theme.panelColor)
+                ),
+                true);
         return 1;
     }
 
@@ -80,7 +82,7 @@ public class GTCETerminalCommands {
         DefaultThemeConfig.save(new ItemTheme()); // built-in defaults
         DefaultThemeConfig.reload();
         ctx.getSource().sendSuccess(() ->
-            Component.literal("§aDefault theme reset to built-in values."), true);
+                Component.translatable("command.gtceuterminal.theme.reset_default.success"), true);
         return 1;
     }
 
@@ -88,19 +90,30 @@ public class GTCETerminalCommands {
     private static int reloadConfig(CommandContext<CommandSourceStack> ctx) {
         DefaultThemeConfig.reload();
         ctx.getSource().sendSuccess(() ->
-            Component.literal("§adefault_theme.json reloaded from disk."), true);
+            Component.translatable("command.gtceuterminal.theme.reload.success"), true);
         return 1;
     }
 
     // ─── /gtcet theme info ───────────────────────────────────────────────────
     private static int showInfo(CommandContext<CommandSourceStack> ctx) {
         ItemTheme t = DefaultThemeConfig.get();
-        ctx.getSource().sendSuccess(() -> Component.literal(
-            "§7Default theme: " +
-            "§fAccent §r" + colorTag(t.accentColor) +
-            " §fBG §r" + colorTag(t.bgColor) +
-            " §fPanel §r" + colorTag(t.panelColor) +
-            (t.hasWallpaper() ? " §fWallpaper: §e" + t.wallpaper : "")), false);
+        ctx.getSource().sendSuccess(() -> {
+            if (t.hasWallpaper()) {
+                return Component.translatable(
+                        "command.gtceuterminal.theme.info.with_wallpaper",
+                        colorTag(t.accentColor),
+                        colorTag(t.bgColor),
+                        colorTag(t.panelColor),
+                        t.wallpaper
+                );
+            }
+            return Component.translatable(
+                    "command.gtceuterminal.theme.info.no_wallpaper",
+                    colorTag(t.accentColor),
+                    colorTag(t.bgColor),
+                    colorTag(t.panelColor)
+            );
+        }, false);
         return 1;
     }
 

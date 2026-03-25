@@ -9,7 +9,6 @@ import com.gtceuterminal.common.pattern.AdvancedAutoBuilder;
 
 import com.gtceuterminal.client.gui.factory.MultiStructureManagerUIFactory;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
@@ -65,7 +64,8 @@ public class MultiStructureManagerBehavior {
                         tag.put("accessPoint", GlobalPos.CODEC.encodeStart(NbtOps.INSTANCE, globalPos)
                                 .getOrThrow(false, err -> {}));
                         player.displayClientMessage(
-                                Component.literal("✓ Linked to ME Network").withStyle(ChatFormatting.GREEN), true);
+                                Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.linked_to_me_network"),
+                                true);
                         playSound(level, blockPos, SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
                     }
                     return InteractionResult.sidedSuccess(level.isClientSide);
@@ -81,7 +81,9 @@ public class MultiStructureManagerBehavior {
                 if (!controller.isFormed()) {
                     if (!level.isClientSide) {
                         if (cooldownTicks > 0 && player.getCooldowns().isOnCooldown(itemStack.getItem())) {
-                            sendMessage(player, "§cCooldown active!", false);
+                            sendMessage(player,
+                                    Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.cooldown_active"),
+                                    false);
                             return InteractionResult.FAIL;
                         }
                         ManagerSettings.Settings settings = new ManagerSettings.Settings(itemStack);
@@ -91,15 +93,21 @@ public class MultiStructureManagerBehavior {
                             if (success) {
                                 if (cooldownTicks > 0)
                                     player.getCooldowns().addCooldown(itemStack.getItem(), cooldownTicks);
-                                sendMessage(player, "§aMultiblock built!", true);
+                                sendMessage(player,
+                                        Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.multiblock_built"),
+                                        true);
                                 playSound(level, blockPos, SoundEvents.ANVIL_USE, 1.0f, 1.2f);
                             } else {
-                                sendMessage(player, "§cFailed to build! Check materials.", false);
+                                sendMessage(player,
+                                        Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.failed_to_build_check_materials"),
+                                        false);
                                 playSound(level, blockPos, SoundEvents.ANVIL_LAND, 0.5f, 0.8f);
                             }
                         } catch (Exception e) {
                             GTCEUTerminalMod.LOGGER.error("Error during auto-build", e);
-                            sendMessage(player, "§cFailed to build!", false);
+                            sendMessage(player,
+                                    Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.failed_to_build"),
+                                    false);
                             playSound(level, blockPos, SoundEvents.ANVIL_LAND, 0.5f, 0.8f);
                             return InteractionResult.FAIL;
                         }
@@ -107,7 +115,9 @@ public class MultiStructureManagerBehavior {
                     return InteractionResult.sidedSuccess(level.isClientSide);
                 }
                 if (!level.isClientSide) {
-                    sendMessage(player, "§aMultiblock is already formed!", true);
+                    sendMessage(player,
+                            Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.multiblock_already_formed"),
+                            true);
                 }
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
@@ -126,7 +136,9 @@ public class MultiStructureManagerBehavior {
             if (machine instanceof IMultiController controller && !controller.isFormed()) {
                 if (!level.isClientSide) {
                     if (cooldownTicks > 0 && player.getCooldowns().isOnCooldown(itemStack.getItem())) {
-                        sendMessage(player, "§cCooldown active!", false);
+                        sendMessage(player,
+                                Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.cooldown_active"),
+                                false);
                         return InteractionResult.FAIL;
                     }
                     try {
@@ -138,7 +150,9 @@ public class MultiStructureManagerBehavior {
                                         player, controller, buildSettings);
 
                         if (analysis == null || analysis.entries.isEmpty()) {
-                            sendMessage(player, "§eNothing to build — multiblock may already be complete.", true);
+                            sendMessage(player,
+                                    Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.nothing_to_build"),
+                                    true);
                             return InteractionResult.sidedSuccess(false);
                         }
 
@@ -148,7 +162,9 @@ public class MultiStructureManagerBehavior {
 
                     } catch (Exception e) {
                         GTCEUTerminalMod.LOGGER.error("Error during autocraft analysis", e);
-                        sendMessage(player, "§cAnalysis failed!", false);
+                        sendMessage(player,
+                                Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.analysis_failed"),
+                                false);
                         return InteractionResult.FAIL;
                     }
                 }
@@ -185,8 +201,8 @@ public class MultiStructureManagerBehavior {
         return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide);
     }
 
-    private void sendMessage(@NotNull Player player, @NotNull String message, boolean isSuccess) {
-        player.displayClientMessage(Component.literal(message), true);
+    private void sendMessage(@NotNull Player player, @NotNull Component message, boolean actionBar) {
+        player.displayClientMessage(message, actionBar);
     }
 
     private void playSound(@NotNull Level level, @NotNull BlockPos pos,

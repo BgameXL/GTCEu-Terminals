@@ -92,7 +92,7 @@ public class PlannerScreen extends Screen {
 
     // ─────────────────────────────────────────────────────────────────────────
     public PlannerScreen(List<SchematicData> schematics) {
-        super(Component.literal("Placement Planner"));
+        super(Component.translatable("gui.gtceuterminal.planner.title"));
         this.schematics = schematics;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
@@ -342,8 +342,12 @@ public class PlannerScreen extends Screen {
         g.fill(SIDEBAR_W - 1, 0, SIDEBAR_W, height, C_SIDEBAR_BDR);
 
         // Title
-        g.drawString(font, "§f§lPlacement Planner", 8, 8, C_TEXT, false);
-        g.drawString(font, "§7Schematics", 8, 22, C_DIM, false);
+        g.drawString(font,
+                Component.translatable("gui.gtceuterminal.planner.title").getString(),
+                8, 8, C_TEXT, false);
+        g.drawString(font,
+                Component.translatable("gui.gtceuterminal.planner.sidebar.schematics").getString(),
+                8, 22, C_DIM, false);
         g.fill(0, 32, SIDEBAR_W - 1, 33, 0xFF333333);
 
         // Schematic list (scrollable)
@@ -385,11 +389,15 @@ public class PlannerScreen extends Screen {
 
         // Rotation badge
         int badgeY = height - HUD_H - 42;
-        String rotLabel = "§7Rotation: §f" + (rotSteps * 90) + "°";
+        String rotLabel = Component.translatable(
+                "gui.gtceuterminal.planner.hud.rotation", rotSteps * 90
+        ).getString();
         g.drawString(font, rotLabel, 8, badgeY, C_TEXT, false);
 
         // Ghost count
-        String ghostLabel = "§7Placed: §f" + PlannerState.ghosts.size();
+        String ghostLabel = Component.translatable(
+                "gui.gtceuterminal.planner.hud.placed", PlannerState.ghosts.size()
+        ).getString();
         g.drawString(font, ghostLabel, 8, badgeY + 10, C_TEXT, false);
 
         // [3D View] button — opens BlueprintViewScreen for the selected schematic
@@ -399,14 +407,19 @@ public class PlannerScreen extends Screen {
         int viewFill = hasSelected ? 0xFF1A3A6B : 0xFF2A2A2A;
         int viewBdr  = hasSelected ? 0xFF2E75B6 : 0xFF444444;
         drawSidebarBtn(g, 8, viewBtnY, viewBtnW, 12, viewFill, viewBdr);
-        g.drawString(font, hasSelected ? "§9⊞ 3D View" : "§8⊞ 3D View", 12, viewBtnY + 2, 0xFFFFFFFF, false);
+        g.drawString(font,
+                hasSelected
+                        ? Component.translatable("gui.gtceuterminal.planner.sidebar.view3d.enabled").getString()
+                        : Component.translatable("gui.gtceuterminal.planner.sidebar.view3d.disabled").getString(),
+                12, viewBtnY + 2, 0xFFFFFFFF, false);
         lastViewBtnY = viewBtnY;
         lastViewBtnW = viewBtnW;
 
         // [Blueprints] button
         int bpBtnY = height - HUD_H - 14;
         drawSidebarBtn(g, 8, bpBtnY, viewBtnW, 12, 0xFF1A3A6B, 0xFF2E75B6);
-        g.drawString(font, "§b⊟ Blueprints", 12, bpBtnY + 2, 0xFFFFFFFF, false);
+        g.drawString(font, Component.translatable("gui.gtceuterminal.planner.sidebar.blueprints").getString(),
+                12, bpBtnY + 2, 0xFFFFFFFF, false);
         lastBpBtnY = bpBtnY;
     }
 
@@ -433,7 +446,7 @@ public class PlannerScreen extends Screen {
         g.fill(0, y, width, height, C_HUD);
         g.fill(0, y, width, y + 1, 0xFF333333);
 
-        String hints = "§7[Scroll] Zoom  [Shift+Scroll] Tilt  [R] Rotate  [LClick] Place  [RClick] Remove  [Tab] 3D";
+        String hints = Component.translatable("gui.gtceuterminal.planner.sidebar.hints").getString();
         g.drawString(font, hints, SIDEBAR_W + 6, y + 7, C_DIM, false);
 
         boolean hasGhosts    = !PlannerState.ghosts.isEmpty();
@@ -449,22 +462,29 @@ public class PlannerScreen extends Screen {
 
         // ── 3D mode button ─────────────────────────────────────────────────
         drawHudBtn(g, modeBx, y + 3, BTN_W_MODE, BTN_H, 0xFF1A3A6B, 0xFF2E75B6);
-        g.drawString(font, "§93D", modeBx + 14, y + 7, 0xFFFFFFFF, false);
+        g.drawString(font,
+                Component.translatable("gui.gtceuterminal.planner.hud.mode_3d").getString(),
+                modeBx + 14, y + 7, 0xFFFFFFFF, false);
 
         // ── Build All ──────────────────────────────────────────────────────
         int buildFill = hasGhosts ? 0xFF1E6B1E : 0xFF2A2A2A;
         int buildBdr  = hasGhosts ? 0xFF2E8B2E : 0xFF444444;
         drawHudBtn(g, buildBx, y + 3, BTN_W, BTN_H, buildFill, buildBdr);
         String buildLbl = hasGhosts
-                ? "§a⊞ Build All (" + PlannerState.ghosts.size() + ")"
-                : "§8⊞ Build All";
+                ? Component.translatable(
+                        "gui.gtceuterminal.planner.hud.build_all.enabled",
+                        PlannerState.ghosts.size()
+                ).getString()
+                : Component.translatable("gui.gtceuterminal.planner.hud.build_all.disabled").getString();
         g.drawString(font, buildLbl, buildBx + 6, y + 7, 0xFFFFFFFF, false);
 
         // ── Clear All ──────────────────────────────────────────────────────
         int clearFill = hasGhosts ? 0xFF6B1E1E : 0xFF2A2A2A;
         int clearBdr  = hasGhosts ? 0xFF8B2E2E : 0xFF444444;
         drawHudBtn(g, clearBx, y + 3, BTN_W, BTN_H, clearFill, clearBdr);
-        String clearLbl = hasGhosts ? "§c✗ Clear All" : "§8✗ Clear All";
+        String clearLbl = hasGhosts
+                ? Component.translatable("gui.gtceuterminal.planner.hud.clear_all.enabled").getString()
+                : Component.translatable("gui.gtceuterminal.planner.hud.clear_all.disabled").getString();
         g.drawString(font, clearLbl, clearBx + 6, y + 7, 0xFFFFFFFF, false);
     }
 

@@ -224,12 +224,15 @@ public class SchematicInterfaceUI {
         WidgetGroup header = new WidgetGroup(2, 2, GUI_WIDTH - 4, 32);
         header.setBackground(new ColorRectTexture(COLOR_BG_LIGHT));
 
-        LabelWidget titleLabel = new LabelWidget(12, 10, "§f§lSchematic Interface");
+        LabelWidget titleLabel = new LabelWidget(12, 10,
+                Component.translatable("gui.gtceuterminal.schematic_interface.title").getString());
         titleLabel.setTextColor(COLOR_TEXT_WHITE);
         header.addWidget(titleLabel);
 
         boolean hasClipboard = hasClipboard();
-        String clipboardText = hasClipboard ? "§a✓ Clipboard Ready" : "§7✗ Clipboard Empty";
+        String clipboardText = hasClipboard
+                ? Component.translatable("gui.gtceuterminal.schematic_interface.clipboard.ready").getString()
+                : Component.translatable("gui.gtceuterminal.schematic_interface.clipboard.empty").getString();
         LabelWidget clipboardLabel = new LabelWidget(GUI_WIDTH - 180, 10, clipboardText);
         clipboardLabel.setTextColor(hasClipboard ? COLOR_SUCCESS : COLOR_TEXT_GRAY);
         header.addWidget(clipboardLabel);
@@ -240,7 +243,7 @@ public class SchematicInterfaceUI {
                 cd -> ThemeEditorDialog.open(mainGroup, ItemTheme.load(terminalItem)));
         gearBtn.setButtonTexture(new TextTexture("§7⚙").setWidth(14).setType(TextTexture.TextType.NORMAL));
         gearBtn.setHoverTexture(new ColorRectTexture(COLOR_HOVER));
-        gearBtn.setHoverTooltips("Theme Settings");
+        gearBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.theme_settings").getString());
         header.addWidget(gearBtn);
 
         return header;
@@ -251,7 +254,8 @@ public class SchematicInterfaceUI {
         WidgetGroup leftPanel = new WidgetGroup(10, 35, 160, GUI_HEIGHT - 45);
         leftPanel.setBackground(theme.panelTexture());
 
-        LabelWidget nameLabel = new LabelWidget(8, 8, "§7Schematic Name:");
+        LabelWidget nameLabel = new LabelWidget(8, 8,
+                Component.translatable("gui.gtceuterminal.schematic_interface.name_label").getString());
         nameLabel.setTextColor(COLOR_TEXT_GRAY);
         leftPanel.addWidget(nameLabel);
 
@@ -262,7 +266,8 @@ public class SchematicInterfaceUI {
         nameInput.setBordered(true);
         leftPanel.addWidget(nameInput);
 
-        LabelWidget listTitle = new LabelWidget(8, 44, "§7Saved Schematics:");
+        LabelWidget listTitle = new LabelWidget(8, 44,
+                Component.translatable("gui.gtceuterminal.schematic_interface.saved_schematics_label").getString());
         listTitle.setTextColor(COLOR_TEXT_GRAY);
         leftPanel.addWidget(listTitle);
 
@@ -279,13 +284,16 @@ public class SchematicInterfaceUI {
 
     private void populateSchematicsList() {
         if (schematics.isEmpty()) {
-            LabelWidget emptyLabel = new LabelWidget(10, 40, "§7No schematics saved");
+            LabelWidget emptyLabel = new LabelWidget(10, 40,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.no_schematics_saved").getString());
             schematicsListWidget.addWidget(emptyLabel);
 
-            LabelWidget hintLabel = new LabelWidget(10, 55, "§8Shift+Click on a formed");
+            LabelWidget hintLabel = new LabelWidget(10, 55,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.hint_formed_1").getString());
             schematicsListWidget.addWidget(hintLabel);
 
-            LabelWidget hintLabel2 = new LabelWidget(10, 65, "§8multiblock to copy it");
+            LabelWidget hintLabel2 = new LabelWidget(10, 65,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.hint_formed_2").getString());
             schematicsListWidget.addWidget(hintLabel2);
         } else {
             int yPos = 5;
@@ -317,7 +325,10 @@ public class SchematicInterfaceUI {
                         this.selectedIndex = index;
                         refreshLeftPanel();
                         player.displayClientMessage(
-                                Component.literal("§7Selected: §f" + schematic.getName()),
+                                Component.translatable(
+                                        "gui.gtceuterminal.schematic_interface.selected",
+                                        schematic.getName()
+                                ),
                                 true
                         );
                     }
@@ -335,7 +346,10 @@ public class SchematicInterfaceUI {
         entry.addWidget(nameLabel);
 
         int blockCount = schematic.getBlocks().size();
-        String sizeInfo = String.format("§8%d blocks", blockCount);
+        String sizeInfo = Component.translatable(
+                "gui.gtceuterminal.schematic_interface.entry.blocks",
+                blockCount
+        ).getString();
         LabelWidget infoLabel = new LabelWidget(8, 22, sizeInfo);
         infoLabel.setTextColor(COLOR_TEXT_GRAY);
         entry.addWidget(infoLabel);
@@ -369,14 +383,17 @@ public class SchematicInterfaceUI {
             addPreviewContent(previewArea, selected, previewSize);
         } else if (hasClipboard()) {
             GTCEUTerminalMod.LOGGER.info("No selection, showing clipboard hint");
-            LabelWidget clipboardInfo = new LabelWidget(10, 10, "§7Clipboard content:");
+            LabelWidget clipboardInfo = new LabelWidget(10, 10,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.preview.clipboard_content").getString());
             previewArea.addWidget(clipboardInfo);
 
-            LabelWidget hint = new LabelWidget(10, 30, "§8Save it to see preview");
+            LabelWidget hint = new LabelWidget(10, 30,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.preview.save_to_see").getString());
             previewArea.addWidget(hint);
         } else {
             GTCEUTerminalMod.LOGGER.info("No selection and no clipboard");
-            LabelWidget noPreview = new LabelWidget(previewSize/2 - 40, previewHeight/2, "§7No preview");
+            LabelWidget noPreview = new LabelWidget(previewSize/2 - 40, previewHeight/2,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.preview.no_preview").getString());
             previewArea.addWidget(noPreview);
         }
 
@@ -414,21 +431,25 @@ public class SchematicInterfaceUI {
 
         // Info label
         BlockPos size1 = schematic.getSize();
-        String infoText = String.format("§7%d blocks | %dx%dx%d",
-                schematic.getBlocks().size(),
-                size1.getX(), size1.getY(), size1.getZ());
+        String infoText = Component.translatable(
+                        "gui.gtceuterminal.schematic_interface.preview.info",
+                        schematic.getBlocks().size(),
+                        size1.getX(), size1.getY(), size1.getZ()
+                ).getString();
 
         LabelWidget infoLabel = new LabelWidget(10, textY, infoText);
         infoLabel.setTextColor(COLOR_TEXT_GRAY);
         area.addWidget(infoLabel);
 
         textY += 12;
-        LabelWidget zoomHint = new LabelWidget(10, textY, "§8Ctrl + Mouse wheel for zoom");
+        LabelWidget zoomHint = new LabelWidget(10, textY,
+                Component.translatable("gui.gtceuterminal.schematic_interface.preview.zoom_hint").getString());
         zoomHint.setTextColor(0xFF666666);
         area.addWidget(zoomHint);
 
         textY += 12;
-        LabelWidget rotation = new LabelWidget(10, textY, "§8Mouse wheel to rotate preview");
+        LabelWidget rotation = new LabelWidget(10, textY,
+                Component.translatable("gui.gtceuterminal.schematic_interface.preview.rotation_hint").getString());
         rotation.setTextColor(0xFF666666);
         area.addWidget(rotation);
     }
@@ -448,7 +469,8 @@ public class SchematicInterfaceUI {
                         new ColorBorderTexture(1, COLOR_BORDER_LIGHT)
                 ),
                 cd -> saveSchematic());
-        saveButton.setButtonTexture(new TextTexture("§f§lSave")
+        saveButton.setButtonTexture(new TextTexture(
+                        Component.translatable("gui.gtceuterminal.schematic_interface.button.save").getString())
                 .setWidth(buttonWidth)
                 .setType(TextTexture.TextType.NORMAL));
         saveButton.setHoverTexture(new GuiTextureGroup(
@@ -464,7 +486,8 @@ public class SchematicInterfaceUI {
                         new ColorBorderTexture(1, COLOR_BORDER_LIGHT)
                 ),
                 cd -> loadSchematic());
-        loadButton.setButtonTexture(new TextTexture("§f§lLoad")
+        loadButton.setButtonTexture(new TextTexture(
+                        Component.translatable("gui.gtceuterminal.schematic_interface.button.load").getString())
                 .setWidth(buttonWidth)
                 .setType(TextTexture.TextType.NORMAL));
         loadButton.setHoverTexture(new GuiTextureGroup(
@@ -480,7 +503,8 @@ public class SchematicInterfaceUI {
                         new ColorBorderTexture(1, COLOR_BORDER_LIGHT)
                 ),
                 cd -> deleteSchematic());
-        deleteButton.setButtonTexture(new TextTexture("§f§lDelete")
+        deleteButton.setButtonTexture(new TextTexture(
+                        Component.translatable("gui.gtceuterminal.schematic_interface.button.delete").getString())
                 .setWidth(buttonWidth)
                 .setType(TextTexture.TextType.NORMAL));
         deleteButton.setHoverTexture(new GuiTextureGroup(
@@ -495,7 +519,8 @@ public class SchematicInterfaceUI {
                         new ColorBorderTexture(1, COLOR_BORDER_LIGHT)
                 ),
                 cd -> gui.entityPlayer.closeContainer());
-        closeButton.setButtonTexture(new TextTexture("§7Close")
+        closeButton.setButtonTexture(new TextTexture(
+                        Component.translatable("gui.gtceuterminal.schematic_interface.button.close").getString())
                 .setWidth(90)
                 .setType(TextTexture.TextType.NORMAL));
         closeButton.setHoverTexture(new GuiTextureGroup(
@@ -547,7 +572,7 @@ public class SchematicInterfaceUI {
     // Helper methods
     private String getMultiblockName(SchematicData schematic) {
         if (schematic == null || schematic.getBlocks().isEmpty()) {
-            return "Multiblock Structure";
+            return Component.translatable("gui.gtceuterminal.schematic_interface.fallback.multiblock_structure").getString();
         }
 
         for (Map.Entry<BlockPos, BlockState> entry : schematic.getBlocks().entrySet()) {
@@ -583,7 +608,7 @@ public class SchematicInterfaceUI {
             return type;
         }
 
-        return "Multiblock Structure";
+        return Component.translatable("gui.gtceuterminal.schematic_interface.fallback.multiblock_structure").getString();
     }
 
     private void refreshLeftPanel() {
@@ -619,13 +644,16 @@ public class SchematicInterfaceUI {
             GTCEUTerminalMod.LOGGER.info("Adding preview for: {}", selected.getName());
             addPreviewContent(previewArea, selected, previewSize);
         } else if (hasClipboard()) {
-            LabelWidget clipboardInfo = new LabelWidget(10, 10, "§7Clipboard content:");
+            LabelWidget clipboardInfo = new LabelWidget(10, 10,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.preview.clipboard_content").getString());
             previewArea.addWidget(clipboardInfo);
 
-            LabelWidget hint = new LabelWidget(10, 30, "§8Save it to see preview");
+            LabelWidget hint = new LabelWidget(10, 30,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.preview.save_to_see").getString());
             previewArea.addWidget(hint);
         } else {
-            LabelWidget noPreview = new LabelWidget(previewSize/2 - 40, previewHeight/2, "§7No preview");
+            LabelWidget noPreview = new LabelWidget(previewSize/2 - 40, previewHeight/2,
+                    Component.translatable("gui.gtceuterminal.schematic_interface.preview.no_preview").getString());
             previewArea.addWidget(noPreview);
         }
 
@@ -636,7 +664,7 @@ public class SchematicInterfaceUI {
     private void saveSchematic() {
         if (!hasClipboard()) {
             player.displayClientMessage(
-                    Component.literal("§c§lError: §cNo clipboard! Copy a multiblock first."),
+                    Component.translatable("gui.gtceuterminal.schematic_interface.chat.error.no_clipboard"),
                     true
             );
             return;
@@ -645,7 +673,7 @@ public class SchematicInterfaceUI {
         String name = nameInput.getCurrentString().trim();
         if (name.isEmpty()) {
             player.displayClientMessage(
-                    Component.literal("§c§lError: §cPlease enter a name!"),
+                    Component.translatable("gui.gtceuterminal.schematic_interface.chat.error.enter_name"),
                     true
             );
             return;
@@ -653,7 +681,7 @@ public class SchematicInterfaceUI {
 
         if ("Clipboard".equalsIgnoreCase(name)) {
             player.displayClientMessage(
-                    Component.literal("§c§lError: §c'Clipboard' is a reserved name!"),
+                    Component.translatable("gui.gtceuterminal.schematic_interface.chat.error.reserved_name"),
                     true
             );
             return;
@@ -663,7 +691,7 @@ public class SchematicInterfaceUI {
         boolean isDuplicate = schematics.stream().anyMatch(s -> s.getName().equalsIgnoreCase(name));
         if (isDuplicate) {
             player.displayClientMessage(
-                    Component.literal("§c§lError: §cSchematic name already exists!"),
+                    Component.translatable("gui.gtceuterminal.schematic_interface.chat.error.name_exists"),
                     true
             );
             return;
@@ -700,7 +728,7 @@ public class SchematicInterfaceUI {
         refreshLeftPanel();
 
         player.displayClientMessage(
-                Component.literal("§a§l✓ §aSaved: §f" + name),
+                Component.translatable("gui.gtceuterminal.schematic_interface.chat.success.saved", name),
                 true
         );
     }
@@ -708,7 +736,7 @@ public class SchematicInterfaceUI {
     private void loadSchematic() {
         if (selectedIndex < 0 || selectedIndex >= schematics.size()) {
             player.displayClientMessage(
-                    Component.literal("§c§lError: §cNo schematic selected!"),
+                    Component.translatable("gui.gtceuterminal.schematic_interface.chat.error.no_schematic_selected"),
                     true
             );
             return;
@@ -722,7 +750,10 @@ public class SchematicInterfaceUI {
         );
 
         player.displayClientMessage(
-                Component.literal("§a§l✓ §aLoaded to clipboard: §f" + schematic.getName()),
+                Component.translatable(
+                        "gui.gtceuterminal.schematic_interface.chat.success.loaded_to_clipboard",
+                        schematic.getName()
+                ),
                 true
         );
     }
@@ -730,7 +761,7 @@ public class SchematicInterfaceUI {
     private void deleteSchematic() {
         if (selectedIndex < 0 || selectedIndex >= schematics.size()) {
             player.displayClientMessage(
-                    Component.literal("§c§lError: §cNo schematic selected!"),
+                    Component.translatable("gui.gtceuterminal.schematic_interface.chat.error.no_schematic_selected"),
                     true
             );
             return;
@@ -754,7 +785,10 @@ public class SchematicInterfaceUI {
         refreshLeftPanel();
 
         player.displayClientMessage(
-                Component.literal("§c§l✗ §cDeleted: §f" + deletedName),
+                Component.translatable(
+                        "gui.gtceuterminal.schematic_interface.chat.success.deleted",
+                        deletedName
+                ),
                 true
         );
     }

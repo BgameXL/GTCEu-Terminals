@@ -6,6 +6,8 @@ import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.widget.LabelWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
+import net.minecraft.network.chat.Component;
+
     // Widget to preview a multiblock structure.
 
 public class MultiblockPreviewWidget extends WidgetGroup {
@@ -24,17 +26,28 @@ public class MultiblockPreviewWidget extends WidgetGroup {
         setBackground(new ColorRectTexture(COLOR_BG));
 
         // Títle
-        LabelWidget titleLabel = new LabelWidget(width / 2 - 30, height / 2 - 30, "§73D Preview");
+        LabelWidget titleLabel = new LabelWidget(
+                width / 2 - 30,
+                height / 2 - 30,
+                Component.translatable("gui.gtceuterminal.multiblock_preview.title_3d").getString()
+        );
         titleLabel.setTextColor(COLOR_TEXT_WHITE);
         addWidget(titleLabel);
 
         // Coming soon
-        LabelWidget comingSoonLabel = new LabelWidget(width / 2 - 35, height / 2 - 15, "§8(Coming Soon)");
+        LabelWidget comingSoonLabel = new LabelWidget(
+                width / 2 - 35,
+                height / 2 - 15,
+                Component.translatable("gui.gtceuterminal.multiblock_preview.coming_soon").getString()
+        );
         comingSoonLabel.setTextColor(COLOR_TEXT_GRAY);
         addWidget(comingSoonLabel);
 
         // Total Blocks
-        String totalText = String.format("§f%d §7blocks total", scanResult.getTotalBlocks());
+        String totalText = Component.translatable(
+                "gui.gtceuterminal.multiblock_preview.total_blocks",
+                scanResult.getTotalBlocks()
+        ).getString();
         LabelWidget totalLabel = new LabelWidget(width / 2 - 40, height / 2 + 10, totalText);
         totalLabel.setTextColor(COLOR_TEXT_WHITE);
         addWidget(totalLabel);

@@ -87,7 +87,7 @@ public class ComponentDetailDialog extends DialogWidget {
 
     private String getDisplayMultiblockName() {
         String raw = multiblock.getName();
-        if (raw == null || raw.isEmpty()) return "Unknown Multiblock";
+        if (raw == null || raw.isEmpty()) return Component.translatable("gui.gtceuterminal.component_detail_dialog.unknown_multiblock").getString();
         if (!raw.contains(" ") && raw.contains(".")) {
             String localized = Component.translatable(raw).getString();
             if (localized != null && !localized.isEmpty()) return localized;
@@ -177,7 +177,10 @@ public class ComponentDetailDialog extends DialogWidget {
         WidgetGroup header = new WidgetGroup(2, 2, W - 4, 26);
         header.setBackground(theme.panelTexture());
 
-        String title = "§l§f" + getDisplayMultiblockName() + " - Components";
+        String title = Component.translatable(
+                "gui.gtceuterminal.component_detail_dialog.header.title",
+                getDisplayMultiblockName()
+        ).getString();
         LabelWidget titleLabel = new LabelWidget(10, 8, title);
         titleLabel.setTextColor(COLOR_TEXT_WHITE);
         header.addWidget(titleLabel);
@@ -192,19 +195,28 @@ public class ComponentDetailDialog extends DialogWidget {
         int yPos = 6;
 
         LabelWidget nameLabel = new LabelWidget(10, yPos,
-                "§7Multiblock: §f" + getDisplayMultiblockName());
+                Component.translatable(
+                        "gui.gtceuterminal.component_detail_dialog.info.multiblock",
+                        getDisplayMultiblockName()
+                ).getString());
         nameLabel.setTextColor(COLOR_TEXT_WHITE);
         infoPanel.addWidget(nameLabel);
 
         yPos += 13;
 
         LabelWidget tierLabel = new LabelWidget(10, yPos,
-                "§7Tier: §f" + multiblock.getTierName());
+                Component.translatable(
+                        "gui.gtceuterminal.component_detail_dialog.info.tier",
+                        multiblock.getTierName()
+                ).getString());
         tierLabel.setTextColor(COLOR_TEXT_WHITE);
         infoPanel.addWidget(tierLabel);
 
         LabelWidget distLabel = new LabelWidget(220, yPos,
-                "§7Distance: §f" + multiblock.getDistanceString());
+                Component.translatable(
+                        "gui.gtceuterminal.component_detail_dialog.info.distance",
+                        multiblock.getDistanceString()
+                ).getString());
         distLabel.setTextColor(COLOR_TEXT_WHITE);
         infoPanel.addWidget(distLabel);
 
@@ -213,7 +225,11 @@ public class ComponentDetailDialog extends DialogWidget {
         List<ComponentGroup> groups = multiblock.getGroupedComponents();
         int totalComponents = multiblock.getComponents().size();
         LabelWidget countLabel = new LabelWidget(10, yPos,
-                "§7Components: §f" + totalComponents + " §7(§f" + groups.size() + " §7groups)");
+                Component.translatable(
+                        "gui.gtceuterminal.component_detail_dialog.info.components",
+                        totalComponents,
+                        groups.size()
+                ).getString());
         countLabel.setTextColor(COLOR_TEXT_WHITE);
         infoPanel.addWidget(countLabel);
 
@@ -233,7 +249,8 @@ public class ComponentDetailDialog extends DialogWidget {
                 new ColorBorderTexture(1, COLOR_BORDER_DARK)
         ));
 
-        LabelWidget listLabel = new LabelWidget(10, 4, "§l§7Component Groups:");
+        LabelWidget listLabel = new LabelWidget(10, 4,
+                Component.translatable("gui.gtceuterminal.component_detail_dialog.list.header").getString());
         listLabel.setTextColor(COLOR_TEXT_WHITE);
         listPanel.addWidget(listLabel);
 
@@ -287,11 +304,18 @@ public class ComponentDetailDialog extends DialogWidget {
             typeLabel.setTextColor(COLOR_TEXT_WHITE);
             entry.addWidget(typeLabel);
 
-            LabelWidget countLabel = new LabelWidget(18, 16, "§7Count: §f" + group.getCount());
+            LabelWidget countLabel = new LabelWidget(18, 16,
+                    Component.translatable(
+                            "gui.gtceuterminal.component_detail_dialog.entry.count",
+                            group.getCount()
+                    ).getString());
             countLabel.setTextColor(COLOR_TEXT_GRAY);
             entry.addWidget(countLabel);
 
-            String tierText = "§7Tier: §f" + rep.getTierName();
+            String tierText = Component.translatable(
+                    "gui.gtceuterminal.component_detail_dialog.entry.tier",
+                    rep.getTierName()
+            ).getString();
             if (!rep.getPossibleUpgradeTiers().isEmpty()) tierText += " §a→";
 
             LabelWidget tierLabel = new LabelWidget(Math.max(18, entryW - 130), 16, tierText);

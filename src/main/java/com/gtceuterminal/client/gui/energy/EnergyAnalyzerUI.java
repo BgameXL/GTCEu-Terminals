@@ -20,6 +20,7 @@ import com.lowdragmc.lowdraglib.gui.widget.*;
 import com.lowdragmc.lowdraglib.utils.Size;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
 import java.math.BigInteger;
@@ -114,12 +115,13 @@ public class EnergyAnalyzerUI {
         g.setBackground(theme.isNativeStyle()
                 ? com.gregtechceu.gtceu.api.gui.GuiTextures.TITLE_BAR_BACKGROUND
                 : new ColorRectTexture(semi(C_PANEL)));
-        LabelWidget title = new LabelWidget(PAD, 8, "Energy Analyzer");
+        LabelWidget title = new LabelWidget(PAD, 8,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.title").getString());
         title.setTextColor(C_GOLD);
         g.addWidget(title);
         int count = holder.machines.size();
         LabelWidget sub = new LabelWidget(W - 130, 8,
-                count + " machine" + (count == 1 ? "" : "s") + " linked");
+                Component.translatable("gui.gtceuterminal.energy_analyzer.header.linked", count).getString());
         sub.setTextColor(C_GRAY);
         g.addWidget(sub);
 
@@ -129,7 +131,7 @@ public class EnergyAnalyzerUI {
                 cd -> ThemeEditorDialog.open(rootGroup, theme));
         gearBtn.setButtonTexture(new TextTexture("§7⚙").setWidth(14).setType(TextTexture.TextType.NORMAL));
         gearBtn.setHoverTexture(new ColorRectTexture(0x33FFFFFF));
-        gearBtn.setHoverTooltips("Theme Settings");
+        gearBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.theme_settings").getString());
         g.addWidget(gearBtn);
 
         return g;
@@ -142,7 +144,8 @@ public class EnergyAnalyzerUI {
 
         List<LinkedMachineData> machines = holder.machines;
         if (machines.isEmpty()) {
-            LabelWidget lbl = new LabelWidget(PAD, 16, "No machines linked.");
+            LabelWidget lbl = new LabelWidget(PAD, 16,
+                    Component.translatable("gui.gtceuterminal.energy_analyzer.no_machines_linked").getString());
             lbl.setTextColor(C_GRAY);
             g.addWidget(lbl);
             return g;
@@ -222,7 +225,9 @@ public class EnergyAnalyzerUI {
         // Storage label
         LabelWidget storedLbl = new LabelWidget(0, y, () -> {
             EnergySnapshot s = selSnap();
-            return (s != null && s.isFormed) ? "Storage: " + storedStr(s) : "";
+            return (s != null && s.isFormed)
+                    ? Component.translatable("gui.gtceuterminal.energy_analyzer.storage_label", storedStr(s)).getString()
+                    : "";
         });
         storedLbl.setClientSideWidget();
         storedLbl.setTextColor(C_WHITE);
@@ -241,7 +246,9 @@ public class EnergyAnalyzerUI {
         LabelWidget lowBuf = new LabelWidget(0, y, () -> {
             EnergySnapshot s = selSnap();
             return (s != null && s.isFormed && s.chargePercent() < 0.10f
-                    && s.energyCapacity > 0) ? "Low buffer!" : "";
+                    && s.energyCapacity > 0)
+                    ? Component.translatable("gui.gtceuterminal.energy_analyzer.low_buffer").getString()
+                    : "";
         });
         lowBuf.setClientSideWidget();
         lowBuf.setTextColor(C_RED);
@@ -253,7 +260,10 @@ public class EnergyAnalyzerUI {
             if (s == null || !s.isFormed) return "";
             long secs = s.secondsUntilChange();
             if (secs < 0 || secs >= 86400) return "";
-            return (s.netPerSec() > 0 ? "Full in " : "Empty in ") + formatTime(secs);
+            String t = formatTime(secs);
+            return (s.netPerSec() > 0)
+                    ? Component.translatable("gui.gtceuterminal.energy_analyzer.eta_full_in", t).getString()
+                    : Component.translatable("gui.gtceuterminal.energy_analyzer.eta_empty_in", t).getString();
         });
         etaLbl.setClientSideWidget();
         etaLbl.setTextColor(C_GRAY);
@@ -263,8 +273,11 @@ public class EnergyAnalyzerUI {
         LabelWidget inL = new LabelWidget(0, y, () -> {
             EnergySnapshot s = selSnap();
             if (s == null || !s.isFormed) return "";
-            return "In:  " + formatEU(s.inputPerSec / 20) + "/t  ("
-                    + formatEU(s.inputPerSec) + "/s)";
+            return Component.translatable(
+                            "gui.gtceuterminal.energy_analyzer.in_line",
+                            formatEU(s.inputPerSec / 20),
+                            formatEU(s.inputPerSec)
+                    ).getString();
         });
         inL.setClientSideWidget();
         inL.setTextColor(C_GREEN);
@@ -273,8 +286,11 @@ public class EnergyAnalyzerUI {
         LabelWidget outL = new LabelWidget(0, y, () -> {
             EnergySnapshot s = selSnap();
             if (s == null || !s.isFormed) return "";
-            return "Out: " + formatEU(s.outputPerSec / 20) + "/t  ("
-                    + formatEU(s.outputPerSec) + "/s)";
+            return Component.translatable(
+                            "gui.gtceuterminal.energy_analyzer.out_line",
+                            formatEU(s.outputPerSec / 20),
+                            formatEU(s.outputPerSec)
+                    ).getString();
         });
         outL.setClientSideWidget();
         outL.setTextColor(C_RED);
@@ -284,7 +300,8 @@ public class EnergyAnalyzerUI {
             EnergySnapshot s = selSnap();
             if (s == null || !s.isFormed) return "";
             long net = s.netPerSec();
-            return "Net: " + (net >= 0 ? "+" : "") + formatEU(net) + "/s";
+            String netStr = (net >= 0 ? "+" : "") + formatEU(net);
+            return Component.translatable("gui.gtceuterminal.energy_analyzer.net_line", netStr).getString();
         });
         netL.setClientSideWidget();
         netL.setTextColor(C_GRAY);
@@ -293,8 +310,12 @@ public class EnergyAnalyzerUI {
         LabelWidget volL = new LabelWidget(0, y, () -> {
             EnergySnapshot s = selSnap();
             if (s == null || !s.isFormed || s.inputVoltage <= 0) return "";
-            return "Voltage: " + getVoltageTier(s.inputVoltage) + " ("
-                    + s.inputVoltage + "V)  " + s.inputAmperage + "A max";
+            return Component.translatable(
+                            "gui.gtceuterminal.energy_analyzer.voltage_line",
+                            getVoltageTier(s.inputVoltage),
+                            s.inputVoltage,
+                            s.inputAmperage
+                    ).getString();
         });
         volL.setClientSideWidget();
         volL.setTextColor(C_BLUE);
@@ -305,7 +326,9 @@ public class EnergyAnalyzerUI {
         recipeBtn = new ButtonWidget(0, y, 95, 10,
                 new ColorRectTexture(0x00000000),
                 cd -> { EnergySnapshot s = selSnap(); if (s != null) openRecipeHistoryDialog(s); });
-        recipeBtn.setButtonTexture(new TextTexture("§6Recipe: §7[log ▶]")
+        recipeBtn.setButtonTexture(new TextTexture(
+                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_button").getString()
+        )
                 .setWidth(95).setType(TextTexture.TextType.LEFT));
         recipeBtn.setHoverTexture(new ColorRectTexture(0x22FFFFFF));
         // Visible only when a recipe is actively running
@@ -337,7 +360,12 @@ public class EnergyAnalyzerUI {
             int secsLeft  = Math.max(0, (s.recipeDuration - s.recipeProgressTicks) / 20);
             int secsDone  = s.recipeProgressTicks / 20;
             int secsTotal = s.recipeDuration / 20;
-            String timeStr = secsLeft > 0 ? formatTime(secsLeft) + " left" : "finishing...";
+            String timeStr = secsLeft > 0
+                    ? Component.translatable(
+                            "gui.gtceuterminal.energy_analyzer.recipe_time_left",
+                            formatTime(secsLeft)
+                    ).getString()
+                    : Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_finishing").getString();
             return pct + "%  " + timeStr + "  (" + secsDone + "s / " + secsTotal + "s)";
         });
         recipePctL.setClientSideWidget();
@@ -350,7 +378,9 @@ public class EnergyAnalyzerUI {
         final int MAX_HATCHES = 5;
         LabelWidget hatchHdr = new LabelWidget(0, y, () -> {
             EnergySnapshot s = selSnap();
-            return (s != null && !s.hatches.isEmpty()) ? "Hatches:" : "";
+            return (s != null && !s.hatches.isEmpty())
+                    ? Component.translatable("gui.gtceuterminal.energy_analyzer.hatches_label").getString()
+                    : "";
         });
         hatchHdr.setClientSideWidget();
         hatchHdr.setTextColor(C_GOLD);
@@ -362,8 +392,10 @@ public class EnergyAnalyzerUI {
                 EnergySnapshot s = selSnap();
                 if (s == null || hi >= s.hatches.size()) return "";
                 EnergySnapshot.HatchInfo hatch = s.hatches.get(hi);
-                return "  " + (hatch.isInput() ? "IN " : "OUT") + "  "
-                        + hatch.name() + "  " + hatch.voltage() + "V";
+                String inOut = hatch.isInput()
+                        ? Component.translatable("gui.gtceuterminal.energy_analyzer.hatch_in").getString()
+                        : Component.translatable("gui.gtceuterminal.energy_analyzer.hatch_out").getString();
+                return "  " + inOut + "  " + hatch.name() + "  " + hatch.voltage() + "V";
             });
             hatchL.setClientSideWidget();
             hatchL.setTextColor(C_GREEN);
@@ -374,7 +406,10 @@ public class EnergyAnalyzerUI {
         LabelWidget moreHatches = new LabelWidget(0, y, () -> {
             EnergySnapshot s = selSnap();
             if (s == null || s.hatches.size() <= MAX_HATCHES) return "";
-            return "  §8+ " + (s.hatches.size() - MAX_HATCHES) + " more...";
+            return Component.translatable(
+                    "gui.gtceuterminal.energy_analyzer.more_hatches",
+                    s.hatches.size() - MAX_HATCHES
+            ).getString();
         });
         moreHatches.setClientSideWidget();
         moreHatches.setTextColor(C_GRAY);
@@ -385,7 +420,8 @@ public class EnergyAnalyzerUI {
         final int GRAPH_SECTION_Y = (H - HEADER_H) - GRAPH_BLOCK_H - PAD;
         final int GRAPH_Y = GRAPH_SECTION_Y + 13;
 
-        LabelWidget graphHdr = new LabelWidget(0, GRAPH_SECTION_Y, "History (EU/s):");
+        LabelWidget graphHdr = new LabelWidget(0, GRAPH_SECTION_Y,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.graph_header").getString());
         graphHdr.setTextColor(C_GOLD);
         g.addWidget(graphHdr);
 
@@ -410,10 +446,12 @@ public class EnergyAnalyzerUI {
             g.addWidget(axisL);
         }
 
-        LabelWidget legIn = new LabelWidget(0, GRAPH_Y + GRAPH_H + 5, "— In");
+        LabelWidget legIn = new LabelWidget(0, GRAPH_Y + GRAPH_H + 5,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.legend_in").getString());
         legIn.setTextColor(0xFF00CC55);
         g.addWidget(legIn);
-        LabelWidget legOut = new LabelWidget(34, GRAPH_Y + GRAPH_H + 5, "— Out");
+        LabelWidget legOut = new LabelWidget(34, GRAPH_Y + GRAPH_H + 5,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.legend_out").getString());
         legOut.setTextColor(0xFFDD3333);
         g.addWidget(legOut);
 
@@ -500,7 +538,8 @@ public class EnergyAnalyzerUI {
         titleBar.setBackground(new ColorRectTexture(0xFF2A2A2A));
         panel.addWidget(titleBar);
 
-        LabelWidget titleLbl = new LabelWidget(8, 4, "§6Machine Options");
+        LabelWidget titleLbl = new LabelWidget(8, 4,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.machine_options.title").getString());
         titleLbl.setTextColor(C_GOLD);
         titleBar.addWidget(titleLbl);
 
@@ -525,7 +564,8 @@ public class EnergyAnalyzerUI {
                     openRenameDialog(machineIdx, m);
                 });
         renameBtn.setButtonTexture(
-                new TextTexture("§e✎  Rename").setWidth(DW - 16).setType(TextTexture.TextType.LEFT));
+                new TextTexture(Component.translatable("gui.gtceuterminal.energy_analyzer.machine_options.rename").getString())
+                        .setWidth(DW - 16).setType(TextTexture.TextType.LEFT));
         renameBtn.setHoverTexture(new ColorRectTexture(0xFF3A3A1A));
         panel.addWidget(renameBtn);
 
@@ -537,7 +577,8 @@ public class EnergyAnalyzerUI {
                     openUnlinkConfirmDialog(machineIdx, m);
                 });
         unlinkBtn.setButtonTexture(
-                new TextTexture("§c✖  Unlink machine").setWidth(DW - 16).setType(TextTexture.TextType.LEFT));
+                new TextTexture(Component.translatable("gui.gtceuterminal.energy_analyzer.machine_options.unlink_machine").getString())
+                        .setWidth(DW - 16).setType(TextTexture.TextType.LEFT));
         unlinkBtn.setHoverTexture(new ColorRectTexture(0xFF3A1515));
         panel.addWidget(unlinkBtn);
 
@@ -546,7 +587,8 @@ public class EnergyAnalyzerUI {
                 new ColorRectTexture(0xFF2A2A2A),
                 cd -> dialog.close());
         cancelBtn.setButtonTexture(
-                new TextTexture("§7Cancel").setWidth(DW - 16).setType(TextTexture.TextType.NORMAL));
+                new TextTexture(Component.translatable("gui.gtceuterminal.energy_analyzer.machine_options.cancel").getString())
+                        .setWidth(DW - 16).setType(TextTexture.TextType.NORMAL));
         cancelBtn.setHoverTexture(new ColorRectTexture(0xFF333333));
         panel.addWidget(cancelBtn);
     }
@@ -573,7 +615,8 @@ public class EnergyAnalyzerUI {
         WidgetGroup titleBar = new WidgetGroup(0, 0, DW, 18);
         titleBar.setBackground(new ColorRectTexture(0xFF2A2A2A));
         panel.addWidget(titleBar);
-        LabelWidget titleLbl = new LabelWidget(8, 4, "§6Rename Machine");
+        LabelWidget titleLbl = new LabelWidget(8, 4,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.rename_dialog.title").getString());
         titleLbl.setTextColor(C_GOLD);
         titleBar.addWidget(titleLbl);
 
@@ -596,7 +639,8 @@ public class EnergyAnalyzerUI {
                     dialog.close();
                 });
         confirmBtn.setButtonTexture(
-                new TextTexture("§aConfirm").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+                new TextTexture(Component.translatable("gui.gtceuterminal.energy_analyzer.rename_dialog.confirm").getString())
+                        .setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
         confirmBtn.setHoverTexture(new ColorRectTexture(0xFF1E6A1E));
         panel.addWidget(confirmBtn);
 
@@ -605,7 +649,8 @@ public class EnergyAnalyzerUI {
                 new ColorRectTexture(0xFF2A2A2A),
                 cd -> dialog.close());
         cancelBtn.setButtonTexture(
-                new TextTexture("§7Cancel").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+                new TextTexture(Component.translatable("gui.gtceuterminal.energy_analyzer.rename_dialog.cancel").getString())
+                        .setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
         cancelBtn.setHoverTexture(new ColorRectTexture(0xFF333333));
         panel.addWidget(cancelBtn);
     }
@@ -632,13 +677,18 @@ public class EnergyAnalyzerUI {
         WidgetGroup titleBar = new WidgetGroup(0, 0, DW, 18);
         titleBar.setBackground(new ColorRectTexture(0xFF2A0000));
         panel.addWidget(titleBar);
-        LabelWidget titleLbl = new LabelWidget(8, 4, "§cUnlink Machine");
+        LabelWidget titleLbl = new LabelWidget(8, 4,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.unlink_dialog.title").getString());
         titleLbl.setTextColor(C_RED);
         titleBar.addWidget(titleLbl);
 
         // Confirm message
+        String targetName = truncate(m.getDisplayName(), 22);
         LabelWidget confirmLbl = new LabelWidget(8, 22,
-                "§7Remove §f" + truncate(m.getDisplayName(), 22) + "§7?");
+                Component.translatable(
+                                "gui.gtceuterminal.energy_analyzer.unlink_dialog.remove_prompt",
+                                targetName
+                        ).getString());
         confirmLbl.setTextColor(C_GRAY);
         panel.addWidget(confirmLbl);
 
@@ -656,7 +706,8 @@ public class EnergyAnalyzerUI {
                     }
                 });
         unlinkBtn.setButtonTexture(
-                new TextTexture("§cUnlink").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+                new TextTexture(Component.translatable("gui.gtceuterminal.energy_analyzer.unlink_dialog.unlink").getString())
+                        .setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
         unlinkBtn.setHoverTexture(new ColorRectTexture(0xFF6A2A2A));
         panel.addWidget(unlinkBtn);
 
@@ -665,11 +716,13 @@ public class EnergyAnalyzerUI {
                 new ColorRectTexture(0xFF2A2A2A),
                 cd -> dialog.close());
         cancelBtn.setButtonTexture(
-                new TextTexture("§7Cancel").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+                new TextTexture(Component.translatable("gui.gtceuterminal.energy_analyzer.unlink_dialog.cancel").getString())
+                        .setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
         cancelBtn.setHoverTexture(new ColorRectTexture(0xFF333333));
         panel.addWidget(cancelBtn);
 
-        LabelWidget hint = new LabelWidget(DW / 2 - 50, DH - 12, "§8Click outside to cancel");
+        LabelWidget hint = new LabelWidget(DW / 2 - 50, DH - 12,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.unlink_dialog.hint_click_outside_cancel").getString());
         hint.setTextColor(0xFF444444);
         panel.addWidget(hint);
     }
@@ -695,7 +748,8 @@ public class EnergyAnalyzerUI {
         WidgetGroup titleBar = new WidgetGroup(0, 0, dW, 18);
         titleBar.setBackground(new ColorRectTexture(0xFF2D2D2D));
         panel.addWidget(titleBar);
-        LabelWidget titleLbl = new LabelWidget(8, 4, "§6Recipe Log  §7— " + snap.machineName);
+        LabelWidget titleLbl = new LabelWidget(8, 4,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.title", snap.machineName).getString());
         titleLbl.setTextColor(C_GOLD);
         titleBar.addWidget(titleLbl);
 
@@ -708,9 +762,12 @@ public class EnergyAnalyzerUI {
 
         int cy = 22;
         // Column headers
-        panel.addWidget(mkLabel(18,  cy, "§7Output",   0xFF888888));
-        panel.addWidget(mkLabel(210, cy, "§7Time",     0xFF888888));
-        panel.addWidget(mkLabel(275, cy, "§7When",     0xFF888888));
+        panel.addWidget(mkLabel(18,  cy,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.output").getString(), 0xFF888888));
+        panel.addWidget(mkLabel(210, cy,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.time").getString(), 0xFF888888));
+        panel.addWidget(mkLabel(275, cy,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.when").getString(), 0xFF888888));
         cy += 10;
         var sep = new WidgetGroup(0, cy, dW, 1);
         sep.setBackground(new ColorRectTexture(0xFF333333));
@@ -718,7 +775,8 @@ public class EnergyAnalyzerUI {
         cy += 4;
 
         if (snap.recipeHistory.isEmpty()) {
-            panel.addWidget(mkLabel(10, cy, "§7No recipes recorded yet.", C_GRAY));
+            panel.addWidget(mkLabel(10, cy,
+                    Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.no_recipes").getString(), C_GRAY));
         } else {
             List<RecipeHistoryEntry> list = snap.recipeHistory;
             int shown = Math.min(list.size(), 17);
@@ -740,7 +798,8 @@ public class EnergyAnalyzerUI {
             }
         }
 
-        LabelWidget hint = new LabelWidget(dW / 2 - 50, dH - 14, "§8Click outside to close");
+        LabelWidget hint = new LabelWidget(dW / 2 - 50, dH - 14,
+                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.hint_click_outside_close").getString());
         hint.setTextColor(0xFF444444);
         panel.addWidget(hint);
     }
@@ -818,12 +877,12 @@ public class EnergyAnalyzerUI {
     }
 
     private static String modeBadge(EnergySnapshot s) {
-        if (!s.isFormed) return "[NOT FORMED]";
+        if (!s.isFormed) return Component.translatable("gui.gtceuterminal.energy_analyzer.mode.not_formed").getString();
         return switch (s.mode) {
-            case CONSUMER  -> "[Consumer]";
-            case GENERATOR -> "[Generator]";
-            case STORAGE   -> "[Storage]";
-            default        -> "[Unknown]";
+            case CONSUMER  -> Component.translatable("gui.gtceuterminal.energy_analyzer.mode.consumer").getString();
+            case GENERATOR -> Component.translatable("gui.gtceuterminal.energy_analyzer.mode.generator").getString();
+            case STORAGE   -> Component.translatable("gui.gtceuterminal.energy_analyzer.mode.storage").getString();
+            default        -> Component.translatable("gui.gtceuterminal.energy_analyzer.mode.unknown").getString();
         };
     }
 

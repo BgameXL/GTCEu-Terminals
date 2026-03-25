@@ -105,17 +105,30 @@ public class LDLMaterialListWidget extends WidgetGroup {
 
     private String formatQuantity(MaterialAvailability mat) {
         if (mat.getInMENetwork() >= mat.getRequired()) {
-            return String.format("§a%d§7/%d §a[ME]",
-                    mat.getTotalAvailable(), mat.getRequired());
+            return Component.translatable(
+                    "gui.gtceuterminal.material_list.quantity.me",
+                    mat.getTotalAvailable(),
+                    mat.getRequired()
+            ).getString();
         } else if (mat.getInInventory() >= mat.getRequired()) {
-            return String.format("§7%d/%d [Inv]",
-                    mat.getTotalAvailable(), mat.getRequired());
+            return Component.translatable(
+                    "gui.gtceuterminal.material_list.quantity.inv",
+                    mat.getTotalAvailable(),
+                    mat.getRequired()
+            ).getString();
         } else if (mat.hasEnough()) {
-            return String.format("§e%d§7/%d §e[Mix]",
-                    mat.getTotalAvailable(), mat.getRequired());
+            return Component.translatable(
+                    "gui.gtceuterminal.material_list.quantity.mix",
+                    mat.getTotalAvailable(),
+                    mat.getRequired()
+            ).getString();
         } else {
-            return String.format("§c%d§7/%d §c[-%d]",
-                    mat.getTotalAvailable(), mat.getRequired(), mat.getMissing());
+            return Component.translatable(
+                    "gui.gtceuterminal.material_list.quantity.missing",
+                    mat.getTotalAvailable(),
+                    mat.getRequired(),
+                    mat.getMissing()
+            ).getString();
         }
     }
 
@@ -128,48 +141,79 @@ public class LDLMaterialListWidget extends WidgetGroup {
 
         // Required vs Available
         String availColor = mat.hasEnough() ? "§a" : "§c";
-        tooltip.add(Component.literal("§7Required: §f" + mat.getRequired()));
-        tooltip.add(Component.literal("§7Available: " + availColor + mat.getTotalAvailable()));
+        tooltip.add(Component.translatable(
+                "gui.gtceuterminal.material_list.tooltip.required",
+                mat.getRequired()
+        ));
+        tooltip.add(Component.translatable(
+                "gui.gtceuterminal.material_list.tooltip.available_colored",
+                availColor + mat.getTotalAvailable()
+        ));
 
         // Separator
         tooltip.add(Component.empty());
-        tooltip.add(Component.literal("§7§l--- Sources ---"));
+        tooltip.add(Component.translatable("gui.gtceuterminal.material_list.tooltip.sources_header"));
 
         // Inventory
         if (mat.getInInventory() > 0) {
-            tooltip.add(Component.literal("  §7Inventory: §f" + mat.getInInventory()));
+            tooltip.add(Component.translatable(
+                    "gui.gtceuterminal.material_list.tooltip.source.inventory_nonzero",
+                    mat.getInInventory()
+            ));
         } else {
-            tooltip.add(Component.literal("  §8Inventory: 0"));
+            tooltip.add(Component.translatable("gui.gtceuterminal.material_list.tooltip.source.inventory_zero"));
         }
 
         // Chests
         if (mat.getInNearbyChests() > 0) {
-            tooltip.add(Component.literal("  §7Chests: §f" + mat.getInNearbyChests()));
+            tooltip.add(Component.translatable(
+                    "gui.gtceuterminal.material_list.tooltip.source.chests_nonzero",
+                    mat.getInNearbyChests()
+            ));
         } else {
-            tooltip.add(Component.literal("  §8Chests: 0"));
+            tooltip.add(Component.translatable("gui.gtceuterminal.material_list.tooltip.source.chests_zero"));
         }
 
         // ME Network — only shown when AE2 is present
         if (MENetworkScanner.isAE2Available()) {
             if (mat.getInMENetwork() > 0) {
-                tooltip.add(Component.literal("  §e§lME Network: §f" + mat.getInMENetwork() + " §8(pending verification)"));
+                tooltip.add(Component.translatable(
+                        "gui.gtceuterminal.material_list.tooltip.source.me_network_nonzero",
+                        mat.getInMENetwork()
+                ));
             } else {
-                tooltip.add(Component.literal("  §8ME Network: 0"));
+                tooltip.add(Component.translatable("gui.gtceuterminal.material_list.tooltip.source.me_network_zero"));
             }
         }
 
         // Status
         tooltip.add(Component.empty());
         if (mat.hasEnough()) {
-            tooltip.add(Component.literal("§a✓ Sufficient materials"));
+            tooltip.add(Component.translatable("gui.gtceuterminal.material_list.tooltip.status.sufficient"));
             String primarySource = mat.getPrimarySource();
-            if (primarySource.equals("ME Network")) {
-                tooltip.add(Component.literal("§7Primary source: §e" + primarySource + " §8(will verify on confirm)"));
-            } else {
-                tooltip.add(Component.literal("§7Primary source: §f" + primarySource));
-            }
+            String primarySourceName = switch (primarySource) {
+                case "ME Network" -> Component.translatable("gui.gtceuterminal.material_list.source.me_network").getString();
+                case "Inventory" -> Component.translatable("gui.gtceuterminal.material_list.source.inventory").getString();
+                case "Chests" -> Component.translatable("gui.gtceuterminal.material_list.source.chests").getString();
+                case "ME + Others" -> Component.translatable("gui.gtceuterminal.material_list.source.me_plus_others").getString();
+                case "Inventory + Others" -> Component.translatable("gui.gtceuterminal.material_list.source.inventory_plus_others").getString();
+                case "None" -> Component.translatable("gui.gtceuterminal.material_list.source.none").getString();
+                default -> primarySource;
+            };
+
+            boolean pendingVerify = primarySource.equals("ME Network");
+            String coloredSource = (pendingVerify ? "§e" : "§f") + primarySourceName;
+            tooltip.add(Component.translatable(
+                    pendingVerify
+                            ? "gui.gtceuterminal.material_list.tooltip.primary_source.me_pending"
+                            : "gui.gtceuterminal.material_list.tooltip.primary_source.normal",
+                    coloredSource
+            ));
         } else {
-            tooltip.add(Component.literal("§c✗ Missing " + mat.getMissing() + " items"));
+            tooltip.add(Component.translatable(
+                    "gui.gtceuterminal.material_list.tooltip.status.missing",
+                    mat.getMissing()
+            ));
         }
 
         return tooltip;

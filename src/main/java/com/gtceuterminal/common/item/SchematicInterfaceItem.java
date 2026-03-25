@@ -5,7 +5,6 @@ import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.ae2.MENetworkScanner;
 import com.gtceuterminal.common.item.behavior.SchematicInterfaceBehavior;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -56,28 +55,33 @@ public class SchematicInterfaceItem extends Item {
                                 @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag isAdvanced) {
         super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
 
-        tooltipComponents.add(Component.literal("Blueprint Tool").withStyle(ChatFormatting.GOLD));
+        tooltipComponents.add(Component.translatable(
+                "item.gtceuterminal.schematic_interface.tooltip.blueprint_tool"));
         tooltipComponents.add(Component.literal(""));
 
         if (MENetworkScanner.isAE2Available()) {
             if (MENetworkScanner.isItemLinked(stack)) {
-                tooltipComponents.add(Component.literal("✓ Linked to ME Network").withStyle(ChatFormatting.GREEN));
+                tooltipComponents.add(Component.translatable(
+                        "item.gtceuterminal.schematic_interface.tooltip.linked"));
                 if (level != null && level.isClientSide) {
                     ClientTooltipHelper.appendAE2RangeTooltip(stack, level, tooltipComponents);
                 }
             } else {
-                tooltipComponents.add(Component.literal("✗ Not Linked").withStyle(ChatFormatting.GRAY));
-                tooltipComponents.add(Component.literal("  Place in ME Wireless Access Point to link")
-                        .withStyle(ChatFormatting.DARK_GRAY));
+                tooltipComponents.add(Component.translatable(
+                        "item.gtceuterminal.schematic_interface.tooltip.not_linked"));
+                tooltipComponents.add(Component.translatable(
+                        "item.gtceuterminal.schematic_interface.tooltip.place_in_me_wireless_access_point"));
             }
         }
 
         tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.literal("Shift + Right-click: ")
-                .withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Open Schematic GUI").withStyle(ChatFormatting.AQUA)));
-        tooltipComponents.add(Component.literal("Right-click: ")
-                .withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Paste Schematic").withStyle(ChatFormatting.YELLOW)));
+        tooltipComponents.add(
+                Component.translatable("item.gtceuterminal.schematic_interface.tooltip.shift_right_click_prefix")
+                        .append(Component.translatable("item.gtceuterminal.schematic_interface.tooltip.open_schematic_gui"))
+        );
+        tooltipComponents.add(
+                Component.translatable("item.gtceuterminal.schematic_interface.tooltip.right_click_prefix")
+                        .append(Component.translatable("item.gtceuterminal.schematic_interface.tooltip.paste_schematic"))
+        );
     }
 }

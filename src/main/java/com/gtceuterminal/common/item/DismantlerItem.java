@@ -6,7 +6,6 @@ import com.gtceuterminal.client.gui.factory.DismantlerItemUIFactory;
 import com.gregtechceu.gtceu.api.machine.IMachineBlockEntity;
 import com.gregtechceu.gtceu.api.machine.multiblock.MultiblockControllerMachine;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -50,7 +49,9 @@ public class DismantlerItem extends Item {
 
         if (!level.isClientSide) {
             player.displayClientMessage(
-                    Component.literal("§cNot a formed multiblock controller!"), true);
+                    Component.translatable("item.gtceuterminal.dismantler.message.not_formed_controller"),
+                    true
+            );
         }
         return InteractionResult.PASS;
     }
@@ -58,18 +59,19 @@ public class DismantlerItem extends Item {
     // ── Tooltip ───────────────────────────────────────────────────────────────
     @Override
     public @NotNull Component getName(@NotNull ItemStack stack) {
-        return Component.translatable(this.getDescriptionId(stack))
-                .withStyle(s -> s.withColor(0x58075D));
+        return Component.translatable(this.getDescriptionId(stack));
     }
 
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull Level level,
                                 @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag isAdvanced) {
         super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
-        tooltipComponents.add(Component.literal("Multiblock Removal Tool").withStyle(ChatFormatting.GOLD));
+        tooltipComponents.add(Component.translatable(
+                "item.gtceuterminal.dismantler.tooltip.tool"
+        ));
         tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.literal("Right-click on Multiblock: ")
-                .withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Open Dismantler GUI").withStyle(ChatFormatting.LIGHT_PURPLE)));
+        tooltipComponents.add(Component.translatable(
+                "item.gtceuterminal.dismantler.tooltip.open_dismantler_gui"
+        ));
     }
 }

@@ -25,6 +25,7 @@ import com.lowdragmc.lowdraglib.gui.editor.ColorPattern;
 import com.lowdragmc.lowdraglib.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib.gui.widget.DialogWidget;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -127,7 +128,10 @@ public class MultiStructureManagerUI {
                     new com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture(0xFF222222),
                     new com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture(0xFF555555));
 
-            String title = "Nearby Multiblocks (" + multiblocks.size() + ")";
+            String title = Component.translatable(
+                    "gui.gtceuterminal.multiblock_manager.nearby_title",
+                    multiblocks.size()
+            ).getString();
             LabelWidget titleLabel = new LabelWidget(4, 5, title);
             display.addWidget(titleLabel);
 
@@ -137,7 +141,7 @@ public class MultiStructureManagerUI {
                     cd -> ThemeEditorDialog.open(gui.mainGroup, ItemTheme.loadFromPlayer(player)));
             gearBtn.setButtonTexture(new TextTexture("§7⚙").setWidth(14).setType(TextTexture.TextType.NORMAL));
             gearBtn.setHoverTexture(new com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture(0x33FFFFFF));
-            gearBtn.setHoverTooltips("Theme Settings");
+            gearBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.theme_settings").getString());
             display.addWidget(gearBtn);
 
             // ↻ refresh button — left of gear button
@@ -146,7 +150,7 @@ public class MultiStructureManagerUI {
                     cd -> { scanMultiblocks(); refreshUI(); });
             refreshBtn.setButtonTexture(new TextTexture("§7↻").setWidth(14).setType(TextTexture.TextType.NORMAL));
             refreshBtn.setHoverTexture(new com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture(0x33FFFFFF));
-            refreshBtn.setHoverTooltips("Refresh");
+            refreshBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.multiblock_manager.refresh_tooltip").getString());
             display.addWidget(refreshBtn);
 
             int yPos = 17;
@@ -197,7 +201,7 @@ public class MultiStructureManagerUI {
                 cd -> toggleHighlight(mb));
         highlightBtn.setButtonTexture(new TextTexture("§e◉").setWidth(16).setType(TextTexture.TextType.NORMAL));
         highlightBtn.setHoverTexture(new com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture(0x33FFFF00));
-        highlightBtn.setHoverTooltips("Highlight in world");
+        highlightBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.multiblock_manager.highlight_tooltip").getString());
         entry.addWidget(highlightBtn);
 
         // ✎ Rename button
@@ -206,7 +210,7 @@ public class MultiStructureManagerUI {
                 cd -> openRenameDialog(mb));
         renameBtn.setButtonTexture(new TextTexture("§7✎").setWidth(16).setType(TextTexture.TextType.NORMAL));
         renameBtn.setHoverTexture(new com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture(0x33FFFFFF));
-        renameBtn.setHoverTooltips("Rename");
+        renameBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.multiblock_manager.rename_tooltip").getString());
         entry.addWidget(renameBtn);
 
         // Status dot
@@ -253,7 +257,10 @@ public class MultiStructureManagerUI {
         WidgetGroup header = new WidgetGroup(2, 2, dialogW - 4, 28);
         header.setBackground(new ColorRectTexture(COLOR_BG_MEDIUM));
 
-        String title = "Nearby Multiblocks (" + multiblocks.size() + ")";
+        String title = Component.translatable(
+                "gui.gtceuterminal.multiblock_manager.nearby_title",
+                multiblocks.size()
+        ).getString();
         LabelWidget titleLabel = new LabelWidget(10, 10, title);
         titleLabel.setTextColor(COLOR_TEXT_WHITE);
         header.addWidget(titleLabel);
@@ -263,7 +270,7 @@ public class MultiStructureManagerUI {
                 cd -> ThemeEditorDialog.open(rootGroup, ItemTheme.loadFromPlayer(player)));
         gearBtn.setButtonTexture(new TextTexture("§7⚙").setWidth(14).setType(TextTexture.TextType.NORMAL));
         gearBtn.setHoverTexture(new ColorRectTexture(COLOR_HOVER));
-        gearBtn.setHoverTooltips("Theme Settings");
+        gearBtn.setHoverTooltips(Component.translatable("gui.gtceuterminal.theme_settings").getString());
         header.addWidget(gearBtn);
         return header;
     }
@@ -379,7 +386,8 @@ public class MultiStructureManagerUI {
         WidgetGroup titleBar = new WidgetGroup(0, 0, DW, 18);
         titleBar.setBackground(new ColorRectTexture(0xFF2A2A2A));
         panel.addWidget(titleBar);
-        LabelWidget title = new LabelWidget(8, 4, "§6Rename Multiblock");
+        LabelWidget title = new LabelWidget(8, 4,
+                Component.translatable("gui.gtceuterminal.multiblock_manager.rename_dialog.title").getString());
         title.setTextColor(0xFFFFAA00);
         titleBar.addWidget(title);
 
@@ -410,7 +418,8 @@ public class MultiStructureManagerUI {
                     refreshUI();
                 });
         confirmBtn.setButtonTexture(
-                new TextTexture("§aConfirm").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+                new TextTexture(Component.translatable("gui.gtceuterminal.multiblock_manager.rename_dialog.confirm").getString())
+                        .setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
         confirmBtn.setHoverTexture(new ColorRectTexture(0xFF1E6A1E));
         panel.addWidget(confirmBtn);
 
@@ -427,7 +436,8 @@ public class MultiStructureManagerUI {
                     refreshUI();
                 });
         clearBtn.setButtonTexture(
-                new TextTexture("§cClear name").setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
+                new TextTexture(Component.translatable("gui.gtceuterminal.multiblock_manager.rename_dialog.clear_name").getString())
+                        .setWidth((DW - 20) / 2).setType(TextTexture.TextType.NORMAL));
         clearBtn.setHoverTexture(new ColorRectTexture(0xFF5A3A3A));
         panel.addWidget(clearBtn);
     }
@@ -473,7 +483,10 @@ public class MultiStructureManagerUI {
         scanMultiblocks();
 
         player.displayClientMessage(
-                net.minecraft.network.chat.Component.literal("§aRefreshed - Found " + multiblocks.size() + " multiblocks"),
+                net.minecraft.network.chat.Component.translatable(
+                        "gui.gtceuterminal.multiblock_manager.refreshed_found",
+                        multiblocks.size()
+                ),
                 true
         );
     }

@@ -73,7 +73,7 @@ public class BlueprintLibraryScreen extends Screen {
     public BlueprintLibraryScreen(Screen parent,
                                   SchematicData currentSchematic,
                                   Consumer<SchematicData> onLoad) {
-        super(Component.literal("Blueprint Library"));
+        super(Component.translatable("gui.gtceuterminal.blueprint.library.title"));
         this.parentScreen      = parent;
         this.currentSchematic  = currentSchematic;
         this.onLoad            = onLoad;
@@ -117,13 +117,17 @@ public class BlueprintLibraryScreen extends Screen {
         g.fill(wx + W - 1, wy, wx + W, wy + H, C_BORDER);
 
         // Title
-        g.drawString(font, "§f§lBlueprint Library", wx + 8, wy + 8, C_TEXT, false);
+        g.drawString(font,
+                Component.translatable("gui.gtceuterminal.blueprint.library.title").getString(),
+                wx + 8, wy + 8, C_TEXT, false);
 
         // Close button [✕]
         int closeBx = wx + W - 18;
         int closeBy = wy + 4;
         renderBtn(g, closeBx, closeBy, 14, 14, C_BTN_DEL, C_BTN_DEL_B, mouseX, mouseY);
-        g.drawString(font, "§c✕", closeBx + 3, closeBy + 3, 0xFFFFFFFF, false);
+        g.drawString(font,
+                Component.translatable("gui.gtceuterminal.blueprint.library.close").getString(),
+                closeBx + 3, closeBy + 3, 0xFFFFFFFF, false);
 
         // List area background
         int lx = wx + LIST_LEFT;
@@ -158,15 +162,25 @@ public class BlueprintLibraryScreen extends Screen {
 
         renderBtn(g, btnX, btnY,      82, 14, hasSelection ? C_BTN : 0xFF2A2A2A,
                 hasSelection ? C_BTN_BDR : 0xFF444444, mouseX, mouseY);
-        g.drawString(f, hasSelection ? "§9Load" : "§8Load", btnX + 4, btnY + 3, 0xFFFFFFFF, false);
+        g.drawString(f,
+                hasSelection
+                        ? Component.translatable("gui.gtceuterminal.blueprint.library.load.enabled").getString()
+                        : Component.translatable("gui.gtceuterminal.blueprint.library.load.disabled").getString(),
+                btnX + 4, btnY + 3, 0xFFFFFFFF, false);
 
         renderBtn(g, btnX, btnY + 20, 82, 14, hasSelection ? C_BTN_DEL : 0xFF2A2A2A,
                 hasSelection ? C_BTN_DEL_B : 0xFF444444, mouseX, mouseY);
-        g.drawString(f, hasSelection ? "§cDelete" : "§8Delete", btnX + 4, btnY + 23, 0xFFFFFFFF, false);
+        g.drawString(f,
+                hasSelection
+                        ? Component.translatable("gui.gtceuterminal.blueprint.library.delete.enabled").getString()
+                        : Component.translatable("gui.gtceuterminal.blueprint.library.delete.disabled").getString(),
+                btnX + 4, btnY + 23, 0xFFFFFFFF, false);
 
         // Save-as section
         int saveY = wy + LIST_TOP + LIST_H + 14;
-        g.drawString(f, "§7Save current schematic as:", wx + LIST_PAD, saveY, C_DIM, false);
+        g.drawString(f,
+                Component.translatable("gui.gtceuterminal.blueprint.library.save_as_label").getString(),
+                wx + LIST_PAD, saveY, C_DIM, false);
 
         int inputY    = saveY + 12;
         int inputW    = W - LIST_PAD * 2 - 46;
@@ -186,7 +200,11 @@ public class BlueprintLibraryScreen extends Screen {
         boolean canSave = !saveNameText.isBlank() && currentSchematic != null;
         renderBtn(g, saveBtnX, inputY, 38, 14, canSave ? 0xFF1E6B1E : 0xFF2A2A2A,
                 canSave ? 0xFF2E8B2E : 0xFF444444, mouseX, mouseY);
-        g.drawString(f, canSave ? "§aSave" : "§8Save", saveBtnX + 4, inputY + 3, 0xFFFFFFFF, false);
+        g.drawString(f,
+                canSave
+                        ? Component.translatable("gui.gtceuterminal.blueprint.library.save.enabled").getString()
+                        : Component.translatable("gui.gtceuterminal.blueprint.library.save.disabled").getString(),
+                saveBtnX + 4, inputY + 3, 0xFFFFFFFF, false);
 
         // Feedback message
         if (!feedbackMsg.isEmpty()) {
@@ -328,10 +346,15 @@ public class BlueprintLibraryScreen extends Screen {
                     loaded.getBlockEntities(),
                     loaded.getOriginalFacing());
             onLoad.accept(renamed);
-            showFeedback("§aLoaded: " + name);
+            showFeedback(Component.translatable(
+                    "gui.gtceuterminal.blueprint.library.feedback.loaded",
+                    name
+            ).getString());
             onClose();
         } else {
-            showFeedback("§cFailed to load blueprint.");
+            showFeedback(Component.translatable(
+                    "gui.gtceuterminal.blueprint.library.feedback.failed_load"
+            ).getString());
         }
     }
 
@@ -339,21 +362,31 @@ public class BlueprintLibraryScreen extends Screen {
         if (selectedIdx < 0 || selectedIdx >= blueprintNames.size()) return;
         String name = blueprintNames.get(selectedIdx);
         if (BlueprintFileManager.delete(name)) {
-            showFeedback("§7Deleted: " + name);
+            showFeedback(Component.translatable(
+                    "gui.gtceuterminal.blueprint.library.feedback.deleted",
+                    name
+            ).getString());
             refreshList();
             selectedIdx = Math.min(selectedIdx, blueprintNames.size() - 1);
         } else {
-            showFeedback("§cFailed to delete.");
+            showFeedback(Component.translatable(
+                    "gui.gtceuterminal.blueprint.library.feedback.failed_delete"
+            ).getString());
         }
     }
 
     private void doSave() {
         if (saveNameText.isBlank() || currentSchematic == null) return;
         if (BlueprintFileManager.save(saveNameText.trim(), currentSchematic)) {
-            showFeedback("§aSaved as: " + saveNameText.trim());
+            showFeedback(Component.translatable(
+                    "gui.gtceuterminal.blueprint.library.feedback.saved_as",
+                    saveNameText.trim()
+            ).getString());
             refreshList();
         } else {
-            showFeedback("§cFailed to save.");
+            showFeedback(Component.translatable(
+                    "gui.gtceuterminal.blueprint.library.feedback.failed_save"
+            ).getString());
         }
     }
 

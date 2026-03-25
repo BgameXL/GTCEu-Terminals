@@ -68,8 +68,9 @@ public class CPacketPlacePlannerGhosts {
 
             if (!com.gtceuterminal.common.config.ItemsConfig.isSchPlannerBuildAllEnabled()) {
                 player.displayClientMessage(
-                        Component.literal("[GTCEu Terminals] Planner 'Build All' is disabled on this server.")
-                                .withStyle(net.minecraft.ChatFormatting.RED), false);
+                        Component.translatable("item.gtceuterminal.planner_build_all.message.disabled"),
+                        false
+                );
                 return;
             }
 
@@ -91,13 +92,18 @@ public class CPacketPlacePlannerGhosts {
                 }
             }
 
-            Component msg = totalSkipped == 0
-                    ? Component.literal("Placed " + totalPlaced + " blocks from "
-                            + ghosts.size() + " structure(s).")
-                    .withStyle(net.minecraft.ChatFormatting.GREEN)
-                    : Component.literal("Placed " + totalPlaced + " blocks, skipped "
-                            + totalSkipped + " (missing items or occupied).")
-                    .withStyle(net.minecraft.ChatFormatting.YELLOW);
+            Component msg;
+            if (totalSkipped == 0) {
+                msg = Component.translatable(
+                        "item.gtceuterminal.planner_build_all.message.success_no_skipped",
+                        totalPlaced, ghosts.size()
+                );
+            } else {
+                msg = Component.translatable(
+                        "item.gtceuterminal.planner_build_all.message.success_with_skipped",
+                        totalPlaced, totalSkipped
+                );
+            }
             player.displayClientMessage(msg, false);
         });
         ctx.get().setPacketHandled(true);

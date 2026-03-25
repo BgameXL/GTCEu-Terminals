@@ -58,13 +58,19 @@ public class CPacketSchematicAction {
             switch (this.actionType) {
                 case SAVE:
                     if (!stackTag.contains("Clipboard")) {
-                        player.displayClientMessage(Component.literal("§eNo clipboard to save!"), true);
+                        player.displayClientMessage(
+                                Component.translatable("item.gtceuterminal.schematic_action.message.no_clipboard_to_save"),
+                                true
+                        );
                         return;
                     }
 
                     CompoundTag clipboardTag = stackTag.getCompound("Clipboard");
                     if (!clipboardTag.contains("Blocks") || clipboardTag.getList("Blocks", 10).isEmpty()) {
-                        player.displayClientMessage(Component.literal("§eClipboard is empty!"), true);
+                        player.displayClientMessage(
+                                Component.translatable("item.gtceuterminal.schematic_action.message.clipboard_empty"),
+                                true
+                        );
                         return;
                     }
 
@@ -75,7 +81,10 @@ public class CPacketSchematicAction {
                             .anyMatch(s -> s.getName().equals(this.schematicName));
 
                     if (isDuplicate) {
-                        player.displayClientMessage(Component.literal("§cSchematic name already exists!"), true);
+                        player.displayClientMessage(
+                                Component.translatable("item.gtceuterminal.schematic_action.message.schematic_name_already_exists"),
+                                true
+                        );
                         return;
                     }
 
@@ -94,7 +103,10 @@ public class CPacketSchematicAction {
                             this.schematicName, clipboard.getOriginalFacing());
 
                     player.displayClientMessage(
-                            Component.literal("§aSaved schematic: " + this.schematicName),
+                            Component.translatable(
+                                    "item.gtceuterminal.schematic_action.message.saved_schematic",
+                                    this.schematicName
+                            ),
                             true
                     );
                     break;
@@ -110,7 +122,10 @@ public class CPacketSchematicAction {
                                 schematic.getName(), schematic.getOriginalFacing());
 
                         player.displayClientMessage(
-                                Component.literal("§aLoaded schematic: " + schematic.getName()),
+                                Component.translatable(
+                                        "item.gtceuterminal.schematic_action.message.loaded_schematic",
+                                        schematic.getName()
+                                ),
                                 true
                         );
                     }
@@ -122,7 +137,10 @@ public class CPacketSchematicAction {
                     if (removed) {
                         saveSchematics(stack, allSchematics);
                         player.displayClientMessage(
-                                Component.literal("§eDeleted schematic: " + this.schematicName),
+                                Component.translatable(
+                                        "item.gtceuterminal.schematic_action.message.deleted_schematic",
+                                        this.schematicName
+                                ),
                                 true
                         );
                     } else {
