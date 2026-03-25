@@ -1,9 +1,9 @@
 {
   "itemGroup.gtceuterminal": "GregTechCEu Terminal",
 
-  "item.gtceuterminal.multi_structure_manager": "Multi-Structure Manager",
+  "item.gtceuterminal.multi_structure_manager": "§4Multi-Structure Manager",
   "item.gtceuterminal.schematic_interface": "Schematic Interface",
-  "item.gtceuterminal.dismantler": "Dismantler",
+  "item.gtceuterminal.dismantler": "§5Dismantler",
 
   "item.gtceuterminal.terminal.success": "Multiblock Built Successfully",
   "item.gtceuterminal.terminal.failed": "Failed to Build Multiblock",
@@ -12,10 +12,48 @@
   "item.gtceuterminal.terminal.already_formed": "Multiblock Already Formed",
 
   "item.gtceuterminal.multi_structure_manager.tooltip": "Manage and Upgrade Nearby Multiblocks",
+  "item.gtceuterminal.multi_structure_manager.tooltip.tool": "§6Multiblock Management Tool",
+  "item.gtceuterminal.multi_structure_manager.tooltip.linked": "§a✓ Linked to ME Network",
+  "item.gtceuterminal.multi_structure_manager.tooltip.not_linked": "§7✗ Not Linked",
+  "item.gtceuterminal.multi_structure_manager.tooltip.place_in_me_wireless_access_point": "§8  Place in ME Wireless Access Point to link",
+  "item.gtceuterminal.multi_structure_manager.tooltip.right_click_settings": "§8Right-click: §bSettings",
+  "item.gtceuterminal.multi_structure_manager.tooltip.shift_right_click_manage": "§8Shift + Right-click: §cManage Multiblocks",
   "item.gtceuterminal.schematic_interface.tooltip": "Copy and Paste Multiblock Schematics",
+  "item.gtceuterminal.schematic_interface.tooltip.blueprint_tool": "§6Blueprint Tool",
+  "item.gtceuterminal.schematic_interface.tooltip.linked": "§a✓ Linked to ME Network",
+  "item.gtceuterminal.schematic_interface.tooltip.not_linked": "§7✗ Not Linked",
+  "item.gtceuterminal.schematic_interface.tooltip.place_in_me_wireless_access_point": "§8  Place in ME Wireless Access Point to link",
+  "item.gtceuterminal.schematic_interface.tooltip.shift_right_click_prefix": "§8Shift + Right-click: ",
+  "item.gtceuterminal.schematic_interface.tooltip.open_schematic_gui": "§bOpen Schematic GUI",
+  "item.gtceuterminal.schematic_interface.tooltip.right_click_prefix": "§8Right-click: ",
+  "item.gtceuterminal.schematic_interface.tooltip.paste_schematic": "§ePaste Schematic",
   "item.gtceuterminal.dismantler.tooltip": "Disassemble Multiblocks and Return Components",
+  "item.gtceuterminal.dismantler.tooltip.tool": "§6Multiblock Removal Tool",
+  "item.gtceuterminal.dismantler.tooltip.open_dismantler_gui": "§7Right-click on Multiblock: §dOpen Dismantler GUI",
 
   "item.gtceuterminal.energy_analyzer": "Energy Analyzer",
+  "item.gtceuterminal.energy_analyzer.tooltip.tool": "§6Energy Monitoring Tool",
+  "item.gtceuterminal.energy_analyzer.tooltip.no_machines_linked": "§7No machines linked",
+  "item.gtceuterminal.energy_analyzer.tooltip.linked_machines": "§7Linked machines: §f%d§7/%d",
+  "item.gtceuterminal.energy_analyzer.tooltip.machine_entry": "  §7● §f%s",
+  "item.gtceuterminal.energy_analyzer.tooltip.more_machines": "  §7... and %d more",
+  "item.gtceuterminal.energy_analyzer.tooltip.right_click_open": "§7Right-click: §bOpen on that machine",
+  "item.gtceuterminal.energy_analyzer.tooltip.right_click_air_open": "§7Right-click (air): §bOpen list",
+  "item.gtceuterminal.energy_analyzer.tooltip.shift_right_click_manage": "§7Shift + Right-click: §eLink / Unlink machine",
+
+  "item.gtceuterminal.tooltip.me_range.in_range": "  §b● In Range",
+  "item.gtceuterminal.tooltip.me_range.out_of_range": "  §c● Out of Range",
+
+  "item.gtceuterminal.multi_structure_manager.behavior.linked_to_me_network": "§a✓ Linked to ME Network",
+
+  "item.gtceuterminal.schematic_copier.failed_to_scan_multiblock": "§cFailed to scan multiblock!",
+  "item.gtceuterminal.schematic_copier.multiblock_copied": "§aMultiblock copied! %d blocks",
+
+  "item.gtceuterminal.schematic_paster.no_schematic_in_clipboard": "§cNo schematic in clipboard!",
+  "item.gtceuterminal.schematic_paster.nothing_to_paste": "§eNothing to paste here. Area may be occupied (or identical).",
+  "item.gtceuterminal.schematic_paster.paste_success.no_skipped": "§aSchematic pasted! §f%d blocks placed",
+  "item.gtceuterminal.schematic_paster.paste_success.with_skipped": "§aSchematic pasted! §f%d blocks placed §7(%d skipped)",
+  "item.gtceuterminal.schematic_paster.missing_materials": "§cMissing materials: §f%s",
   "item.gtceuterminal.power_logger.desc": "Monitors machine power consumption",
 
   "gui.gtceuterminal.planner.title": "§f§lPlacement Planner",

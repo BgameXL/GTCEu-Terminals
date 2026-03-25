@@ -6,7 +6,6 @@ import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiPart;
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.data.SchematicData;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -42,8 +41,7 @@ public final class SchematicCopier {
 
         if (positions.isEmpty()) {
             player.displayClientMessage(
-                    Component.literal("Failed to scan multiblock!")
-                            .withStyle(ChatFormatting.RED),
+                    Component.translatable("item.gtceuterminal.schematic_copier.failed_to_scan_multiblock"),
                     true);
             GTCEUTerminalMod.LOGGER.warn("Scanned multiblock but got 0 positions");
             return;
@@ -82,8 +80,7 @@ public final class SchematicCopier {
         itemStack.setTag(itemTag);
 
         player.displayClientMessage(
-                Component.literal("Multiblock copied! " + blocks.size() + " blocks")
-                        .withStyle(ChatFormatting.GREEN),
+                Component.translatable("item.gtceuterminal.schematic_copier.multiblock_copied", blocks.size()),
                 true);
 
         GTCEUTerminalMod.LOGGER.info("Multiblock copied: {} blocks", blocks.size());

@@ -1,10 +1,8 @@
 package com.gtceuterminal.common.item;
 
-import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.ae2.MENetworkScanner;
 import com.gtceuterminal.common.item.behavior.MultiStructureManagerBehavior;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -43,8 +41,7 @@ public class MultiStructureManagerItem extends Item {
     // ── Tooltip ───────────────────────────────────────────────────────────────
     @Override
     public @NotNull Component getName(@NotNull ItemStack stack) {
-        return Component.translatable(this.getDescriptionId(stack))
-                .withStyle(s -> s.withColor(0x990000));
+        return Component.translatable(this.getDescriptionId(stack));
     }
 
     @Override
@@ -52,28 +49,35 @@ public class MultiStructureManagerItem extends Item {
                                 @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag isAdvanced) {
         super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
 
-        tooltipComponents.add(Component.literal("Multiblock Management Tool").withStyle(ChatFormatting.GOLD));
+        tooltipComponents.add(Component.translatable(
+                "item.gtceuterminal.multi_structure_manager.tooltip.tool"
+        ));
         tooltipComponents.add(Component.literal(""));
 
         if (MENetworkScanner.isAE2Available()) {
             if (MENetworkScanner.isItemLinked(stack)) {
-                tooltipComponents.add(Component.literal("✓ Linked to ME Network").withStyle(ChatFormatting.GREEN));
+                tooltipComponents.add(Component.translatable(
+                        "item.gtceuterminal.multi_structure_manager.tooltip.linked"
+                ));
                 if (level != null && level.isClientSide) {
                     ClientTooltipHelper.appendAE2RangeTooltip(stack, level, tooltipComponents);
                 }
             } else {
-                tooltipComponents.add(Component.literal("✗ Not Linked").withStyle(ChatFormatting.GRAY));
-                tooltipComponents.add(Component.literal("  Place in ME Wireless Access Point to link")
-                        .withStyle(ChatFormatting.DARK_GRAY));
+                tooltipComponents.add(Component.translatable(
+                        "item.gtceuterminal.multi_structure_manager.tooltip.not_linked"
+                ));
+                tooltipComponents.add(Component.translatable(
+                        "item.gtceuterminal.multi_structure_manager.tooltip.place_in_me_wireless_access_point"
+                ));
             }
         }
 
         tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.literal("Right-click: ")
-                .withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Settings").withStyle(ChatFormatting.AQUA)));
-        tooltipComponents.add(Component.literal("Shift + Right-click: ")
-                .withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Manage Multiblocks").withStyle(ChatFormatting.RED)));
+        tooltipComponents.add(Component.translatable(
+                "item.gtceuterminal.multi_structure_manager.tooltip.right_click_settings"
+        ));
+        tooltipComponents.add(Component.translatable(
+                "item.gtceuterminal.multi_structure_manager.tooltip.shift_right_click_manage"
+        ));
     }
 }

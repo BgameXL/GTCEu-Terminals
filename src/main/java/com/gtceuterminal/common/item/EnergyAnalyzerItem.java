@@ -9,7 +9,6 @@ import com.gtceuterminal.common.energy.LinkedMachineData;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -172,33 +171,39 @@ public class EnergyAnalyzerItem extends Item {
                                 @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
 
-        tooltip.add(Component.literal("Energy Monitoring Tool").withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.tool"));
         tooltip.add(Component.literal(""));
 
         List<LinkedMachineData> machines = loadMachines(stack);
         int max = ItemsConfig.getEAMaxLinkedMachines();
 
         if (machines.isEmpty()) {
-            tooltip.add(Component.literal("No machines linked").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.no_machines_linked"));
         } else {
-            tooltip.add(Component.literal("Linked machines: §f" + machines.size() + "§7/" + max)
-                    .withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable(
+                    "item.gtceuterminal.energy_analyzer.tooltip.linked_machines",
+                    machines.size(),
+                    max
+            ));
             // Show first 3
             int shown = Math.min(3, machines.size());
             for (int i = 0; i < shown; i++) {
-                tooltip.add(Component.literal("  §7● §f" + machines.get(i).getDisplayName()));
+                tooltip.add(Component.translatable(
+                        "item.gtceuterminal.energy_analyzer.tooltip.machine_entry",
+                        machines.get(i).getDisplayName()
+                ));
             }
             if (machines.size() > 3) {
-                tooltip.add(Component.literal("  §7... and " + (machines.size() - 3) + " more"));
+                tooltip.add(Component.translatable(
+                        "item.gtceuterminal.energy_analyzer.tooltip.more_machines",
+                        (machines.size() - 3)
+                ));
             }
         }
 
         tooltip.add(Component.literal(""));
-        tooltip.add(Component.literal("Right-click: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Open on that machine").withStyle(ChatFormatting.AQUA)));
-        tooltip.add(Component.literal("Right-click (air): ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Open list").withStyle(ChatFormatting.AQUA)));
-        tooltip.add(Component.literal("Shift + Right-click: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("Link / Unlink machine").withStyle(ChatFormatting.YELLOW)));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.right_click_open"));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.right_click_air_open"));
+        tooltip.add(Component.translatable("item.gtceuterminal.energy_analyzer.tooltip.shift_right_click_manage"));
     }
 }

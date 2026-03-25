@@ -2,7 +2,6 @@ package com.gtceuterminal.common.item;
 
 import com.gtceuterminal.common.ae2.MENetworkScanner;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -35,11 +34,13 @@ public final class ClientTooltipHelper {
         if (localPlayer == null || level == null) return;
 
         if (MENetworkScanner.isItemInRange(stack, level, localPlayer)) {
-            tooltipComponents.add(Component.literal("  ● In Range")
-                    .withStyle(ChatFormatting.AQUA));
+            tooltipComponents.add(Component.translatable(
+                    "item.gtceuterminal.tooltip.me_range.in_range"
+            ));
         } else {
-            tooltipComponents.add(Component.literal("  ● Out of Range")
-                    .withStyle(ChatFormatting.RED));
+            tooltipComponents.add(Component.translatable(
+                    "item.gtceuterminal.tooltip.me_range.out_of_range"
+            ));
         }
     }
 }

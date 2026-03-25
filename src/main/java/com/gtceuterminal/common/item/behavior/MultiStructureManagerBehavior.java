@@ -9,7 +9,6 @@ import com.gtceuterminal.common.pattern.AdvancedAutoBuilder;
 
 import com.gtceuterminal.client.gui.factory.MultiStructureManagerUIFactory;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
@@ -65,7 +64,8 @@ public class MultiStructureManagerBehavior {
                         tag.put("accessPoint", GlobalPos.CODEC.encodeStart(NbtOps.INSTANCE, globalPos)
                                 .getOrThrow(false, err -> {}));
                         player.displayClientMessage(
-                                Component.literal("✓ Linked to ME Network").withStyle(ChatFormatting.GREEN), true);
+                                Component.translatable("item.gtceuterminal.multi_structure_manager.behavior.linked_to_me_network"),
+                                true);
                         playSound(level, blockPos, SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
                     }
                     return InteractionResult.sidedSuccess(level.isClientSide);
