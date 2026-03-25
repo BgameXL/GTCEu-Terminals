@@ -30,7 +30,7 @@
   "item.gtceuterminal.dismantler": "§5结构拆卸器",
   "item.gtceuterminal.dismantler.tooltip": "拆卸多方块结构并返还组件",
   "item.gtceuterminal.dismantler.tooltip.tool": "§6多方块拆卸工具",
-  "item.gtceuterminal.dismantler.tooltip.open_dismantler_gui": "§7右键点击多方块：§d打开拆卸器界面",
+  "item.gtceuterminal.dismantler.tooltip.open_dismantler_gui": "§7Shift + 右键点击多方块：§d打开拆卸器界面",
   "item.gtceuterminal.dismantler.message.not_formed_controller": "§c不是已成型的多方块控制器！",
 
   "item.gtceuterminal.energy_analyzer": "能量分析仪",

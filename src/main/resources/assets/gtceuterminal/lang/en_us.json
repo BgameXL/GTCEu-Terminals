@@ -30,7 +30,7 @@
   "item.gtceuterminal.dismantler": "§5Dismantler",
   "item.gtceuterminal.dismantler.tooltip": "Disassemble Multiblocks and Return Components",
   "item.gtceuterminal.dismantler.tooltip.tool": "§6Multiblock Removal Tool",
-  "item.gtceuterminal.dismantler.tooltip.open_dismantler_gui": "§7Right-click on Multiblock: §dOpen Dismantler GUI",
+  "item.gtceuterminal.dismantler.tooltip.open_dismantler_gui": "§7Shift + Right-click on Multiblock: §dOpen Dismantler GUI",
   "item.gtceuterminal.dismantler.message.not_formed_controller": "§cNot a formed multiblock controller!",
 
   "item.gtceuterminal.energy_analyzer": "Energy Analyzer",
