@@ -20,14 +20,14 @@
 
   "gui.gtceuterminal.planner.title": "§f§l放置规划器",
   "gui.gtceuterminal.planner.sidebar.schematics": "§7结构蓝图",
-  "gui.gtceuterminal.planner.hud.rotation": "§7旋转： §f%d°",
-  "gui.gtceuterminal.planner.hud.placed": "§7已放置： §f%d",
+  "gui.gtceuterminal.planner.hud.rotation": "§7旋转： §f%s°",
+  "gui.gtceuterminal.planner.hud.placed": "§7已放置： §f%s",
   "gui.gtceuterminal.planner.sidebar.view3d.enabled": "§9⊞ 三维视图",
   "gui.gtceuterminal.planner.sidebar.view3d.disabled": "§8⊞ 三维视图",
   "gui.gtceuterminal.planner.sidebar.blueprints": "§b⊟ 蓝图",
   "gui.gtceuterminal.planner.sidebar.hints": "§7[滚轮] 缩放  [Shift+滚轮] 倾斜  [R] 旋转  [左键] 放置  [右键] 移除  [Tab] 三维",
   "gui.gtceuterminal.planner.hud.mode_3d": "§93D",
-  "gui.gtceuterminal.planner.hud.build_all.enabled": "§a⊞ 全部建造（%d）",
+  "gui.gtceuterminal.planner.hud.build_all.enabled": "§a⊞ 全部建造（%s）",
   "gui.gtceuterminal.planner.hud.build_all.disabled": "§8⊞ 全部建造",
   "gui.gtceuterminal.planner.hud.clear_all.enabled": "§c✗ 清空全部",
   "gui.gtceuterminal.planner.hud.clear_all.disabled": "§8✗ 清空全部",
@@ -35,8 +35,8 @@
   "gui.gtceuterminal.autocraft.title": "自动装配确认",
   "gui.gtceuterminal.autocraft.header.build": "§f§l自动装配：建造多方块",
   "gui.gtceuterminal.autocraft.header.upgrade": "§f§l自动装配：升级组件",
-  "gui.gtceuterminal.autocraft.summary.all_available": "§aME 中所有物品就绪",
-  "gui.gtceuterminal.autocraft.summary.missing": "§c%d 种物品类型缺少于 ME",
+  "gui.gtceuterminal.autocraft.summary.all_available": "§aME中所有物品就绪",
+  "gui.gtceuterminal.autocraft.summary.missing": "§cME中缺少%s种物品类型",
   "gui.gtceuterminal.autocraft.confirm.build": "§a开始建造！",
   "gui.gtceuterminal.autocraft.confirm.upgrade": "§a开始升级！",
   "gui.gtceuterminal.autocraft.confirm.unavailable": "§8不可用",
@@ -64,7 +64,7 @@
   "gui.gtceuterminal.blueprint.view.orbit.place_mode": "§9放置模式",
   "gui.gtceuterminal.blueprint.view.orbit.blueprints": "§b蓝图",
   "gui.gtceuterminal.blueprint.view.place.hints": "§7[WASD] 移动  [R] 旋转  [Enter] 确认  [Tab/Esc] 取消",
-  "gui.gtceuterminal.blueprint.view.place.info": "§7位置： §f%d, %d, %d  §7尺寸： §f%dx%dx%d  §7旋转： §f%d°",
+  "gui.gtceuterminal.blueprint.view.place.info": "§7位置： §f%s, %s, %s  §7尺寸： §f%sx%sx%s  §7旋转： §f%s°",
   "gui.gtceuterminal.blueprint.view.place.confirm": "§a✔ 确认",
   "gui.gtceuterminal.blueprint.view.place.cancel": "§c✕ 取消",
 
@@ -79,12 +79,12 @@
   "gui.gtceuterminal.schematic_interface.hint_formed_1": "§8Shift+点击已成型的",
   "gui.gtceuterminal.schematic_interface.hint_formed_2": "§8多方块以复制它",
   "gui.gtceuterminal.schematic_interface.selected": "§7已选择：§f%s",
-  "gui.gtceuterminal.schematic_interface.entry.blocks": "§8%d 块",
+  "gui.gtceuterminal.schematic_interface.entry.blocks": "§8%s 块",
 
   "gui.gtceuterminal.schematic_interface.preview.clipboard_content": "§7剪贴板内容：",
   "gui.gtceuterminal.schematic_interface.preview.save_to_see": "§8保存后可查看预览",
   "gui.gtceuterminal.schematic_interface.preview.no_preview": "§7暂无预览",
-  "gui.gtceuterminal.schematic_interface.preview.info": "§7%d 块 | %dx%dx%d",
+  "gui.gtceuterminal.schematic_interface.preview.info": "§7%s 块 | %sx%sx%s",
   "gui.gtceuterminal.schematic_interface.preview.zoom_hint": "§8Ctrl + 鼠标滚轮用于缩放",
   "gui.gtceuterminal.schematic_interface.preview.rotation_hint": "§8使用鼠标滚轮旋转预览",
 
@@ -104,22 +104,22 @@
 
   "gui.gtceuterminal.schematic_interface.fallback.multiblock_structure": "多方块结构",
 
-  "gui.gtceuterminal.multiblock_manager.nearby_title": "附近的多方块（%d）",
+  "gui.gtceuterminal.multiblock_manager.nearby_title": "附近的多方块（%s）",
   "gui.gtceuterminal.multiblock_manager.refresh_tooltip": "刷新",
   "gui.gtceuterminal.multiblock_manager.highlight_tooltip": "在世界中高亮",
   "gui.gtceuterminal.multiblock_manager.rename_tooltip": "重命名",
   "gui.gtceuterminal.multiblock_manager.rename_dialog.title": "§6重命名多方块",
   "gui.gtceuterminal.multiblock_manager.rename_dialog.confirm": "§a确认",
   "gui.gtceuterminal.multiblock_manager.rename_dialog.clear_name": "§c清空名称",
-  "gui.gtceuterminal.multiblock_manager.refreshed_found": "§a已刷新 - 找到 %d 个多方块",
+  "gui.gtceuterminal.multiblock_manager.refreshed_found": "§a已刷新 - 找到 %s 个多方块",
 
   "gui.gtceuterminal.dismantler.title": "§l§f多方块拆解器",
-  "gui.gtceuterminal.dismantler.coords_format": "§7[%d, %d, %d]",
+  "gui.gtceuterminal.dismantler.coords_format": "§7[%s, %s, %s]",
   "gui.gtceuterminal.dismantler.preview_label": "§7预览",
   "gui.gtceuterminal.dismantler.no_data": "§c无数据",
   "gui.gtceuterminal.dismantler.blocks_to_recover": "§7待回收方块",
-  "gui.gtceuterminal.dismantler.total_blocks": "§7总计：§f%d 个方块",
-  "gui.gtceuterminal.dismantler.inventory_empty_slots": "§7库存：§f%d §7个空槽",
+  "gui.gtceuterminal.dismantler.total_blocks": "§7总计：§f%s 个方块",
+  "gui.gtceuterminal.dismantler.inventory_empty_slots": "§7库存：§f%s §7个空槽",
   "gui.gtceuterminal.dismantler.warning_not_enough_space": "§6⚠ 警告：库存空间不足！物品将掉落到地面上。",
   "gui.gtceuterminal.dismantler.enough_space": "§a✓ 库存足够以回收所有方块",
   "gui.gtceuterminal.dismantler.action.dismantle": "§c拆解多方块",
@@ -127,7 +127,7 @@
   "gui.gtceuterminal.dismantler.chat.success": "§a多方块已成功拆解！",
 
   "gui.gtceuterminal.energy_analyzer.title": "能量分析器",
-  "gui.gtceuterminal.energy_analyzer.header.linked": "已连接的机器：%d",
+  "gui.gtceuterminal.energy_analyzer.header.linked": "已连接的机器：%s",
   "gui.gtceuterminal.energy_analyzer.no_machines_linked": "未连接任何机器。",
   "gui.gtceuterminal.energy_analyzer.storage_label": "储存：%s",
   "gui.gtceuterminal.energy_analyzer.low_buffer": "缓冲低！",
@@ -136,7 +136,7 @@
   "gui.gtceuterminal.energy_analyzer.in_line": "输入：%s/t（%s/s）",
   "gui.gtceuterminal.energy_analyzer.out_line": "输出：%s/t（%s/s）",
   "gui.gtceuterminal.energy_analyzer.net_line": "净增：%s/s",
-  "gui.gtceuterminal.energy_analyzer.voltage_line": "电压：%s（%dV）  %dA 最大",
+  "gui.gtceuterminal.energy_analyzer.voltage_line": "电压：%s（%sV）  %sA 最大",
 
   "gui.gtceuterminal.energy_analyzer.recipe_button": "§6配方：§7[日志 ▶]",
   "gui.gtceuterminal.energy_analyzer.recipe_time_left": "%s 后完成",
@@ -145,7 +145,7 @@
   "gui.gtceuterminal.energy_analyzer.hatches_label": "导管：",
   "gui.gtceuterminal.energy_analyzer.hatch_in": "输入",
   "gui.gtceuterminal.energy_analyzer.hatch_out": "输出",
-  "gui.gtceuterminal.energy_analyzer.more_hatches": "  §8+ %d 个更多...",
+  "gui.gtceuterminal.energy_analyzer.more_hatches": "  §8+ %s 个更多...",
 
   "gui.gtceuterminal.energy_analyzer.graph_header": "历史记录（EU/s）：",
   "gui.gtceuterminal.energy_analyzer.legend_in": "— 输入",
@@ -206,11 +206,11 @@
   "gui.gtceuterminal.component_detail.info.multiblock": "§7多方块：§f%s",
   "gui.gtceuterminal.component_detail.info.tier": "§7等级：§f%s",
   "gui.gtceuterminal.component_detail.info.distance": "§7距离：§f%s",
-  "gui.gtceuterminal.component_detail.info.components": "§7组件：§f%d §7(§f%d §7组)",
+  "gui.gtceuterminal.component_detail.info.components": "§7组件：§f%s §7(§f%s §7组)",
 
   "gui.gtceuterminal.component_detail.list.header": "§l§7组件组：",
 
-  "gui.gtceuterminal.component_detail.entry.count": "§7数量：§f%d",
+  "gui.gtceuterminal.component_detail.entry.count": "§7数量：§f%s",
   "gui.gtceuterminal.component_detail.entry.tier": "§7等级：§f%s",
   "gui.gtceuterminal.component_detail.entry.upgrade": "§a升级",
   "gui.gtceuterminal.component_detail.entry.max": "§7最大",
@@ -229,27 +229,27 @@
   "gui.gtceuterminal.component_detail_dialog.info.multiblock": "§7多方块：§f%s",
   "gui.gtceuterminal.component_detail_dialog.info.tier": "§7等级：§f%s",
   "gui.gtceuterminal.component_detail_dialog.info.distance": "§7距离：§f%s",
-  "gui.gtceuterminal.component_detail_dialog.info.components": "§7组件：§f%d §7(§f%d §7组)",
+  "gui.gtceuterminal.component_detail_dialog.info.components": "§7组件：§f%s §7(§f%s §7组)",
 
   "gui.gtceuterminal.component_detail_dialog.list.header": "§l§7组件组：",
 
-  "gui.gtceuterminal.component_detail_dialog.entry.count": "§7数量：§f%d",
+  "gui.gtceuterminal.component_detail_dialog.entry.count": "§7数量：§f%s",
   "gui.gtceuterminal.component_detail_dialog.entry.tier": "§7等级：§f%s",
 
   "gui.gtceuterminal.group_upgrade_dialog.title": "§l§f升级组确认",
-  "gui.gtceuterminal.group_upgrade_dialog.upgrade_x": "§e升级 %dx %s",
+  "gui.gtceuterminal.group_upgrade_dialog.upgrade_x": "§e升级 %sx %s",
   "gui.gtceuterminal.group_upgrade_dialog.from": "§7来自：§f%s",
   "gui.gtceuterminal.group_upgrade_dialog.to": "§7到：§f%s",
   "gui.gtceuterminal.group_upgrade_dialog.creative_no_materials": "§a创造模式 - 无需材料",
   "gui.gtceuterminal.group_upgrade_dialog.required_materials": "§7所需材料：",
-  "gui.gtceuterminal.group_upgrade_dialog.confirm_upgrade_all": "升级全部（%d）",
+  "gui.gtceuterminal.group_upgrade_dialog.confirm_upgrade_all": "升级全部（%s）",
   "gui.gtceuterminal.group_upgrade_dialog.confirm_missing_materials": "缺少材料",
   "gui.gtceuterminal.group_upgrade_dialog.cancel": "取消",
   "gui.gtceuterminal.group_upgrade_dialog.unknown_coil": "未知线圈",
 
   "gui.gtceuterminal.component_upgrade_dialog.title": "§l§f升级 %s",
 
-  "gui.gtceuterminal.component_upgrade_dialog.info.count_components": "§7数量：§f%d 个组件",
+  "gui.gtceuterminal.component_upgrade_dialog.info.count_components": "§7数量：§f%s 个组件",
   "gui.gtceuterminal.component_upgrade_dialog.info.current_tier": "§7当前等级：§f%s",
 
   "gui.gtceuterminal.component_upgrade_dialog.tier_selection.label_upgrade_option": "§l§7选择升级选项：",
@@ -261,7 +261,7 @@
 
   "gui.gtceuterminal.component_upgrade_dialog.chat.select_upgrade_option_first": "§e请先选择升级选项。",
   "gui.gtceuterminal.component_upgrade_dialog.chat.analyzing_me_network": "§7正在分析 ME 网络...",
-  "gui.gtceuterminal.component_upgrade_dialog.chat.changing_components": "§a正在更改 %d 个组件...",
+  "gui.gtceuterminal.component_upgrade_dialog.chat.changing_components": "§a正在更改 %s 个组件...",
 
   "gui.gtceuterminal.component_upgrade_dialog.materials.required_label": "§l§7所需材料：",
   "gui.gtceuterminal.component_upgrade_dialog.materials.me_materials_verified": "§e⚠ 将在确认时验证 ME 材料",
@@ -271,24 +271,24 @@
 
   "gui.gtceuterminal.component_upgrade_dialog.option_all_any": "§f全部\n§7(任意)",
 
-  "gui.gtceuterminal.material_list.quantity.me": "§a%d§7/%d §a[ME]",
-  "gui.gtceuterminal.material_list.quantity.inv": "§7%d/%d [背包]",
-  "gui.gtceuterminal.material_list.quantity.mix": "§e%d§7/%d §e[混合]",
-  "gui.gtceuterminal.material_list.quantity.missing": "§c%d§7/%d §c[-%d]",
+  "gui.gtceuterminal.material_list.quantity.me": "§a%s§7/%s §a[ME]",
+  "gui.gtceuterminal.material_list.quantity.inv": "§7%s/%s [背包]",
+  "gui.gtceuterminal.material_list.quantity.mix": "§e%s§7/%s §e[混合]",
+  "gui.gtceuterminal.material_list.quantity.missing": "§c%s§7/%s §c[-%s]",
 
-  "gui.gtceuterminal.material_list.tooltip.required": "§7需求：§f%d",
+  "gui.gtceuterminal.material_list.tooltip.required": "§7需求：§f%s",
   "gui.gtceuterminal.material_list.tooltip.available_colored": "§7可用：%s",
   "gui.gtceuterminal.material_list.tooltip.sources_header": "§7§l--- 资源来源 ---",
 
-  "gui.gtceuterminal.material_list.tooltip.source.inventory_nonzero": "  §7背包：§f%d",
+  "gui.gtceuterminal.material_list.tooltip.source.inventory_nonzero": "  §7背包：§f%s",
   "gui.gtceuterminal.material_list.tooltip.source.inventory_zero": "  §8背包：0",
-  "gui.gtceuterminal.material_list.tooltip.source.chests_nonzero": "  §7箱子：§f%d",
+  "gui.gtceuterminal.material_list.tooltip.source.chests_nonzero": "  §7箱子：§f%s",
   "gui.gtceuterminal.material_list.tooltip.source.chests_zero": "  §8箱子：0",
-  "gui.gtceuterminal.material_list.tooltip.source.me_network_nonzero": "  §e§lME 网络：§f%d §8(确认时验证)",
+  "gui.gtceuterminal.material_list.tooltip.source.me_network_nonzero": "  §e§lME 网络：§f%s §8(确认时验证)",
   "gui.gtceuterminal.material_list.tooltip.source.me_network_zero": "  §8ME 网络：0",
 
   "gui.gtceuterminal.material_list.tooltip.status.sufficient": "§a✓ 材料充足",
-  "gui.gtceuterminal.material_list.tooltip.status.missing": "§c✗ 缺少 %d 个物品",
+  "gui.gtceuterminal.material_list.tooltip.status.missing": "§c✗ 缺少 %s 个物品",
 
   "gui.gtceuterminal.material_list.tooltip.primary_source.me_pending": "§7主要来源：%s §8(确认时验证)",
   "gui.gtceuterminal.material_list.tooltip.primary_source.normal": "§7主要来源：%s",
@@ -302,7 +302,7 @@
 
   "gui.gtceuterminal.multiblock_preview.title_3d": "§73D预览",
   "gui.gtceuterminal.multiblock_preview.coming_soon": "§8（即将推出）",
-  "gui.gtceuterminal.multiblock_preview.total_blocks": "§f%d §7方块总数",
+  "gui.gtceuterminal.multiblock_preview.total_blocks": "§f%s §7方块总数",
 
   "gui.gtceuterminal.theme_editor.title": "§f⚙ 主题设置",
   "gui.gtceuterminal.theme_editor.presets": "§7预设",

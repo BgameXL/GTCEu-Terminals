@@ -178,7 +178,7 @@ public class AutocraftConfirmScreen extends Screen {
         String craftSuffix = craft ? " §e✦" : "";
         String right = Component.translatable(
                 "gui.gtceuterminal.autocraft.entry.right",
-                String.valueOf(needed),
+                needed,
                 inMeColored,
                 craftSuffix
         ).getString();
