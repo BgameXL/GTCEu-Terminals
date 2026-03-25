@@ -224,7 +224,7 @@
   "gui.gtceuterminal.energy_analyzer.header.linked": "已連線的機器：%s",
   "gui.gtceuterminal.energy_analyzer.no_machines_linked": "未連線任何機器。",
   "gui.gtceuterminal.energy_analyzer.storage_label": "儲存：%s",
-  "gui.gtceuterminal.energy_analyzer.low_buffer": "緩衝低！",
+  "gui.gtceuterminal.energy_analyzer.low_buffer": "電量低！",
   "gui.gtceuterminal.energy_analyzer.eta_full_in": "將在 %s 內填滿",
   "gui.gtceuterminal.energy_analyzer.eta_empty_in": "將在 %s 內清空",
   "gui.gtceuterminal.energy_analyzer.in_line": "輸入：%s/t（%s/s）",
