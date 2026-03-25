@@ -55,7 +55,6 @@
   "item.gtceuterminal.component_upgrade.unknown_coil": "未知线圈",
   "item.gtceuterminal.component_upgrade.message.upgraded_coils": "§e⚠ 已将 %d 个线圈升级为 §6%s%s",
   "item.gtceuterminal.component_upgrade.message.reset_multiblock": "§6⚠ 请重置多方块以应用新的温度",
-
   "item.gtceuterminal.component_upgrade.message.upgraded": "§a已升级 %d 个组件",
   "item.gtceuterminal.component_upgrade.message.warning_void_or_dropped": "§6⚠ 升级/降级组件时，物品可能会被销毁或掉落",
   "item.gtceuterminal.component_upgrade.message.failed": "§c升级失败 %d 个组件",
