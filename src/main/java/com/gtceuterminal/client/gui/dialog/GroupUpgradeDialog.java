@@ -1,6 +1,8 @@
 package com.gtceuterminal.client.gui.dialog;
 
 import com.gregtechceu.gtceu.api.GTValues;
+import com.gregtechceu.gtceu.api.GTCEuAPI;
+import com.gregtechceu.gtceu.api.block.ICoilType;
 
 import com.gtceuterminal.common.theme.ItemTheme;
 import com.gtceuterminal.common.material.ComponentUpgradeHelper;
@@ -23,6 +25,8 @@ import com.lowdragmc.lowdraglib.utils.Size;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.util.Mth;
@@ -184,9 +188,9 @@ public class GroupUpgradeDialog extends DialogWidget {
         int yPos = 8;
 
         // Component count and name
-        String componentName = group.getType().getDisplayName();
+        Component componentName = group.getType().getDisplayNameComponent();
         LabelWidget countLabel = new LabelWidget(10, yPos,
-                net.minecraft.network.chat.Component.translatable(
+                Component.translatable(
                         "gui.gtceuterminal.group_upgrade_dialog.upgrade_x",
                         group.getCount(),
                         componentName
@@ -197,9 +201,9 @@ public class GroupUpgradeDialog extends DialogWidget {
         yPos += 15;
 
         // From tier
-        String fromName = getDisplayName(group.getType(), group.getTier());
+        Component fromName = getTierDisplayName(group.getType(), group.getTier());
         LabelWidget fromLabel = new LabelWidget(10, yPos,
-                net.minecraft.network.chat.Component.translatable(
+                Component.translatable(
                         "gui.gtceuterminal.group_upgrade_dialog.from",
                         fromName
                 ).getString());
@@ -209,9 +213,9 @@ public class GroupUpgradeDialog extends DialogWidget {
         yPos += 12;
 
         // To tier
-        String toName = getDisplayName(group.getType(), targetTier);
+        Component toName = getTierDisplayName(group.getType(), targetTier);
         LabelWidget toLabel = new LabelWidget(10, yPos,
-                net.minecraft.network.chat.Component.translatable(
+                Component.translatable(
                         "gui.gtceuterminal.group_upgrade_dialog.to",
                         toName
                 ).getString());
@@ -362,28 +366,38 @@ public class GroupUpgradeDialog extends DialogWidget {
         }
     }
 
-    private String getDisplayName(ComponentType type, int tier) {
+    private Component getTierDisplayName(ComponentType type, int tier) {
         if (type == ComponentType.COIL) {
-            return getCoilName(tier);
+            return getCoilNameComponent(tier);
         } else if (type == ComponentType.MAINTENANCE) {
-            return type.getDisplayName();
+            return type.getDisplayNameComponent();
         } else {
             String tierName = GTValues.VN[tier].toUpperCase(Locale.ROOT);
-            return type.getDisplayName() + " (" + tierName + ")";
+            return Component.translatable(
+                    "gui.gtceuterminal.group_upgrade_dialog.type_with_tier",
+                    type.getDisplayNameComponent(),
+                    tierName
+            );
         }
     }
 
-    private String getCoilName(int tier) {
-        return switch (tier) {
-            case 0 -> "Cupronickel";
-            case 1 -> "Kanthal";
-            case 2 -> "Nichrome";
-            case 3 -> "RTM Alloy";
-            case 4 -> "HSS-G";
-            case 5 -> "Naquadah";
-            case 6 -> "Trinium";
-            case 7 -> "Tritanium";
-            default -> net.minecraft.network.chat.Component.translatable("gui.gtceuterminal.group_upgrade_dialog.unknown_coil").getString();
-        };
+    private Component getCoilNameComponent(int tier) {
+        try {
+            for (var entry : GTCEuAPI.HEATING_COILS.entrySet()) {
+                ICoilType coilType = entry.getKey();
+                if (coilType == null) continue;
+                if (coilType.getTier() != tier) continue;
+                var sup = entry.getValue();
+                var block = sup != null ? sup.get() : null;
+                if (block != null) {
+                    return Component.translatable(block.getDescriptionId());
+                }
+                String fallback = coilType.getName();
+                if (fallback != null && !fallback.isBlank()) {
+                    return Component.literal(fallback);
+                }
+            }
+        } catch (Exception ignored) {}
+        return Component.translatable("gui.gtceuterminal.group_upgrade_dialog.unknown_coil");
     }
 }

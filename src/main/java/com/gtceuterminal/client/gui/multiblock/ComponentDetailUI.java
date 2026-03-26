@@ -239,7 +239,7 @@ public class ComponentDetailUI {
             int dotY = compact ? 12 : 15;
             entry.addWidget(new ImageWidget(8, dotY, 8, 8, new ColorRectTexture(COLOR_SUCCESS)));
 
-            String typeName = group.getType().name().replace("_", " ");
+            String typeName = group.getType().getDisplayNameComponent().getString();
             addText(entry, 22, compact ? 4 : 5, entryW - 120, "§f" + typeName, textScale);
 
             addText(entry, 22, compact ? 16 : 17, 120,
@@ -247,7 +247,7 @@ public class ComponentDetailUI {
                     textScale);
 
             addText(entry, compact ? 130 : 150, compact ? 16 : 17, entryW - 220,
-                    Component.translatable("gui.gtceuterminal.component_detail.entry.tier", rep.getTierName()).getString(),
+                    Component.translatable("gui.gtceuterminal.component_detail.entry.tier", tierNameForList(group, rep)).getString(),
                     textScale);
 
             int btnW = compact ? 64 : 80;
@@ -285,6 +285,27 @@ public class ComponentDetailUI {
         }
 
         return entry;
+    }
+
+    private static String tierNameForList(ComponentGroup group, ComponentInfo rep) {
+        try {
+            if (group != null && group.getType() == com.gtceuterminal.common.multiblock.ComponentType.COIL) {
+                String k = "gui.gtceuterminal.coil_tier." + switch (rep.getTier()) {
+                    case 0 -> "cupronickel";
+                    case 1 -> "kanthal";
+                    case 2 -> "nichrome";
+                    case 3 -> "rtm_alloy";
+                    case 4 -> "hss_g";
+                    case 5 -> "naquadah";
+                    case 6 -> "trinium";
+                    case 7 -> "tritanium";
+                    default -> "unknown";
+                };
+                return Component.translatable(k).getString();
+            }
+        } catch (Throwable ignored) {}
+        String s = rep != null ? rep.getTierName() : "";
+        return s != null ? s : "";
     }
 
     private WidgetGroup createActionButtons() {

@@ -1,5 +1,7 @@
 package com.gtceuterminal.common.multiblock;
 
+import net.minecraft.network.chat.Component;
+
 // Types of multiblock components
 public enum ComponentType {
 
@@ -111,6 +113,16 @@ public enum ComponentType {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    /** Translation key for user-facing UI labels. */
+    public String getDisplayNameKey() {
+        return "component.gtceuterminal.component_type." + name().toLowerCase();
+    }
+
+    /** Localized name for UI usage (client-side). */
+    public Component getDisplayNameComponent() {
+        return Component.translatable(getDisplayNameKey());
     }
 
     public String getAbilityId() {

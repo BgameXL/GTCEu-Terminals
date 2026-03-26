@@ -243,7 +243,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
         String title = Component.translatable(
                 "gui.gtceuterminal.component_upgrade_dialog.title",
-                group.getType().name().replace("_", " ")
+                group.getType().getDisplayNameComponent()
         ).getString();
         LabelWidget titleLabel = new LabelWidget(10, 7, title);
         titleLabel.setTextColor(COLOR_TEXT_WHITE);
@@ -500,7 +500,17 @@ public class ComponentUpgradeDialog extends DialogWidget {
                 yPos += btnHeight + spacing;
             }
 
-            String name = (e.displayName != null && !e.displayName.isBlank()) ? e.displayName : e.blockId;
+            String name = e.blockId;
+            try {
+                Block b = BuiltInRegistries.BLOCK.get(net.minecraft.resources.ResourceLocation.tryParse(e.blockId));
+                if (b != null) {
+                    String loc = Component.translatable(b.getDescriptionId()).getString();
+                    if (loc != null && !loc.isBlank()) name = loc;
+                }
+            } catch (Exception ignored) {}
+            if (name == null || name.isBlank()) {
+                name = (e.displayName != null && !e.displayName.isBlank()) ? e.displayName : e.blockId;
+            }
             name = trimCommonSuffixes(name);
 
             String tierTag = (e.tierName != null && !e.tierName.isBlank()) ? e.tierName : safeTierName(e.tier);

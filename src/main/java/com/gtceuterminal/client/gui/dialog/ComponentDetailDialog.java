@@ -299,7 +299,7 @@ public class ComponentDetailDialog extends DialogWidget {
 
             entry.addWidget(new ImageWidget(6, 14, 7, 7, new ColorRectTexture(COLOR_SUCCESS)));
 
-            String typeName = group.getType().name().replace("_", " ");
+            String typeName = group.getType().getDisplayNameComponent().getString();
             LabelWidget typeLabel = new LabelWidget(18, 4, "§f" + typeName);
             typeLabel.setTextColor(COLOR_TEXT_WHITE);
             entry.addWidget(typeLabel);
@@ -314,7 +314,7 @@ public class ComponentDetailDialog extends DialogWidget {
 
             String tierText = Component.translatable(
                     "gui.gtceuterminal.component_detail_dialog.entry.tier",
-                    rep.getTierName()
+                    tierNameForList(group, rep)
             ).getString();
             if (!rep.getPossibleUpgradeTiers().isEmpty()) tierText += " §a→";
 
@@ -324,6 +324,27 @@ public class ComponentDetailDialog extends DialogWidget {
         }
 
         return entry;
+    }
+
+    private static String tierNameForList(ComponentGroup group, ComponentInfo rep) {
+        try {
+            if (group != null && group.getType() == com.gtceuterminal.common.multiblock.ComponentType.COIL) {
+                String k = "gui.gtceuterminal.coil_tier." + switch (rep.getTier()) {
+                    case 0 -> "cupronickel";
+                    case 1 -> "kanthal";
+                    case 2 -> "nichrome";
+                    case 3 -> "rtm_alloy";
+                    case 4 -> "hss_g";
+                    case 5 -> "naquadah";
+                    case 6 -> "trinium";
+                    case 7 -> "tritanium";
+                    default -> "unknown";
+                };
+                return net.minecraft.network.chat.Component.translatable(k).getString();
+            }
+        } catch (Throwable ignored) {}
+        String s = rep != null ? rep.getTierName() : "";
+        return s != null ? s : "";
     }
 
     private ButtonWidget createCloseButton() {
