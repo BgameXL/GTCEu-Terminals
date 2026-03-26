@@ -1,5 +1,6 @@
 package com.gtceuterminal.client.gui.dialog;
 
+import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.common.theme.ItemTheme;
 import com.gtceuterminal.common.multiblock.ComponentGroup;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
@@ -328,19 +329,8 @@ public class ComponentDetailDialog extends DialogWidget {
 
     private static String tierNameForList(ComponentGroup group, ComponentInfo rep) {
         try {
-            if (group != null && group.getType() == com.gtceuterminal.common.multiblock.ComponentType.COIL) {
-                String k = "gui.gtceuterminal.coil_tier." + switch (rep.getTier()) {
-                    case 0 -> "cupronickel";
-                    case 1 -> "kanthal";
-                    case 2 -> "nichrome";
-                    case 3 -> "rtm_alloy";
-                    case 4 -> "hss_g";
-                    case 5 -> "naquadah";
-                    case 6 -> "trinium";
-                    case 7 -> "tritanium";
-                    default -> "unknown";
-                };
-                return net.minecraft.network.chat.Component.translatable(k).getString();
+            if (group != null && group.getType() == ComponentType.COIL) {
+                return ComponentType.getCoilTierName(rep.getTier());
             }
         } catch (Throwable ignored) {}
         String s = rep != null ? rep.getTierName() : "";

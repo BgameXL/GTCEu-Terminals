@@ -125,6 +125,22 @@ public enum ComponentType {
         return Component.translatable(getDisplayNameKey());
     }
 
+    // ─── Coil tier localization helpers ──────────────────────────────────────
+    public static String getCoilTierName(int tier) {
+        String suffix = switch (tier) {
+            case 0 -> "cupronickel";
+            case 1 -> "kanthal";
+            case 2 -> "nichrome";
+            case 3 -> "rtm_alloy";
+            case 4 -> "hss_g";
+            case 5 -> "naquadah";
+            case 6 -> "trinium";
+            case 7 -> "tritanium";
+            default -> "unknown";
+        };
+        return Component.translatable("gui.gtceuterminal.coil_tier." + suffix).getString();
+    }
+
     public String getAbilityId() {
         return abilityId;
     }

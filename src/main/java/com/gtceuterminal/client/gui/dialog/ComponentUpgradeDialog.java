@@ -266,10 +266,14 @@ public class ComponentUpgradeDialog extends DialogWidget {
             countLabel.setTextColor(COLOR_TEXT_WHITE);
             panel.addWidget(countLabel);
 
+            String tierName = rep.getTierName();
+            if (rep.getType() == ComponentType.COIL) {
+                tierName = ComponentType.getCoilTierName(rep.getTier());
+            }
             LabelWidget currentLabel = new LabelWidget(10, 18,
                     Component.translatable(
                             "gui.gtceuterminal.component_upgrade_dialog.info.current_tier",
-                            rep.getTierName()
+                            tierName
                     ).getString());
             currentLabel.setTextColor(COLOR_TEXT_WHITE);
             panel.addWidget(currentLabel);

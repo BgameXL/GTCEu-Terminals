@@ -318,8 +318,8 @@
   "gui.gtceuterminal.group_upgrade_dialog.unknown_coil": "未知线圈",
 
   "gui.gtceuterminal.coil_tier.cupronickel": "白铜",
-  "gui.gtceuterminal.coil_tier.kanthal": "坎塔尔",
-  "gui.gtceuterminal.coil_tier.nichrome": "镍铬",
+  "gui.gtceuterminal.coil_tier.kanthal": "坎塔尔合金",
+  "gui.gtceuterminal.coil_tier.nichrome": "镍铬合金",
   "gui.gtceuterminal.coil_tier.rtm_alloy": "钌钨钼合金",
   "gui.gtceuterminal.coil_tier.hss_g": "高速钢-G",
   "gui.gtceuterminal.coil_tier.naquadah": "硅岩",
