@@ -17,8 +17,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 
@@ -120,6 +122,14 @@ public final class SchematicPaster {
                 continue;
             }
 
+            // Skip the UPPER half of doors — the item is already counted from LOWER.
+            // When we place the LOWER half via BlockItem.place() Minecraft will
+            // auto-create the UPPER half, so we never need to place or count it.
+            if (rotatedState.getBlock() instanceof DoorBlock
+                    && rotatedState.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
+                skippedCount++; continue;
+            }
+
             Item item = rotatedState.getBlock().asItem();
             if (item == Items.AIR) { skippedCount++; continue; }
 
@@ -169,6 +179,22 @@ public final class SchematicPaster {
                 continue;
             }
 
+            // Doors are two-block-tall structures.
+            if (p.state.getBlock() instanceof DoorBlock
+                    && p.state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER) {
+                BlockPos upperPos = p.worldPos.above();
+                // Only place if there is room for the upper half
+                BlockState upperCurrent = level.getBlockState(upperPos);
+                if (upperCurrent.isAir() || upperCurrent.canBeReplaced()) {
+                    BlockState upperState = p.state.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER);
+                    level.setBlock(p.worldPos, p.state, 3);
+                    level.setBlock(upperPos,   upperState, 3);
+                    placedCount++;
+                } else {
+                    skippedCount++;
+                }
+                continue;
+            }
             level.setBlock(p.worldPos, p.state, 3);
             placedCount++;
 

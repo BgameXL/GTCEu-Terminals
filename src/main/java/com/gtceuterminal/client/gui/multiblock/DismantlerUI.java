@@ -170,11 +170,11 @@ public class DismantlerUI {
         header.addWidget(title);
 
         String coords = Component.translatable(
-                        "gui.gtceuterminal.dismantler.coords_format",
-                        controllerPos.getX(),
-                        controllerPos.getY(),
-                        controllerPos.getZ()
-                ).getString();
+                "gui.gtceuterminal.dismantler.coords_format",
+                controllerPos.getX(),
+                controllerPos.getY(),
+                controllerPos.getZ()
+        ).getString();
         LabelWidget coordsLabel = new LabelWidget(GUI_WIDTH - 120, 9, coords);
         coordsLabel.setTextColor(COLOR_TEXT_GRAY);
         header.addWidget(coordsLabel);
@@ -223,9 +223,9 @@ public class DismantlerUI {
         if (scanResult != null) {
             panel.addWidget(new LabelWidget(5, 18,
                     Component.translatable(
-                                    "gui.gtceuterminal.dismantler.total_blocks",
-                                    scanResult.getTotalBlocks()
-                            ).getString())
+                            "gui.gtceuterminal.dismantler.total_blocks",
+                            scanResult.getTotalBlocks()
+                    ).getString())
                     .setTextColor(COLOR_TEXT_WHITE));
             panel.addWidget(new BlockListWidget(5, 35, 220, 200, scanResult));
         }
@@ -245,12 +245,17 @@ public class DismantlerUI {
 
         bar.addWidget(new LabelWidget(10, 8,
                 Component.translatable(
-                                "gui.gtceuterminal.dismantler.inventory_empty_slots",
-                                emptySlots
-                        ).getString())
+                        "gui.gtceuterminal.dismantler.inventory_empty_slots",
+                        emptySlots
+                ).getString())
                 .setTextColor(COLOR_TEXT_WHITE));
 
-        if (scanResult != null && emptySlots < scanResult.getBlockCounts().size()) {
+        // getItemsToRecover() returns the actual stacks that will be given (one per
+        // distinct block type respecting maxStackSize), which is the correct unit
+        // to compare against free inventory slots — not getBlockCounts().size() which
+        // only counts distinct block TYPES and can be far smaller than slots needed.
+        int slotsNeeded = (scanResult != null) ? scanResult.getItemsToRecover().size() : 0;
+        if (emptySlots < slotsNeeded) {
             bar.addWidget(new LabelWidget(10, 20,
                     Component.translatable("gui.gtceuterminal.dismantler.warning_not_enough_space").getString())
                     .setTextColor(COLOR_WARNING));

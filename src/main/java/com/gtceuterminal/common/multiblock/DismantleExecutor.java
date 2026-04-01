@@ -9,13 +9,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 // Execute the dismantling of the multiblock
 public class DismantleExecutor {
@@ -31,9 +35,24 @@ public class DismantleExecutor {
         List<ItemStack> items = new ArrayList<>();
         BlockPos controllerPos = controller.getPos();
 
+        // Identify upper halves of double-block structures (doors, etc.)
+        // The multiblock cache contains BOTH block positions of a door, but the door
+        // item should only be refunded ONCE (from the lower half). Skipping the upper
+        // half prevents the x2 duplication that results in up to 9 extra doors per
+        // cleanroom depending on door count.
+        Set<BlockPos> skipPositions = new HashSet<>();
+        for (BlockPos pos : scanResult.getAllBlocks()) {
+            BlockState st = level.getBlockState(pos);
+            if (st.getBlock() instanceof DoorBlock
+                    && st.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
+                skipPositions.add(pos);
+            }
+        }
+
         // 1) First everything except the controller (avoids invalidating early state)
         for (BlockPos pos : scanResult.getAllBlocks()) {
             if (pos.equals(controllerPos)) continue;
+            if (skipPositions.contains(pos)) continue; // upper half — item already counted from lower
             ItemStack refund = createRefundStack(level, pos);
             mergeInto(items, refund);
         }

@@ -8,6 +8,8 @@ import com.gtceuterminal.common.data.SchematicData;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -51,7 +53,20 @@ public final class SchematicCopier {
         Map<BlockPos, CompoundTag> blockEntities = new HashMap<>();
         BlockPos controllerPos = controller.self().getPos();
 
+        // Skip the upper half of double-block structures (doors, etc.).
+        // The cache contains both BlockPos for every door, but we only store
+        // the lower half so paste and material-count see exactly one entry per door.
+        java.util.Set<BlockPos> upperHalves = new java.util.HashSet<>();
         for (BlockPos pos : positions) {
+            BlockState st = level.getBlockState(pos);
+            if (st.getBlock() instanceof DoorBlock
+                    && st.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
+                upperHalves.add(pos);
+            }
+        }
+
+        for (BlockPos pos : positions) {
+            if (upperHalves.contains(pos)) continue; // upper half — lower half carries the item
             BlockState state = level.getBlockState(pos);
             if (state.isAir()) continue;
 
