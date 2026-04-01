@@ -40,8 +40,13 @@ Please report any bugs specific to these projects here so we can continue to sup
 
 ### Credits
 
-Special Thanks to Haze Vista, for providing textures and ideas.
+- Special Thanks to Haze Vista, for providing textures and ideas.
+
+- yan (yan072600) for translating the mod to simplified chinese and make the mod able to translate to another languages.
+
+- GTM Things for inspiring Multi-Structure Manager.
+
+- GregTech CEu Modern.
 
 Contributors are welcomed and encouraged!
-
 
