@@ -1,6 +1,5 @@
 package com.gtceuterminal.client.gui.dialog;
 
-import com.gtceuterminal.common.theme.ItemTheme;
 import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.client.gui.multiblock.ComponentDetailUI;
 import com.gtceuterminal.client.gui.widget.LDLMaterialListWidget;
@@ -15,6 +14,7 @@ import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.common.multiblock.MultiblockInfo;
 import com.gtceuterminal.common.network.CPacketComponentUpgrade;
 import com.gtceuterminal.common.network.TerminalNetwork;
+import com.gtceuterminal.common.theme.ItemTheme;
 import com.gtceuterminal.common.upgrade.UniversalUpgradeCatalog;
 import com.gtceuterminal.common.upgrade.UniversalUpgradeCatalogBuilder;
 
@@ -243,7 +243,7 @@ public class ComponentUpgradeDialog extends DialogWidget {
 
         String title = Component.translatable(
                 "gui.gtceuterminal.component_upgrade_dialog.title",
-                group.getType().name().replace("_", " ")
+                group.getType().getDisplayNameComponent()
         ).getString();
         LabelWidget titleLabel = new LabelWidget(10, 7, title);
         titleLabel.setTextColor(COLOR_TEXT_WHITE);
@@ -266,10 +266,14 @@ public class ComponentUpgradeDialog extends DialogWidget {
             countLabel.setTextColor(COLOR_TEXT_WHITE);
             panel.addWidget(countLabel);
 
+            String tierName = rep.getTierName();
+            if (rep.getType() == ComponentType.COIL) {
+                tierName = ComponentType.getCoilTierName(rep.getTier());
+            }
             LabelWidget currentLabel = new LabelWidget(10, 18,
                     Component.translatable(
                             "gui.gtceuterminal.component_upgrade_dialog.info.current_tier",
-                            rep.getTierName()
+                            tierName
                     ).getString());
             currentLabel.setTextColor(COLOR_TEXT_WHITE);
             panel.addWidget(currentLabel);
@@ -500,7 +504,17 @@ public class ComponentUpgradeDialog extends DialogWidget {
                 yPos += btnHeight + spacing;
             }
 
-            String name = (e.displayName != null && !e.displayName.isBlank()) ? e.displayName : e.blockId;
+            String name = e.blockId;
+            try {
+                Block b = BuiltInRegistries.BLOCK.get(net.minecraft.resources.ResourceLocation.tryParse(e.blockId));
+                if (b != null) {
+                    String loc = Component.translatable(b.getDescriptionId()).getString();
+                    if (loc != null && !loc.isBlank()) name = loc;
+                }
+            } catch (Exception ignored) {}
+            if (name == null || name.isBlank()) {
+                name = (e.displayName != null && !e.displayName.isBlank()) ? e.displayName : e.blockId;
+            }
             name = trimCommonSuffixes(name);
 
             String tierTag = (e.tierName != null && !e.tierName.isBlank()) ? e.tierName : safeTierName(e.tier);

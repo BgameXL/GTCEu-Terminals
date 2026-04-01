@@ -3,6 +3,7 @@ package com.gtceuterminal.client.gui.dialog;
 import com.gtceuterminal.common.theme.ItemTheme;
 import com.gtceuterminal.common.multiblock.ComponentGroup;
 import com.gtceuterminal.common.multiblock.ComponentInfo;
+import com.gtceuterminal.common.multiblock.ComponentType;
 import com.gtceuterminal.common.multiblock.MultiblockInfo;
 
 import com.lowdragmc.lowdraglib.gui.widget.ButtonWidget;
@@ -299,7 +300,7 @@ public class ComponentDetailDialog extends DialogWidget {
 
             entry.addWidget(new ImageWidget(6, 14, 7, 7, new ColorRectTexture(COLOR_SUCCESS)));
 
-            String typeName = group.getType().name().replace("_", " ");
+            String typeName = group.getType().getDisplayNameComponent().getString();
             LabelWidget typeLabel = new LabelWidget(18, 4, "§f" + typeName);
             typeLabel.setTextColor(COLOR_TEXT_WHITE);
             entry.addWidget(typeLabel);
@@ -314,7 +315,7 @@ public class ComponentDetailDialog extends DialogWidget {
 
             String tierText = Component.translatable(
                     "gui.gtceuterminal.component_detail_dialog.entry.tier",
-                    rep.getTierName()
+                    tierNameForList(group, rep)
             ).getString();
             if (!rep.getPossibleUpgradeTiers().isEmpty()) tierText += " §a→";
 
@@ -324,6 +325,16 @@ public class ComponentDetailDialog extends DialogWidget {
         }
 
         return entry;
+    }
+
+    private static String tierNameForList(ComponentGroup group, ComponentInfo rep) {
+        try {
+            if (group != null && group.getType() == ComponentType.COIL) {
+                return ComponentType.getCoilTierName(rep.getTier());
+            }
+        } catch (Throwable ignored) {}
+        String s = rep != null ? rep.getTierName() : "";
+        return s != null ? s : "";
     }
 
     private ButtonWidget createCloseButton() {

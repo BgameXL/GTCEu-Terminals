@@ -42,7 +42,6 @@
   "item.gtceuterminal.energy_analyzer.tooltip.right_click_open": "§7右键：§b在该机器上打开",
   "item.gtceuterminal.energy_analyzer.tooltip.right_click_air_open": "§7右键（空位）：§b打开列表",
   "item.gtceuterminal.energy_analyzer.tooltip.shift_right_click_manage": "§7Shift + 右键：§e链接 / 取消链接机器",
-
   "item.gtceuterminal.energy_analyzer.message.unlinked": "§c已取消连接：§f%s",
   "item.gtceuterminal.energy_analyzer.message.cannot_link_more": "§c无法连接超过 §f%d§c 台机器。请先取消一个连接。",
   "item.gtceuterminal.energy_analyzer.message.dimension_not_allowed": "§c配置中不允许维度 §f%s§c。",
@@ -93,7 +92,6 @@
   "item.gtceuterminal.tooltip.me_range.out_of_range": "  §c● 超出范围",
 
   "item.gtceuterminal.multi_structure_manager.behavior.linked_to_me_network": "§a✓ 已连接到ME网络",
-
   "item.gtceuterminal.multi_structure_manager.behavior.cooldown_active": "§c冷却中！",
   "item.gtceuterminal.multi_structure_manager.behavior.multiblock_built": "§a多方块已建造！",
   "item.gtceuterminal.multi_structure_manager.behavior.failed_to_build_check_materials": "§c建造失败！请检查材料。",
@@ -110,6 +108,7 @@
   "item.gtceuterminal.schematic_paster.paste_success.no_skipped": "§a结构已粘贴！§f%d 个方块已放置",
   "item.gtceuterminal.schematic_paster.paste_success.with_skipped": "§a结构已粘贴！§f%d 个方块已放置 §7(%d 个已跳过)",
   "item.gtceuterminal.schematic_paster.missing_materials": "§c缺少材料：§f%s",
+
   "item.gtceuterminal.power_logger.desc": "监控机器电力消耗",
 
   "gui.gtceuterminal.planner.title": "§f§l放置规划器",
@@ -152,7 +151,6 @@
   "gui.gtceuterminal.blueprint.library.feedback.failed_delete": "§c删除失败。",
   "gui.gtceuterminal.blueprint.library.feedback.saved_as": "§a已保存为： %s",
   "gui.gtceuterminal.blueprint.library.feedback.failed_save": "§c保存失败。",
-
   "gui.gtceuterminal.blueprint.view.title": "蓝图库查看器",
   "gui.gtceuterminal.blueprint.view.orbit.hints": "§7[拖拽] 旋转  [滚轮] 缩放  [Tab] 放置模式  [Esc] 返回规划器",
   "gui.gtceuterminal.blueprint.view.orbit.place_mode": "§9放置模式",
@@ -174,19 +172,16 @@
   "gui.gtceuterminal.schematic_interface.hint_formed_2": "§8多方块以复制它",
   "gui.gtceuterminal.schematic_interface.selected": "§7已选择：§f%s",
   "gui.gtceuterminal.schematic_interface.entry.blocks": "§8%s 块",
-
   "gui.gtceuterminal.schematic_interface.preview.clipboard_content": "§7剪贴板内容：",
   "gui.gtceuterminal.schematic_interface.preview.save_to_see": "§8保存后可查看预览",
   "gui.gtceuterminal.schematic_interface.preview.no_preview": "§7暂无预览",
   "gui.gtceuterminal.schematic_interface.preview.info": "§7%s 块 | %sx%sx%s",
   "gui.gtceuterminal.schematic_interface.preview.zoom_hint": "§8Ctrl + 鼠标滚轮用于缩放",
   "gui.gtceuterminal.schematic_interface.preview.rotation_hint": "§8使用鼠标滚轮旋转预览",
-
   "gui.gtceuterminal.schematic_interface.button.save": "§f§l保存",
   "gui.gtceuterminal.schematic_interface.button.load": "§f§l加载",
   "gui.gtceuterminal.schematic_interface.button.delete": "§f§l删除",
   "gui.gtceuterminal.schematic_interface.button.close": "§7关闭",
-
   "gui.gtceuterminal.schematic_interface.chat.error.no_clipboard": "§c§l错误：§c没有剪贴板！请先复制一个多方块。",
   "gui.gtceuterminal.schematic_interface.chat.error.enter_name": "§c§l错误：§c请输入名称！",
   "gui.gtceuterminal.schematic_interface.chat.error.reserved_name": "§c§l错误：§c'Clipboard' 是保留名称！",
@@ -195,7 +190,6 @@
   "gui.gtceuterminal.schematic_interface.chat.error.no_schematic_selected": "§c§l错误：§c未选择结构！",
   "gui.gtceuterminal.schematic_interface.chat.success.loaded_to_clipboard": "§a§l✓ §a已加载到剪贴板：§f%s",
   "gui.gtceuterminal.schematic_interface.chat.success.deleted": "§c§l✗ §c已删除：§f%s",
-
   "gui.gtceuterminal.schematic_interface.fallback.multiblock_structure": "多方块结构",
 
   "gui.gtceuterminal.multiblock_manager.nearby_title": "附近的多方块（%s）",
@@ -231,42 +225,36 @@
   "gui.gtceuterminal.energy_analyzer.out_line": "输出：%s/t（%s/s）",
   "gui.gtceuterminal.energy_analyzer.net_line": "净增：%s/s",
   "gui.gtceuterminal.energy_analyzer.voltage_line": "电压：%s（%sV）  %sA 最大",
-
   "gui.gtceuterminal.energy_analyzer.recipe_button": "§6配方：§7[日志 ▶]",
   "gui.gtceuterminal.energy_analyzer.recipe_time_left": "%s 后完成",
   "gui.gtceuterminal.energy_analyzer.recipe_finishing": "即将完成...",
-
   "gui.gtceuterminal.energy_analyzer.hatches_label": "仓：",
   "gui.gtceuterminal.energy_analyzer.hatch_in": "输入",
   "gui.gtceuterminal.energy_analyzer.hatch_out": "输出",
+  "gui.gtceuterminal.energy_analyzer.hatch_line": "  %s  %s  %dV%s",
+  "gui.gtceuterminal.energy_analyzer.hatch_amp_suffix": " %dA",
   "gui.gtceuterminal.energy_analyzer.more_hatches": "  §8+ %s 个更多...",
-
   "gui.gtceuterminal.energy_analyzer.graph_header": "历史记录（EU/s）：",
   "gui.gtceuterminal.energy_analyzer.legend_in": "— 输入",
   "gui.gtceuterminal.energy_analyzer.legend_out": "— 输出",
-
   "gui.gtceuterminal.energy_analyzer.machine_options.title": "§6机器选项",
   "gui.gtceuterminal.energy_analyzer.machine_options.rename": "§e✎  重命名",
   "gui.gtceuterminal.energy_analyzer.machine_options.unlink_machine": "§c✖  解除连接机器",
   "gui.gtceuterminal.energy_analyzer.machine_options.cancel": "§7取消",
-
   "gui.gtceuterminal.energy_analyzer.rename_dialog.title": "§6重命名机器",
   "gui.gtceuterminal.energy_analyzer.rename_dialog.confirm": "§a确认",
   "gui.gtceuterminal.energy_analyzer.rename_dialog.cancel": "§7取消",
-
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.title": "§c解除连接机器",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.remove_prompt": "§7移除 §f%s§7？",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.unlink": "§c解除连接",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.cancel": "§7取消",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.hint_click_outside_cancel": "§8点击空白处取消",
-
   "gui.gtceuterminal.energy_analyzer.recipe_log.title": "§6配方日志  §7— %s",
   "gui.gtceuterminal.energy_analyzer.recipe_log.output": "§7输出",
   "gui.gtceuterminal.energy_analyzer.recipe_log.time": "§7时间",
   "gui.gtceuterminal.energy_analyzer.recipe_log.when": "§7时间点",
   "gui.gtceuterminal.energy_analyzer.recipe_log.no_recipes": "§7尚无记录的配方。",
   "gui.gtceuterminal.energy_analyzer.recipe_log.hint_click_outside_close": "§8点击空白处关闭",
-
   "gui.gtceuterminal.energy_analyzer.mode.not_formed": "[未成型]",
   "gui.gtceuterminal.energy_analyzer.mode.consumer": "[消费者]",
   "gui.gtceuterminal.energy_analyzer.mode.generator": "[发电机]",
@@ -274,59 +262,46 @@
   "gui.gtceuterminal.energy_analyzer.mode.unknown": "[未知]",
 
   "gui.gtceuterminal.manager_settings.title": "§l管理设置",
-
   "gui.gtceuterminal.manager_settings.common.yes": "§a是",
   "gui.gtceuterminal.manager_settings.common.no": "§c否",
-
   "gui.gtceuterminal.manager_settings.hatch_mode.label": "§7无仓模式",
   "gui.gtceuterminal.manager_settings.hatch_mode.tooltip": "§7在不使用能源仓/动力仓的情况下建造",
   "gui.gtceuterminal.manager_settings.hatch_mode.hint_toggle": "§8← 点击切换",
-
   "gui.gtceuterminal.manager_settings.tier_mode.label": "§7等级模式",
   "gui.gtceuterminal.manager_settings.tier_mode.tooltip": "§7组件等级（1=LV，2=MV，...）",
   "gui.gtceuterminal.manager_settings.tier_mode.hint_scroll_type": "§8↑↓ 滚动或输入",
-
   "gui.gtceuterminal.manager_settings.repeat_count.label": "§7重复次数",
   "gui.gtceuterminal.manager_settings.repeat_count.tooltip": "§7结构重复的次数",
   "gui.gtceuterminal.manager_settings.repeat_count.hint_layers": "§8可重复层数（0-99）",
-
   "gui.gtceuterminal.manager_settings.use_ae2.label": "§7使用 AE2",
   "gui.gtceuterminal.manager_settings.use_ae2.tooltip": "§7需要无线终端",
   "gui.gtceuterminal.manager_settings.use_ae2.hint_use_materials": "§8← 使用 AE2 作为材料",
 
   "gui.gtceuterminal.component_detail.header.title_compact": "§l§f%s",
   "gui.gtceuterminal.component_detail.header.title_full": "§l§f%s - 组件",
-
   "gui.gtceuterminal.component_detail.info.multiblock": "§7多方块：§f%s",
   "gui.gtceuterminal.component_detail.info.tier": "§7等级：§f%s",
   "gui.gtceuterminal.component_detail.info.distance": "§7距离：§f%s",
   "gui.gtceuterminal.component_detail.info.components": "§7组件：§f%s §7(§f%s §7组)",
-
   "gui.gtceuterminal.component_detail.list.header": "§l§7组件组：",
-
   "gui.gtceuterminal.component_detail.entry.count": "§7数量：§f%s",
   "gui.gtceuterminal.component_detail.entry.tier": "§7等级：§f%s",
   "gui.gtceuterminal.component_detail.entry.upgrade": "§a升级",
   "gui.gtceuterminal.component_detail.entry.max": "§7最大",
-
   "gui.gtceuterminal.component_detail.actions.bulk_upgrade": "§a批量升级",
   "gui.gtceuterminal.component_detail.actions.scan": "§7扫描",
   "gui.gtceuterminal.component_detail.actions.back": "§7← 返回",
-
   "gui.gtceuterminal.component_detail.notifications.bulk_not_implemented": "§7批量升级尚未实现",
   "gui.gtceuterminal.component_detail.notifications.rescanned": "§a已重新扫描组件",
   "gui.gtceuterminal.component_detail.notifications.use_esc_to_close": "§7使用 ESC 关闭",
 
   "gui.gtceuterminal.component_detail_dialog.unknown_multiblock": "未知多方块",
   "gui.gtceuterminal.component_detail_dialog.header.title": "§l§f%s - 组件",
-
   "gui.gtceuterminal.component_detail_dialog.info.multiblock": "§7多方块：§f%s",
   "gui.gtceuterminal.component_detail_dialog.info.tier": "§7等级：§f%s",
   "gui.gtceuterminal.component_detail_dialog.info.distance": "§7距离：§f%s",
-  "gui.gtceuterminal.component_detail_dialog.info.components": "§7组件：§f%s §7(§f%s §7组)",
-
-  "gui.gtceuterminal.component_detail_dialog.list.header": "§l§7组件组：",
-
+  "gui.gtceuterminal.component_detail_dialog.info.components": "§7组件：§f%s §7(§f%s §7类)",
+  "gui.gtceuterminal.component_detail_dialog.list.header": "§l§7组件类型：",
   "gui.gtceuterminal.component_detail_dialog.entry.count": "§7数量：§f%s",
   "gui.gtceuterminal.component_detail_dialog.entry.tier": "§7等级：§f%s",
 
@@ -334,6 +309,7 @@
   "gui.gtceuterminal.group_upgrade_dialog.upgrade_x": "§e升级 %sx %s",
   "gui.gtceuterminal.group_upgrade_dialog.from": "§7来自：§f%s",
   "gui.gtceuterminal.group_upgrade_dialog.to": "§7到：§f%s",
+  "gui.gtceuterminal.group_upgrade_dialog.type_with_tier": "%s（%s）",
   "gui.gtceuterminal.group_upgrade_dialog.creative_no_materials": "§a创造模式 - 无需材料",
   "gui.gtceuterminal.group_upgrade_dialog.required_materials": "§7所需材料：",
   "gui.gtceuterminal.group_upgrade_dialog.confirm_upgrade_all": "升级全部（%s）",
@@ -341,52 +317,96 @@
   "gui.gtceuterminal.group_upgrade_dialog.cancel": "取消",
   "gui.gtceuterminal.group_upgrade_dialog.unknown_coil": "未知线圈",
 
+  "gui.gtceuterminal.coil_tier.cupronickel": "白铜",
+  "gui.gtceuterminal.coil_tier.kanthal": "坎塔尔合金",
+  "gui.gtceuterminal.coil_tier.nichrome": "镍铬合金",
+  "gui.gtceuterminal.coil_tier.rtm_alloy": "钌钨钼合金",
+  "gui.gtceuterminal.coil_tier.hss_g": "高速钢-G",
+  "gui.gtceuterminal.coil_tier.naquadah": "硅岩",
+  "gui.gtceuterminal.coil_tier.trinium": "凯金",
+  "gui.gtceuterminal.coil_tier.tritanium": "三钛",
+  "gui.gtceuterminal.coil_tier.unknown": "未知线圈",
+
   "gui.gtceuterminal.component_upgrade_dialog.title": "§l§f升级 %s",
+
+  "component.gtceuterminal.component_type.energy_hatch": "能源仓",
+  "component.gtceuterminal.component_type.dynamo_hatch": "动力仓",
+  "component.gtceuterminal.component_type.wireless_energy_input": "无线能源输入仓",
+  "component.gtceuterminal.component_type.wireless_energy_output": "无线能源输出仓",
+  "component.gtceuterminal.component_type.wireless_laser_input": "无线激光靶仓",
+  "component.gtceuterminal.component_type.wireless_laser_output": "无线激光源仓",
+  "component.gtceuterminal.component_type.substation_input_energy": "变电站能源输入",
+  "component.gtceuterminal.component_type.substation_output_energy": "变电站能源输出",
+  "component.gtceuterminal.component_type.input_bus": "输入总线",
+  "component.gtceuterminal.component_type.output_bus": "输出总线",
+  "component.gtceuterminal.component_type.steam_input_bus": "蒸汽输入总线",
+  "component.gtceuterminal.component_type.steam_output_bus": "蒸汽输出总线",
+  "component.gtceuterminal.component_type.input_hatch": "输入仓",
+  "component.gtceuterminal.component_type.output_hatch": "输出仓",
+  "component.gtceuterminal.component_type.input_hatch_1x": "输入仓",
+  "component.gtceuterminal.component_type.output_hatch_1x": "输出仓",
+  "component.gtceuterminal.component_type.quad_input_hatch": "四重输入仓",
+  "component.gtceuterminal.component_type.quad_output_hatch": "四重输出仓",
+  "component.gtceuterminal.component_type.nonuple_input_hatch": "九重输入仓",
+  "component.gtceuterminal.component_type.nonuple_output_hatch": "九重输出仓",
+  "component.gtceuterminal.component_type.muffler": "消声仓",
+  "component.gtceuterminal.component_type.maintenance": "维护仓",
+  "component.gtceuterminal.component_type.rotor_holder": "转子支架",
+  "component.gtceuterminal.component_type.pump_fluid_hatch": "泵液仓",
+  "component.gtceuterminal.component_type.steam": "蒸汽仓",
+  "component.gtceuterminal.component_type.tank_valve": "储罐阀门",
+  "component.gtceuterminal.component_type.passthrough_hatch": "直通仓",
+  "component.gtceuterminal.component_type.parallel_hatch": "并行仓",
+  "component.gtceuterminal.component_type.input_laser": "激光输入仓",
+  "component.gtceuterminal.component_type.output_laser": "激光输出仓",
+  "component.gtceuterminal.component_type.computation_data_reception": "计算数据接收仓",
+  "component.gtceuterminal.component_type.computation_data_transmission": "计算数据发送仓",
+  "component.gtceuterminal.component_type.optical_data_reception": "光学数据接收仓",
+  "component.gtceuterminal.component_type.optical_data_transmission": "光学数据发送仓",
+  "component.gtceuterminal.component_type.data_access": "数据访问仓",
+  "component.gtceuterminal.component_type.hpca_component": "HPCA 组件",
+  "component.gtceuterminal.component_type.object_holder": "对象支架",
+  "component.gtceuterminal.component_type.coil": "加热线圈",
+  "component.gtceuterminal.component_type.casing": "外壳",
+  "component.gtceuterminal.component_type.machine_hatch": "机器仓",
+  "component.gtceuterminal.component_type.dual_hatch": "双联仓",
+  "component.gtceuterminal.component_type.filter": "过滤器",
+  "component.gtceuterminal.component_type.unknown": "未知组件",
 
   "gui.gtceuterminal.component_upgrade_dialog.info.count_components": "§7数量：§f%s 个组件",
   "gui.gtceuterminal.component_upgrade_dialog.info.current_tier": "§7当前等级：§f%s",
-
   "gui.gtceuterminal.component_upgrade_dialog.tier_selection.label_upgrade_option": "§l§7选择升级选项：",
   "gui.gtceuterminal.component_upgrade_dialog.tier_selection.label_target_tier": "§l§7选择目标等级：",
-
   "gui.gtceuterminal.component_upgrade_dialog.actions.confirm_change": "§e确认更改",
   "gui.gtceuterminal.component_upgrade_dialog.actions.auto_craft": "§9⚙ 自动加工",
   "gui.gtceuterminal.component_upgrade_dialog.actions.cancel": "§f取消",
-
   "gui.gtceuterminal.component_upgrade_dialog.chat.select_upgrade_option_first": "§e请先选择升级选项。",
   "gui.gtceuterminal.component_upgrade_dialog.chat.analyzing_me_network": "§7正在分析ME网络...",
   "gui.gtceuterminal.component_upgrade_dialog.chat.changing_components": "§a正在更改%s个组件...",
-
   "gui.gtceuterminal.component_upgrade_dialog.materials.required_label": "§l§7所需材料：",
   "gui.gtceuterminal.component_upgrade_dialog.materials.me_materials_verified": "§e⚠ 将在确认时验证ME材料",
   "gui.gtceuterminal.component_upgrade_dialog.materials.creative_mode": "§a§l创造模式",
   "gui.gtceuterminal.component_upgrade_dialog.materials.select_option_to_see": "§7选择一个选项以查看材料",
   "gui.gtceuterminal.component_upgrade_dialog.materials.creative_mode_not_required": "§a[创造模式 - 不需要]",
-
   "gui.gtceuterminal.component_upgrade_dialog.option_all_any": "§f全部\n§7(任意)",
 
   "gui.gtceuterminal.material_list.quantity.me": "§a%s§7/%s §a[ME]",
   "gui.gtceuterminal.material_list.quantity.inv": "§7%s/%s [背包]",
   "gui.gtceuterminal.material_list.quantity.mix": "§e%s§7/%s §e[混合]",
   "gui.gtceuterminal.material_list.quantity.missing": "§c%s§7/%s §c[-%s]",
-
   "gui.gtceuterminal.material_list.tooltip.required": "§7需求：§f%s",
   "gui.gtceuterminal.material_list.tooltip.available_colored": "§7可用：%s",
   "gui.gtceuterminal.material_list.tooltip.sources_header": "§7§l--- 资源来源 ---",
-
   "gui.gtceuterminal.material_list.tooltip.source.inventory_nonzero": "  §7背包：§f%s",
   "gui.gtceuterminal.material_list.tooltip.source.inventory_zero": "  §8背包：0",
   "gui.gtceuterminal.material_list.tooltip.source.chests_nonzero": "  §7箱子：§f%s",
   "gui.gtceuterminal.material_list.tooltip.source.chests_zero": "  §8箱子：0",
   "gui.gtceuterminal.material_list.tooltip.source.me_network_nonzero": "  §e§lME网络：§f%s §8(确认时验证)",
   "gui.gtceuterminal.material_list.tooltip.source.me_network_zero": "  §8ME网络：0",
-
   "gui.gtceuterminal.material_list.tooltip.status.sufficient": "§a✓ 材料充足",
   "gui.gtceuterminal.material_list.tooltip.status.missing": "§c✗ 缺少 %s 个物品",
-
   "gui.gtceuterminal.material_list.tooltip.primary_source.me_pending": "§7主要来源：%s §8(确认时验证)",
   "gui.gtceuterminal.material_list.tooltip.primary_source.normal": "§7主要来源：%s",
-
   "gui.gtceuterminal.material_list.source.me_network": "ME网络",
   "gui.gtceuterminal.material_list.source.inventory": "背包",
   "gui.gtceuterminal.material_list.source.chests": "箱子",
@@ -403,7 +423,6 @@
   "gui.gtceuterminal.theme_editor.style.gtceu_native": "GTCEu 原生",
   "gui.gtceuterminal.theme_editor.style.dark": "深色",
   "gui.gtceuterminal.theme_editor.style_label": "§7风格：§f%s",
-
   "gui.gtceuterminal.theme_editor.wallpaper": "§7壁纸",
   "gui.gtceuterminal.theme_editor.none": "§8无",
   "gui.gtceuterminal.theme_editor.preview": "§7预览",
@@ -411,15 +430,12 @@
   "gui.gtceuterminal.theme_editor.tab.accent": "强调色",
   "gui.gtceuterminal.theme_editor.tab.bg": "背景",
   "gui.gtceuterminal.theme_editor.tab.panel": "面板",
-
   "gui.gtceuterminal.theme_editor.options": "§7选项",
   "gui.gtceuterminal.theme_editor.toggle.compact_mode": "紧凑模式",
   "gui.gtceuterminal.theme_editor.toggle.show_tooltips": "显示提示",
   "gui.gtceuterminal.theme_editor.toggle.show_borders": "显示边框",
-
   "gui.gtceuterminal.theme_editor.button.save": "§a保存",
   "gui.gtceuterminal.theme_editor.button.reset": "§c重置",
-
   "gui.gtceuterminal.theme_editor.preset.default": "默认",
   "gui.gtceuterminal.theme_editor.preset.gtceu_red": "GTCEu 红色",
   "gui.gtceuterminal.theme_editor.preset.matrix": "矩阵",

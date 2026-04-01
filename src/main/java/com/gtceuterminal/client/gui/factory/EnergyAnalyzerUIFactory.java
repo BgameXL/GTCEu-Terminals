@@ -58,11 +58,10 @@ public class EnergyAnalyzerUIFactory extends UIFactory<EnergyAnalyzerUIFactory.E
             }
             if (targetLevel != null) {
                 snapshots.add(EnergyDataCollector.collect(
-                        targetLevel, m.getPos(), m.getCustomName(), m.getMachineType()));
+                        targetLevel, m.getPos(), m.getCustomName(), m.getControllerBlockKey()));
             } else {
                 EnergySnapshot offline = new EnergySnapshot();
-                offline.machineName = m.getDisplayName();
-                offline.machineType = m.getMachineType();
+                m.applyToSnapshotIdentity(offline);
                 offline.mode = EnergySnapshot.MachineMode.UNKNOWN;
                 offline.isFormed = false;
                 snapshots.add(offline);

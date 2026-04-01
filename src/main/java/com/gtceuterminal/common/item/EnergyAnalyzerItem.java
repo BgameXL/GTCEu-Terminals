@@ -23,12 +23,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,13 +61,10 @@ public class EnergyAnalyzerItem extends Item {
         if (machine == null) return InteractionResult.PASS;
 
         String dimId = LinkedMachineData.dimId(level);
-        String machineType = machine.getDefinition().getId().getPath()
-                .replace("_", " ")
-                .replace("/", " ");
-        // Capitalize first letter of each word
-        machineType = java.util.Arrays.stream(machineType.split(" "))
-                .map(w -> w.isEmpty() ? w : Character.toUpperCase(w.charAt(0)) + w.substring(1))
-                .reduce((a, b) -> a + " " + b).orElse(machineType);
+        Block ctrlBlock = level.getBlockState(pos).getBlock();
+        var blockRl = ForgeRegistries.BLOCKS.getKey(ctrlBlock);
+        String controllerBlockKey = blockRl != null ? blockRl.toString() : "";
+        Component controllerName = ctrlBlock.getName();
 
         if (player.isShiftKeyDown()) {
             // Shift+click: link or unlink
@@ -79,7 +79,7 @@ public class EnergyAnalyzerItem extends Item {
                     player.displayClientMessage(
                             Component.translatable(
                                     "item.gtceuterminal.energy_analyzer.message.unlinked",
-                                    machineType
+                                    controllerName
                             ),
                             true
                     );
@@ -113,12 +113,12 @@ public class EnergyAnalyzerItem extends Item {
             }
 
             // Link it
-            machines.add(new LinkedMachineData(pos, dimId, "", machineType));
+            machines.add(new LinkedMachineData(pos, dimId, "", controllerBlockKey));
             saveMachines(stack, machines);
             player.displayClientMessage(
                     Component.translatable(
                             "item.gtceuterminal.energy_analyzer.message.linked",
-                            machineType, machines.size(), max
+                            controllerName, machines.size(), max
                     ),
                     true
             );
@@ -217,7 +217,7 @@ public class EnergyAnalyzerItem extends Item {
             for (int i = 0; i < shown; i++) {
                 tooltip.add(Component.translatable(
                         "item.gtceuterminal.energy_analyzer.tooltip.machine_entry",
-                        machines.get(i).getDisplayName()
+                        machines.get(i).getDisplayNameComponent()
                 ));
             }
             if (machines.size() > 3) {

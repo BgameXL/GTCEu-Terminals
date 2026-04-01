@@ -1,6 +1,7 @@
 package com.gtceuterminal.common.energy;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -12,8 +13,10 @@ public class EnergySnapshot {
     public enum MachineMode { CONSUMER, GENERATOR, STORAGE, UNKNOWN }
 
     // ─── Identity ─────────────────────────────────────────────────────────────
-    public String machineName;
-    public String machineType;
+    /** User-defined label from analyzer rename; empty for default controller block name. */
+    public String machineCustomName = "";
+    /** Block description id for the controller block (e.g. block.gtceu.ebf). */
+    public String machineTypeKey = "";
     public MachineMode mode;
     public boolean isFormed;
 
@@ -79,10 +82,11 @@ public class EnergySnapshot {
     }
 
     // ─── Hatch info ───────────────────────────────────────────────────────────
-    public record HatchInfo(String name, long voltage, long amperage, boolean isInput) {
+    /** blockNameKey = block.getDescriptionId() for the hatch block at that position. */
+    public record HatchInfo(String blockNameKey, long voltage, long amperage, boolean isInput) {
 
         public void encode(FriendlyByteBuf buf) {
-            buf.writeUtf(name);
+            buf.writeUtf(blockNameKey);
             buf.writeLong(voltage);
             buf.writeLong(amperage);
             buf.writeBoolean(isInput);
@@ -93,10 +97,21 @@ public class EnergySnapshot {
         }
     }
 
+    /** Title shown in UI: custom name or localized controller block name. */
+    public Component getMachineTitle() {
+        if (machineCustomName != null && !machineCustomName.isBlank()) {
+            return Component.literal(machineCustomName);
+        }
+        if (machineTypeKey != null && !machineTypeKey.isBlank()) {
+            return Component.translatable(machineTypeKey);
+        }
+        return Component.literal("");
+    }
+
     // ─── Network serialization ────────────────────────────────────────────────
     public void encode(FriendlyByteBuf buf) {
-        buf.writeUtf(machineName);
-        buf.writeUtf(machineType);
+        buf.writeUtf(machineCustomName);
+        buf.writeUtf(machineTypeKey);
         buf.writeEnum(mode);
         buf.writeBoolean(isFormed);
         buf.writeLong(energyStored);
@@ -138,8 +153,8 @@ public class EnergySnapshot {
     // Must be in same order as encode()
     public static EnergySnapshot decode(FriendlyByteBuf buf) {
         EnergySnapshot s = new EnergySnapshot();
-        s.machineName    = buf.readUtf();
-        s.machineType    = buf.readUtf();
+        s.machineCustomName = buf.readUtf();
+        s.machineTypeKey    = buf.readUtf();
         s.mode           = buf.readEnum(MachineMode.class);
         s.isFormed       = buf.readBoolean();
         s.energyStored   = buf.readLong();

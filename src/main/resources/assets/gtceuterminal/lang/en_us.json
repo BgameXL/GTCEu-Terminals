@@ -42,7 +42,6 @@
   "item.gtceuterminal.energy_analyzer.tooltip.right_click_open": "§7Right-click: §bOpen on that machine",
   "item.gtceuterminal.energy_analyzer.tooltip.right_click_air_open": "§7Right-click (air): §bOpen list",
   "item.gtceuterminal.energy_analyzer.tooltip.shift_right_click_manage": "§7Shift + Right-click: §eLink / Unlink machine",
-
   "item.gtceuterminal.energy_analyzer.message.unlinked": "§cUnlinked: §f%s",
   "item.gtceuterminal.energy_analyzer.message.cannot_link_more": "§cCannot link more than §f%d§c machines. Unlink one first.",
   "item.gtceuterminal.energy_analyzer.message.dimension_not_allowed": "§cDimension §f%s§c is not allowed in config.",
@@ -93,7 +92,6 @@
   "item.gtceuterminal.tooltip.me_range.out_of_range": "  §c● Out of Range",
 
   "item.gtceuterminal.multi_structure_manager.behavior.linked_to_me_network": "§a✓ Linked to ME Network",
-
   "item.gtceuterminal.multi_structure_manager.behavior.cooldown_active": "§cCooldown active!",
   "item.gtceuterminal.multi_structure_manager.behavior.multiblock_built": "§aMultiblock built!",
   "item.gtceuterminal.multi_structure_manager.behavior.failed_to_build_check_materials": "§cFailed to build! Check materials.",
@@ -110,6 +108,7 @@
   "item.gtceuterminal.schematic_paster.paste_success.no_skipped": "§aSchematic pasted! §f%d blocks placed",
   "item.gtceuterminal.schematic_paster.paste_success.with_skipped": "§aSchematic pasted! §f%d blocks placed §7(%d skipped)",
   "item.gtceuterminal.schematic_paster.missing_materials": "§cMissing materials: §f%s",
+
   "item.gtceuterminal.power_logger.desc": "Monitors machine power consumption",
 
   "gui.gtceuterminal.planner.title": "§f§lPlacement Planner",
@@ -152,7 +151,6 @@
   "gui.gtceuterminal.blueprint.library.feedback.failed_delete": "§cFailed to delete.",
   "gui.gtceuterminal.blueprint.library.feedback.saved_as": "§aSaved as: %s",
   "gui.gtceuterminal.blueprint.library.feedback.failed_save": "§cFailed to save.",
-
   "gui.gtceuterminal.blueprint.view.title": "Blueprint Viewer",
   "gui.gtceuterminal.blueprint.view.orbit.hints": "§7[Drag] Orbit  [Scroll] Zoom  [Tab] Place Mode  [Esc] Back to Planner",
   "gui.gtceuterminal.blueprint.view.orbit.place_mode": "§9Place Mode",
@@ -174,19 +172,16 @@
   "gui.gtceuterminal.schematic_interface.hint_formed_2": "§8multiblock to copy it",
   "gui.gtceuterminal.schematic_interface.selected": "§7Selected: §f%s",
   "gui.gtceuterminal.schematic_interface.entry.blocks": "§8%s blocks",
-
   "gui.gtceuterminal.schematic_interface.preview.clipboard_content": "§7Clipboard content:",
   "gui.gtceuterminal.schematic_interface.preview.save_to_see": "§8Save it to see preview",
   "gui.gtceuterminal.schematic_interface.preview.no_preview": "§7No preview",
   "gui.gtceuterminal.schematic_interface.preview.info": "§7%s blocks | %sx%sx%s",
   "gui.gtceuterminal.schematic_interface.preview.zoom_hint": "§8Ctrl + Mouse wheel for zoom",
   "gui.gtceuterminal.schematic_interface.preview.rotation_hint": "§8Mouse wheel to rotate preview",
-
   "gui.gtceuterminal.schematic_interface.button.save": "§f§lSave",
   "gui.gtceuterminal.schematic_interface.button.load": "§f§lLoad",
   "gui.gtceuterminal.schematic_interface.button.delete": "§f§lDelete",
   "gui.gtceuterminal.schematic_interface.button.close": "§7Close",
-
   "gui.gtceuterminal.schematic_interface.chat.error.no_clipboard": "§c§lError: §cNo clipboard! Copy a multiblock first.",
   "gui.gtceuterminal.schematic_interface.chat.error.enter_name": "§c§lError: §cPlease enter a name!",
   "gui.gtceuterminal.schematic_interface.chat.error.reserved_name": "§c§lError: §c'Clipboard' is a reserved name!",
@@ -195,7 +190,6 @@
   "gui.gtceuterminal.schematic_interface.chat.error.no_schematic_selected": "§c§lError: §cNo schematic selected!",
   "gui.gtceuterminal.schematic_interface.chat.success.loaded_to_clipboard": "§a§l✓ §aLoaded to clipboard: §f%s",
   "gui.gtceuterminal.schematic_interface.chat.success.deleted": "§c§l✗ §cDeleted: §f%s",
-
   "gui.gtceuterminal.schematic_interface.fallback.multiblock_structure": "Multiblock Structure",
 
   "gui.gtceuterminal.multiblock_manager.nearby_title": "Nearby Multiblocks (%s)",
@@ -231,42 +225,36 @@
   "gui.gtceuterminal.energy_analyzer.out_line": "Out: %s/t  (%s/s)",
   "gui.gtceuterminal.energy_analyzer.net_line": "Net: %s/s",
   "gui.gtceuterminal.energy_analyzer.voltage_line": "Voltage: %s (%sV)  %sA max",
-
   "gui.gtceuterminal.energy_analyzer.recipe_button": "§6Recipe: §7[log ▶]",
   "gui.gtceuterminal.energy_analyzer.recipe_time_left": "%s left",
   "gui.gtceuterminal.energy_analyzer.recipe_finishing": "finishing...",
-
   "gui.gtceuterminal.energy_analyzer.hatches_label": "Hatches:",
   "gui.gtceuterminal.energy_analyzer.hatch_in": "IN",
   "gui.gtceuterminal.energy_analyzer.hatch_out": "OUT",
+  "gui.gtceuterminal.energy_analyzer.hatch_line": "  %s  %s  %dV%s",
+  "gui.gtceuterminal.energy_analyzer.hatch_amp_suffix": " %dA",
   "gui.gtceuterminal.energy_analyzer.more_hatches": "  §8+ %s more...",
-
   "gui.gtceuterminal.energy_analyzer.graph_header": "History (EU/s):",
   "gui.gtceuterminal.energy_analyzer.legend_in": "— In",
   "gui.gtceuterminal.energy_analyzer.legend_out": "— Out",
-
   "gui.gtceuterminal.energy_analyzer.machine_options.title": "§6Machine Options",
   "gui.gtceuterminal.energy_analyzer.machine_options.rename": "§e✎  Rename",
   "gui.gtceuterminal.energy_analyzer.machine_options.unlink_machine": "§c✖  Unlink machine",
   "gui.gtceuterminal.energy_analyzer.machine_options.cancel": "§7Cancel",
-
   "gui.gtceuterminal.energy_analyzer.rename_dialog.title": "§6Rename Machine",
   "gui.gtceuterminal.energy_analyzer.rename_dialog.confirm": "§aConfirm",
   "gui.gtceuterminal.energy_analyzer.rename_dialog.cancel": "§7Cancel",
-
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.title": "§cUnlink Machine",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.remove_prompt": "§7Remove §f%s§7?",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.unlink": "§cUnlink",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.cancel": "§7Cancel",
   "gui.gtceuterminal.energy_analyzer.unlink_dialog.hint_click_outside_cancel": "§8Click outside to cancel",
-
   "gui.gtceuterminal.energy_analyzer.recipe_log.title": "§6Recipe Log  §7— %s",
   "gui.gtceuterminal.energy_analyzer.recipe_log.output": "§7Output",
   "gui.gtceuterminal.energy_analyzer.recipe_log.time": "§7Time",
   "gui.gtceuterminal.energy_analyzer.recipe_log.when": "§7When",
   "gui.gtceuterminal.energy_analyzer.recipe_log.no_recipes": "§7No recipes recorded yet.",
   "gui.gtceuterminal.energy_analyzer.recipe_log.hint_click_outside_close": "§8Click outside to close",
-
   "gui.gtceuterminal.energy_analyzer.mode.not_formed": "[NOT FORMED]",
   "gui.gtceuterminal.energy_analyzer.mode.consumer": "[Consumer]",
   "gui.gtceuterminal.energy_analyzer.mode.generator": "[Generator]",
@@ -274,59 +262,46 @@
   "gui.gtceuterminal.energy_analyzer.mode.unknown": "[Unknown]",
 
   "gui.gtceuterminal.manager_settings.title": "§lManager Settings",
-
   "gui.gtceuterminal.manager_settings.common.yes": "§aYes",
   "gui.gtceuterminal.manager_settings.common.no": "§cNo",
-
   "gui.gtceuterminal.manager_settings.hatch_mode.label": "§7No Hatch Mode",
   "gui.gtceuterminal.manager_settings.hatch_mode.tooltip": "§7Build without hatches",
   "gui.gtceuterminal.manager_settings.hatch_mode.hint_toggle": "§8← Click to toggle",
-
   "gui.gtceuterminal.manager_settings.tier_mode.label": "§7Tier Mode",
   "gui.gtceuterminal.manager_settings.tier_mode.tooltip": "§7Component tier (1=LV, 2=MV, ...)",
   "gui.gtceuterminal.manager_settings.tier_mode.hint_scroll_type": "§8↑↓ Scroll or type",
-
   "gui.gtceuterminal.manager_settings.repeat_count.label": "§7Repeat Count",
   "gui.gtceuterminal.manager_settings.repeat_count.tooltip": "§7Number of times to repeat the structure",
   "gui.gtceuterminal.manager_settings.repeat_count.hint_layers": "§8Repeatable layers (0-99)",
-
   "gui.gtceuterminal.manager_settings.use_ae2.label": "§7Use AE2",
   "gui.gtceuterminal.manager_settings.use_ae2.tooltip": "§7Wireless Terminal is required",
   "gui.gtceuterminal.manager_settings.use_ae2.hint_use_materials": "§8← Use AE2 for materials",
 
   "gui.gtceuterminal.component_detail.header.title_compact": "§l§f%s",
   "gui.gtceuterminal.component_detail.header.title_full": "§l§f%s - Components",
-
   "gui.gtceuterminal.component_detail.info.multiblock": "§7Multiblock: §f%s",
   "gui.gtceuterminal.component_detail.info.tier": "§7Tier: §f%s",
   "gui.gtceuterminal.component_detail.info.distance": "§7Distance: §f%s",
   "gui.gtceuterminal.component_detail.info.components": "§7Components: §f%s §7(§f%s §7groups)",
-
   "gui.gtceuterminal.component_detail.list.header": "§l§7Component Groups:",
-
   "gui.gtceuterminal.component_detail.entry.count": "§7Count: §f%s",
   "gui.gtceuterminal.component_detail.entry.tier": "§7Tier: §f%s",
   "gui.gtceuterminal.component_detail.entry.upgrade": "§aUpgrade",
   "gui.gtceuterminal.component_detail.entry.max": "§7Max",
-
   "gui.gtceuterminal.component_detail.actions.bulk_upgrade": "§aBulk Upgrade",
   "gui.gtceuterminal.component_detail.actions.scan": "§7Scan",
   "gui.gtceuterminal.component_detail.actions.back": "§7← Back",
-
   "gui.gtceuterminal.component_detail.notifications.bulk_not_implemented": "§7Bulk upgrade not yet implemented",
   "gui.gtceuterminal.component_detail.notifications.rescanned": "§aRescanned components",
   "gui.gtceuterminal.component_detail.notifications.use_esc_to_close": "§7Use ESC to close",
 
   "gui.gtceuterminal.component_detail_dialog.unknown_multiblock": "Unknown Multiblock",
   "gui.gtceuterminal.component_detail_dialog.header.title": "§l§f%s - Components",
-
   "gui.gtceuterminal.component_detail_dialog.info.multiblock": "§7Multiblock: §f%s",
   "gui.gtceuterminal.component_detail_dialog.info.tier": "§7Tier: §f%s",
   "gui.gtceuterminal.component_detail_dialog.info.distance": "§7Distance: §f%s",
   "gui.gtceuterminal.component_detail_dialog.info.components": "§7Components: §f%s §7(§f%s §7groups)",
-
   "gui.gtceuterminal.component_detail_dialog.list.header": "§l§7Component Groups:",
-
   "gui.gtceuterminal.component_detail_dialog.entry.count": "§7Count: §f%s",
   "gui.gtceuterminal.component_detail_dialog.entry.tier": "§7Tier: §f%s",
 
@@ -334,6 +309,7 @@
   "gui.gtceuterminal.group_upgrade_dialog.upgrade_x": "§eUpgrade %sx %s",
   "gui.gtceuterminal.group_upgrade_dialog.from": "§7From: §f%s",
   "gui.gtceuterminal.group_upgrade_dialog.to": "§7To: §f%s",
+  "gui.gtceuterminal.group_upgrade_dialog.type_with_tier": "%s (%s)",
   "gui.gtceuterminal.group_upgrade_dialog.creative_no_materials": "§aCreative Mode - No materials required",
   "gui.gtceuterminal.group_upgrade_dialog.required_materials": "§7Required materials:",
   "gui.gtceuterminal.group_upgrade_dialog.confirm_upgrade_all": "Upgrade All (%s)",
@@ -341,52 +317,96 @@
   "gui.gtceuterminal.group_upgrade_dialog.cancel": "Cancel",
   "gui.gtceuterminal.group_upgrade_dialog.unknown_coil": "Unknown Coil",
 
+  "gui.gtceuterminal.coil_tier.cupronickel": "Cupronickel",
+  "gui.gtceuterminal.coil_tier.kanthal": "Kanthal",
+  "gui.gtceuterminal.coil_tier.nichrome": "Nichrome",
+  "gui.gtceuterminal.coil_tier.rtm_alloy": "RTM Alloy",
+  "gui.gtceuterminal.coil_tier.hss_g": "HSS-G",
+  "gui.gtceuterminal.coil_tier.naquadah": "Naquadah",
+  "gui.gtceuterminal.coil_tier.trinium": "Trinium",
+  "gui.gtceuterminal.coil_tier.tritanium": "Tritanium",
+  "gui.gtceuterminal.coil_tier.unknown": "Unknown Coil",
+
   "gui.gtceuterminal.component_upgrade_dialog.title": "§l§fUpgrade %s",
+
+  "component.gtceuterminal.component_type.energy_hatch": "Energy Hatch",
+  "component.gtceuterminal.component_type.dynamo_hatch": "Dynamo Hatch",
+  "component.gtceuterminal.component_type.wireless_energy_input": "Wireless Energy Input Hatch",
+  "component.gtceuterminal.component_type.wireless_energy_output": "Wireless Energy Output Hatch",
+  "component.gtceuterminal.component_type.wireless_laser_input": "Wireless Laser Target Hatch",
+  "component.gtceuterminal.component_type.wireless_laser_output": "Wireless Laser Source Hatch",
+  "component.gtceuterminal.component_type.substation_input_energy": "Substation Input Energy",
+  "component.gtceuterminal.component_type.substation_output_energy": "Substation Output Energy",
+  "component.gtceuterminal.component_type.input_bus": "Input Bus",
+  "component.gtceuterminal.component_type.output_bus": "Output Bus",
+  "component.gtceuterminal.component_type.steam_input_bus": "Steam Input Bus",
+  "component.gtceuterminal.component_type.steam_output_bus": "Steam Output Bus",
+  "component.gtceuterminal.component_type.input_hatch": "Input Hatch",
+  "component.gtceuterminal.component_type.output_hatch": "Output Hatch",
+  "component.gtceuterminal.component_type.input_hatch_1x": "Input Hatch (1x)",
+  "component.gtceuterminal.component_type.output_hatch_1x": "Output Hatch (1x)",
+  "component.gtceuterminal.component_type.quad_input_hatch": "Quad Input Hatch (4x)",
+  "component.gtceuterminal.component_type.quad_output_hatch": "Quad Output Hatch (4x)",
+  "component.gtceuterminal.component_type.nonuple_input_hatch": "Nonuple Input Hatch (9x)",
+  "component.gtceuterminal.component_type.nonuple_output_hatch": "Nonuple Output Hatch (9x)",
+  "component.gtceuterminal.component_type.muffler": "Muffler Hatch",
+  "component.gtceuterminal.component_type.maintenance": "Maintenance Hatch",
+  "component.gtceuterminal.component_type.rotor_holder": "Rotor Holder",
+  "component.gtceuterminal.component_type.pump_fluid_hatch": "Pump Fluid Hatch",
+  "component.gtceuterminal.component_type.steam": "Steam Hatch",
+  "component.gtceuterminal.component_type.tank_valve": "Tank Valve",
+  "component.gtceuterminal.component_type.passthrough_hatch": "Passthrough Hatch",
+  "component.gtceuterminal.component_type.parallel_hatch": "Parallel Hatch",
+  "component.gtceuterminal.component_type.input_laser": "Input Laser Hatch",
+  "component.gtceuterminal.component_type.output_laser": "Output Laser Hatch",
+  "component.gtceuterminal.component_type.computation_data_reception": "Computation Data Reception Hatch",
+  "component.gtceuterminal.component_type.computation_data_transmission": "Computation Data Transmission Hatch",
+  "component.gtceuterminal.component_type.optical_data_reception": "Optical Data Reception Hatch",
+  "component.gtceuterminal.component_type.optical_data_transmission": "Optical Data Transmission Hatch",
+  "component.gtceuterminal.component_type.data_access": "Data Access Hatch",
+  "component.gtceuterminal.component_type.hpca_component": "HPCA Component",
+  "component.gtceuterminal.component_type.object_holder": "Object Holder",
+  "component.gtceuterminal.component_type.coil": "Heating Coil",
+  "component.gtceuterminal.component_type.casing": "Casing",
+  "component.gtceuterminal.component_type.machine_hatch": "Machine Hatch",
+  "component.gtceuterminal.component_type.dual_hatch": "Dual Hatch",
+  "component.gtceuterminal.component_type.filter": "Filter",
+  "component.gtceuterminal.component_type.unknown": "Unknown Component",
 
   "gui.gtceuterminal.component_upgrade_dialog.info.count_components": "§7Count: §f%s components",
   "gui.gtceuterminal.component_upgrade_dialog.info.current_tier": "§7Current Tier: §f%s",
-
   "gui.gtceuterminal.component_upgrade_dialog.tier_selection.label_upgrade_option": "§l§7Select Upgrade Option:",
   "gui.gtceuterminal.component_upgrade_dialog.tier_selection.label_target_tier": "§l§7Select Target Tier:",
-
   "gui.gtceuterminal.component_upgrade_dialog.actions.confirm_change": "§eConfirm Change",
   "gui.gtceuterminal.component_upgrade_dialog.actions.auto_craft": "§9⚙ Auto-craft",
   "gui.gtceuterminal.component_upgrade_dialog.actions.cancel": "§fCancel",
-
   "gui.gtceuterminal.component_upgrade_dialog.chat.select_upgrade_option_first": "§eSelect an upgrade option first.",
   "gui.gtceuterminal.component_upgrade_dialog.chat.analyzing_me_network": "§7Analyzing ME Network...",
   "gui.gtceuterminal.component_upgrade_dialog.chat.changing_components": "§aChanging %s components...",
-
   "gui.gtceuterminal.component_upgrade_dialog.materials.required_label": "§l§7Required Materials:",
   "gui.gtceuterminal.component_upgrade_dialog.materials.me_materials_verified": "§e⚠ ME materials will be verified on confirmation",
   "gui.gtceuterminal.component_upgrade_dialog.materials.creative_mode": "§a§lCREATIVE MODE",
   "gui.gtceuterminal.component_upgrade_dialog.materials.select_option_to_see": "§7Select an option to see materials",
   "gui.gtceuterminal.component_upgrade_dialog.materials.creative_mode_not_required": "§a[Creative Mode - Not Required]",
-
   "gui.gtceuterminal.component_upgrade_dialog.option_all_any": "§fALL\n§7(any)",
 
   "gui.gtceuterminal.material_list.quantity.me": "§a%s§7/%s §a[ME]",
   "gui.gtceuterminal.material_list.quantity.inv": "§7%s/%s [Inv]",
   "gui.gtceuterminal.material_list.quantity.mix": "§e%s§7/%s §e[Mix]",
   "gui.gtceuterminal.material_list.quantity.missing": "§c%s§7/%s §c[-%s]",
-
   "gui.gtceuterminal.material_list.tooltip.required": "§7Required: §f%s",
   "gui.gtceuterminal.material_list.tooltip.available_colored": "§7Available: %s",
   "gui.gtceuterminal.material_list.tooltip.sources_header": "§7§l--- Sources ---",
-
   "gui.gtceuterminal.material_list.tooltip.source.inventory_nonzero": "  §7Inventory: §f%s",
   "gui.gtceuterminal.material_list.tooltip.source.inventory_zero": "  §8Inventory: 0",
   "gui.gtceuterminal.material_list.tooltip.source.chests_nonzero": "  §7Chests: §f%s",
   "gui.gtceuterminal.material_list.tooltip.source.chests_zero": "  §8Chests: 0",
   "gui.gtceuterminal.material_list.tooltip.source.me_network_nonzero": "  §e§lME Network: §f%s §8(pending verification)",
   "gui.gtceuterminal.material_list.tooltip.source.me_network_zero": "  §8ME Network: 0",
-
   "gui.gtceuterminal.material_list.tooltip.status.sufficient": "§a✓ Sufficient materials",
   "gui.gtceuterminal.material_list.tooltip.status.missing": "§c✗ Missing %s items",
-
   "gui.gtceuterminal.material_list.tooltip.primary_source.me_pending": "§7Primary source: %s §8(will verify on confirm)",
   "gui.gtceuterminal.material_list.tooltip.primary_source.normal": "§7Primary source: %s",
-
   "gui.gtceuterminal.material_list.source.me_network": "ME Network",
   "gui.gtceuterminal.material_list.source.inventory": "Inventory",
   "gui.gtceuterminal.material_list.source.chests": "Chests",
@@ -403,7 +423,6 @@
   "gui.gtceuterminal.theme_editor.style.gtceu_native": "GTCEu Native",
   "gui.gtceuterminal.theme_editor.style.dark": "Dark",
   "gui.gtceuterminal.theme_editor.style_label": "§7Style: §f%s",
-
   "gui.gtceuterminal.theme_editor.wallpaper": "§7Wallpaper",
   "gui.gtceuterminal.theme_editor.none": "§8None",
   "gui.gtceuterminal.theme_editor.preview": "§7Preview",
@@ -411,15 +430,12 @@
   "gui.gtceuterminal.theme_editor.tab.accent": "Accent",
   "gui.gtceuterminal.theme_editor.tab.bg": "BG",
   "gui.gtceuterminal.theme_editor.tab.panel": "Panel",
-
   "gui.gtceuterminal.theme_editor.options": "§7Options",
   "gui.gtceuterminal.theme_editor.toggle.compact_mode": "Compact mode",
   "gui.gtceuterminal.theme_editor.toggle.show_tooltips": "Show tooltips",
   "gui.gtceuterminal.theme_editor.toggle.show_borders": "Show borders",
-
   "gui.gtceuterminal.theme_editor.button.save": "§aSave",
   "gui.gtceuterminal.theme_editor.button.reset": "§cReset",
-
   "gui.gtceuterminal.theme_editor.preset.default": "Default",
   "gui.gtceuterminal.theme_editor.preset.gtceu_red": "GTCEu Red",
   "gui.gtceuterminal.theme_editor.preset.matrix": "Matrix",

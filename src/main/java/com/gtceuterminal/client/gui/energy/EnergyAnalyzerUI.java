@@ -170,7 +170,7 @@ public class EnergyAnalyzerUI {
             g.addWidget(dot);
 
             LabelWidget name = new LabelWidget(PAD + 12, y + 4,
-                    () -> truncate(m.getDisplayName(), 14));
+                    () -> truncate(m.getDisplayNameComponent().getString(), 14));
             name.setClientSideWidget();
             name.setTextColor(C_GRAY);
             g.addWidget(name);
@@ -208,7 +208,8 @@ public class EnergyAnalyzerUI {
 
         // Machine name
         LabelWidget title = new LabelWidget(0, y, () -> {
-            EnergySnapshot s = selSnap(); return s != null ? s.machineName : "";
+            EnergySnapshot s = selSnap();
+            return s != null ? s.getMachineTitle().getString() : "";
         });
         title.setClientSideWidget();
         title.setTextColor(C_WHITE);
@@ -395,7 +396,21 @@ public class EnergyAnalyzerUI {
                 String inOut = hatch.isInput()
                         ? Component.translatable("gui.gtceuterminal.energy_analyzer.hatch_in").getString()
                         : Component.translatable("gui.gtceuterminal.energy_analyzer.hatch_out").getString();
-                return "  " + inOut + "  " + hatch.name() + "  " + hatch.voltage() + "V";
+                String ampSuffix = hatch.amperage() > 1
+                        ? Component.translatable(
+                                "gui.gtceuterminal.energy_analyzer.hatch_amp_suffix",
+                                hatch.amperage()
+                        ).getString()
+                        : "";
+                String blockKey = hatch.blockNameKey();
+                if (blockKey == null || blockKey.isBlank()) return "";
+                return Component.translatable(
+                        "gui.gtceuterminal.energy_analyzer.hatch_line",
+                        inOut,
+                        Component.translatable(blockKey),
+                        hatch.voltage(),
+                        ampSuffix
+                ).getString();
             });
             hatchL.setClientSideWidget();
             hatchL.setTextColor(C_GREEN);
@@ -552,7 +567,7 @@ public class EnergyAnalyzerUI {
 
         // Machine name subtitle
         LabelWidget nameLbl = new LabelWidget(8, 22,
-                "§7" + truncate(m.getDisplayName(), 28));
+                "§7" + truncate(m.getDisplayNameComponent().getString(), 28));
         nameLbl.setTextColor(C_GRAY);
         panel.addWidget(nameLbl);
 
@@ -683,7 +698,7 @@ public class EnergyAnalyzerUI {
         titleBar.addWidget(titleLbl);
 
         // Confirm message
-        String targetName = truncate(m.getDisplayName(), 22);
+        String targetName = truncate(m.getDisplayNameComponent().getString(), 22);
         LabelWidget confirmLbl = new LabelWidget(8, 22,
                 Component.translatable(
                                 "gui.gtceuterminal.energy_analyzer.unlink_dialog.remove_prompt",
@@ -749,7 +764,7 @@ public class EnergyAnalyzerUI {
         titleBar.setBackground(new ColorRectTexture(0xFF2D2D2D));
         panel.addWidget(titleBar);
         LabelWidget titleLbl = new LabelWidget(8, 4,
-                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.title", snap.machineName).getString());
+                Component.translatable("gui.gtceuterminal.energy_analyzer.recipe_log.title", snap.getMachineTitle()).getString());
         titleLbl.setTextColor(C_GOLD);
         titleBar.addWidget(titleLbl);
 

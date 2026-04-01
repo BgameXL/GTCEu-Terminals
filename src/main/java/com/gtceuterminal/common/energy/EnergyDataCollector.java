@@ -4,12 +4,10 @@ import com.gtceuterminal.GTCEUTerminalMod;
 import com.gtceuterminal.common.config.ItemsConfig;
 import com.gtceuterminal.common.multiblock.MachineInferencer;
 
-import com.gregtechceu.gtceu.api.GTValues;
 import com.gregtechceu.gtceu.api.capability.GTCapabilityHelper;
 import com.gregtechceu.gtceu.api.capability.IEnergyContainer;
 import com.gregtechceu.gtceu.api.capability.IEnergyInfoProvider;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
-import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiController;
 import com.gregtechceu.gtceu.api.machine.feature.multiblock.IMultiPart;
 import com.gregtechceu.gtceu.api.machine.multiblock.PartAbility;
 import com.gregtechceu.gtceu.api.machine.multiblock.WorkableElectricMultiblockMachine;
@@ -19,8 +17,10 @@ import com.gregtechceu.gtceu.api.machine.feature.IRecipeLogicMachine;
 import com.gregtechceu.gtceu.api.machine.trait.RecipeLogic;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -75,10 +75,10 @@ public class EnergyDataCollector {
 
     // ─── Main entry point ────────────────────────────────────────────────────
     public static EnergySnapshot collect(ServerLevel level, BlockPos pos,
-                                         String customName, String machineType) {
+                                         String customName, String controllerBlockKey) {
         EnergySnapshot snap = new EnergySnapshot();
-        snap.machineName = customName.isBlank() ? machineType : customName;
-        snap.machineType = machineType;
+        snap.machineCustomName = customName != null ? customName : "";
+        snap.machineTypeKey = typeKeyFromControllerBlock(level, pos, controllerBlockKey);
         snap.mode = EnergySnapshot.MachineMode.UNKNOWN;
         snap.isFormed = false;
 
@@ -143,11 +143,9 @@ public class EnergyDataCollector {
                 }
 
                 // Active recipe info + history tracking
-                if (snap.isFormed && snap.mode == EnergySnapshot.MachineMode.CONSUMER
-                        && electric instanceof IRecipeLogicMachine) {
-                    IRecipeLogicMachine rlm = (IRecipeLogicMachine) electric;
-                    collectRecipeInfo(rlm, snap);
-                    RecipeHistoryTracker.poll(pos, rlm);
+                if (snap.isFormed && snap.mode == EnergySnapshot.MachineMode.CONSUMER) {
+                    collectRecipeInfo(electric, snap);
+                    RecipeHistoryTracker.poll(pos, electric);
                     snap.recipeHistory = new java.util.ArrayList<>(RecipeHistoryTracker.getHistory(pos));
                 }
             }
@@ -183,6 +181,21 @@ public class EnergyDataCollector {
         }
 
         return snap;
+    }
+
+    /** Block description id for UI; uses world block if present else registry key from link data. */
+    private static String typeKeyFromControllerBlock(ServerLevel level, BlockPos pos, String controllerBlockKey) {
+        var state = level.getBlockState(pos);
+        if (!state.isAir()) {
+            return state.getBlock().getDescriptionId();
+        }
+        if (controllerBlockKey != null && !controllerBlockKey.isBlank()) {
+            Block b = ForgeRegistries.BLOCKS.getValue(ResourceLocation.parse(controllerBlockKey));
+            if (b != null) {
+                return b.getDescriptionId();
+            }
+        }
+        return "";
     }
 
     // ─── Active recipe info ──────────────────────────────────────────────────
@@ -264,10 +277,8 @@ public class EnergyDataCollector {
     }
 
     // ─── Hatch breakdown ─────────────────────────────────────────────────────
-    private static void collectHatchInfo(WorkableElectricMultiblockMachine machine, EnergySnapshot snap) {
+    private static void collectHatchInfo(WorkableElectricMultiblockMachine ctrl, EnergySnapshot snap) {
         try {
-            IMultiController ctrl = (IMultiController) machine;
-
             for (IMultiPart part : ctrl.getParts()) {
                 BlockPos partPos = part.self().getPos();
                 Level level = part.self().getLevel();
@@ -281,9 +292,9 @@ public class EnergyDataCollector {
                         || PartAbility.SUBSTATION_INPUT_ENERGY.isApplicable(part.self().getBlockState().getBlock());
 
                 // GTMThings wireless hatch detection via block registry name
-                var blockKey = ForgeRegistries.BLOCKS.getKey(part.self().getBlockState().getBlock());
-                if (blockKey != null) {
-                    String blockId = blockKey.toString().toLowerCase();
+                var regKey = ForgeRegistries.BLOCKS.getKey(part.self().getBlockState().getBlock());
+                if (regKey != null) {
+                    String blockId = regKey.toString().toLowerCase();
                     if (blockId.contains("wireless")) {
                         if (blockId.contains("input") || blockId.contains("target")) {
                             isInput = true;
@@ -293,10 +304,8 @@ public class EnergyDataCollector {
                         long vol = isInput ? ec.getInputVoltage() : ec.getOutputVoltage();
                         long amp = isInput ? ec.getInputAmperage() : ec.getOutputAmperage();
                         if (vol > 0) {
-                            String tier = GTValues.VN[com.gregtechceu.gtceu.utils.GTUtil.getTierByVoltage(vol)];
-                            String name = tier + " Wireless " + (isInput ? "Energy Input" : "Energy Output") + " Hatch";
-                            if (amp > 1) name += " " + amp + "A";
-                            snap.hatches.add(new EnergySnapshot.HatchInfo(name, vol, amp, isInput));
+                            Block hb = part.self().getBlockState().getBlock();
+                            snap.hatches.add(new EnergySnapshot.HatchInfo(hb.getDescriptionId(), vol, amp, isInput));
                             continue;
                         }
                     }
@@ -306,10 +315,8 @@ public class EnergyDataCollector {
                 long amperage = isInput ? ec.getInputAmperage() : ec.getOutputAmperage();
                 if (voltage <= 0) continue;
 
-                String tier = GTValues.VN[com.gregtechceu.gtceu.utils.GTUtil.getTierByVoltage(voltage)];
-                String name = tier + " " + (isInput ? "Energy Hatch" : "Dynamo Hatch");
-                if (amperage > 1) name += " " + amperage + "A";
-                snap.hatches.add(new EnergySnapshot.HatchInfo(name, voltage, amperage, isInput));
+                Block hatchBlock = part.self().getBlockState().getBlock();
+                snap.hatches.add(new EnergySnapshot.HatchInfo(hatchBlock.getDescriptionId(), voltage, amperage, isInput));
             }
         } catch (Exception e) {
             GTCEUTerminalMod.LOGGER.debug("Error collecting hatch info", e);
